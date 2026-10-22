@@ -11,7 +11,7 @@ A extensão funciona inteiramente no navegador do analista. Ela não coleta, nã
 | Texto digitado nos campos (contexto, ações, perguntas e similares) | Memória do painel lateral | Até o painel ser fechado, o analista limpar, ou o tempo de inatividade configurado expirar (padrão: 15 minutos). Após uma limpeza manual, uma cópia fica só em memória por 30 segundos para “Desfazer limpeza” e então é descartada (ou imediatamente, se o analista apagar também os dados salvos ou digitar algo novo) |
 | Texto gerado e editado na prévia | Memória do painel lateral | Mesmo critério acima |
 | Resultado da detecção de dados sensíveis | Memória do painel lateral | Mesmo critério acima |
-| Texto do modo “Corrigir ortografia” e as sugestões | Memória do painel lateral | Mesmo critério acima. A lista de palavras usada na correção vem no pacote e não contém dado de chamado |
+| Texto do modo “Corrigir texto” e as sugestões | Memória do painel lateral | Mesmo critério acima. A lista de palavras usada na correção vem no pacote e não contém dado de chamado |
 
 O processamento é local e determinístico. Os dados sensíveis detectados são exibidos somente de forma mascarada.
 
@@ -36,7 +36,7 @@ O texto colado no modo “Revisar texto pronto” segue as mesmas regras do rest
 Administradores podem fornecer um perfil por política (`chrome.storage.managed`), somente leitura para a extensão.
 
 ## Corretor do navegador (fora do controle da extensão)
-Os campos de texto pedem a verificação ortográfica do próprio Edge (`spellcheck`). A extensão não envia nada, mas o Edge pode usar o serviço Microsoft Editor para verificar campos de texto de qualquer página, inclusive deste painel, quando a política `MicrosoftEditorProofingEnabled` está ativada ou não configurada e o usuário não o desligou nas configurações de idiomas. Nesse caso o texto digitado pode ser enviado à Microsoft pelo navegador. Quem precisa garantir que nada saia da máquina deve desativar a política `MicrosoftEditorProofingEnabled` (o Edge passa a usar só os dicionários locais) ou `SpellcheckEnabled`. A correção do modo “Corrigir ortografia” é da extensão e sempre local.
+Os campos de texto pedem a verificação ortográfica do próprio Edge (`spellcheck`). A extensão não envia nada, mas o Edge pode usar o serviço Microsoft Editor para verificar campos de texto de qualquer página, inclusive deste painel, quando a política `MicrosoftEditorProofingEnabled` está ativada ou não configurada e o usuário não o desligou nas configurações de idiomas. Nesse caso o texto digitado pode ser enviado à Microsoft pelo navegador. Quem precisa garantir que nada saia da máquina deve desativar a política `MicrosoftEditorProofingEnabled` (o Edge passa a usar só os dicionários locais) ou `SpellcheckEnabled`. A correção do modo “Corrigir texto” é da extensão e sempre local.
 
 ## O que não é feito
 - Não lê o conteúdo de páginas, abas, histórico, cookies nem campos de sistemas de chamados.

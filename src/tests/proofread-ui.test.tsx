@@ -23,7 +23,7 @@ const field = () => screen.getByLabelText('Texto a corrigir') as HTMLTextAreaEle
 const live = () => document.querySelector('[aria-live="polite"]')?.textContent ?? '';
 
 async function openAndVerify(user: ReturnType<typeof userEvent.setup>, text = SAMPLE) {
-  await user.click(screen.getByRole('button', { name: 'Corrigir ortografia' }));
+  await user.click(screen.getByRole('button', { name: 'Corrigir texto' }));
   fireEvent.change(field(), { target: { value: text } });
   await user.click(screen.getByRole('button', { name: 'Verificar texto' }));
   await screen.findByRole('heading', { name: /^Sugestões \(/ }, { timeout: 15000 });
@@ -38,7 +38,35 @@ describe('camada 0: corretor do navegador', () => {
   });
 });
 
-describe('modo Corrigir ortografia', () => {
+describe('modo Corrigir texto: camada 2 (concordância, crase e uso)', () => {
+  const TEXT = 'os usuario nao relatou lentidão e houveram falhas';
+
+  it('mostra o motivo e a regra de cada sugestão de concordância', async () => {
+    const { user } = setup();
+    await openAndVerify(user, TEXT);
+    expect(screen.getByRole('heading', { name: 'Sugestões (3)' })).toBeTruthy();
+    expect(screen.getByText('Haver no sentido de existir fica no singular.')).toBeTruthy();
+    expect(screen.getByText('Concordância')).toBeTruthy();
+  });
+
+  it('"Aceitar acentos e grafia" não aplica concordância; essa pede aceite individual', async () => {
+    const { user } = setup();
+    await openAndVerify(user, TEXT);
+    await user.click(screen.getByRole('button', { name: 'Aceitar acentos e grafia (2)' }));
+    expect(field().value).toBe('os usuário não relatou lentidão e houveram falhas');
+    expect(screen.getByRole('heading', { name: /^Sugestões \(/ }).textContent).toMatch(/\(\d\)/);
+    await user.click(screen.getByRole('button', { name: 'Aceitar: trocar houveram por houve' }));
+    expect(field().value).toBe('os usuário não relatou lentidão e houve falhas');
+  });
+
+  it('o texto só muda por ação: verificar não altera nada', async () => {
+    const { user } = setup();
+    await openAndVerify(user, TEXT);
+    expect(field().value).toBe(TEXT);
+  });
+});
+
+describe('modo Corrigir texto', () => {
   it('lista as sugestões sem alterar o texto', async () => {
     const { user } = setup();
     await openAndVerify(user);
@@ -72,7 +100,7 @@ describe('modo Corrigir ortografia', () => {
   it('aceita todas de uma vez e anuncia a contagem', async () => {
     const { user } = setup();
     await openAndVerify(user);
-    await user.click(screen.getByRole('button', { name: 'Aceitar todas (3)' }));
+    await user.click(screen.getByRole('button', { name: 'Aceitar acentos e grafia (3)' }));
     expect(field().value).toBe('o usuário não consegue abrir a planilha, foi necessário reiniciar');
     expect(live()).toMatch(/3 trocas aplicadas\. Nenhuma sugestão restante/);
   });
@@ -98,7 +126,7 @@ describe('modo Corrigir ortografia', () => {
 
   it('texto sem erro devolve uma resposta honesta, e texto vazio pede o texto', async () => {
     const { user } = setup();
-    await user.click(screen.getByRole('button', { name: 'Corrigir ortografia' }));
+    await user.click(screen.getByRole('button', { name: 'Corrigir texto' }));
     await user.click(screen.getByRole('button', { name: 'Verificar texto' }));
     expect(screen.getByRole('alert').textContent).toMatch(/Cole ou digite o texto/);
     fireEvent.change(field(), { target: { value: 'O acesso foi liberado e o usuário já consegue entrar.' } });
@@ -110,7 +138,7 @@ describe('modo Corrigir ortografia', () => {
   it('copia o texto corrigido com aviso para leitores de tela', async () => {
     const { user, copy } = setup();
     await openAndVerify(user, 'nao foi possivel');
-    await user.click(screen.getByRole('button', { name: 'Aceitar todas (2)' }));
+    await user.click(screen.getByRole('button', { name: 'Aceitar acentos e grafia (2)' }));
     await user.click(screen.getByRole('button', { name: 'Copiar texto' }));
     expect(copy).toHaveBeenCalledWith('não foi possível');
     expect(live()).toMatch(/Texto copiado/);
@@ -142,7 +170,7 @@ describe('modo Corrigir ortografia', () => {
     const user = userEvent.setup();
     render(<App storage={storage} copy={vi.fn(async () => true)} now={() => NOW} />);
     await openAndVerify(user);
-    await user.click(screen.getByRole('button', { name: 'Aceitar todas (3)' }));
+    await user.click(screen.getByRole('button', { name: 'Aceitar acentos e grafia (3)' }));
     expect(JSON.stringify([local.data, session.data])).not.toMatch(/planilha|usu[aá]rio|consegue/);
   });
 

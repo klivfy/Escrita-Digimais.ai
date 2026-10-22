@@ -1,14 +1,19 @@
 /**
- * Correção ortográfica por lista de frequência (camada 1). Pura: recebe a lista já carregada e devolve sugestões.
- * Nunca altera o texto sozinha. Duas regras:
+ * Correção de texto por camadas. Pura: recebe a lista já carregada e devolve sugestões. Nunca altera o texto sozinha.
+ * Camada 1, ortografia por lista de frequência, com duas regras:
  *  - acento: a palavra digitada tem uma variante só com acento muito mais frequente ("nao" para "não");
  *  - grafia: a palavra é rara e existe uma palavra comum a uma edição de distância ("licensa" para "licença").
- * Cobre acento e grafia de palavras comuns. Não corrige gramática, concordância nem palavras válidas no lugar errado.
+ * Camada 2 (domain/agreement.ts): concordância, crase e palavras parecidas, por regras fechadas.
+ * Não corrige gramática em geral, e deixa passar muita coisa: sugestão ausente não quer dizer texto correto.
  */
 import { PROOFREAD_DOMAIN_TERMS, PROOFREAD_LIMITS } from '../config/proofread/rules';
+import { checkAgreement } from './agreement';
 import { FUTURE_FIRST_PERSON, PARTICIPLE_OPENERS, PAST_FIRST_PERSON, POSSESSIVES } from '../config/voice-lists';
 
-export type ProofreadRule = 'acento' | 'grafia';
+export type ProofreadRule = 'acento' | 'grafia' | 'concordancia' | 'crase' | 'uso';
+
+/** Regras de ortografia (camada 1): trocas de baixo risco, que "Aceitar acentos e grafia" aplica de uma vez. */
+export const SPELLING_RULES: ReadonlySet<ProofreadRule> = new Set<ProofreadRule>(['acento', 'grafia']);
 
 export interface ProofreadSuggestion {
   /** Posição do trecho no texto original (índices UTF-16, fim exclusivo). */
@@ -17,6 +22,8 @@ export interface ProofreadSuggestion {
   original: string;
   replacement: string;
   rule: ProofreadRule;
+  /** Por que a troca é sugerida, em uma frase. */
+  reason: string;
 }
 
 export interface FreqIndex {
@@ -141,7 +148,10 @@ export function proofread(text: string, index: FreqIndex, options: ProofreadOpti
         pick = best(spelling, index.zipf);
       }
     }
-    if (rule) out.push({ start, end: start + word.length, original: word, replacement: keepCase(word, pick), rule });
+    if (rule) {
+      const reason = rule === 'acento' ? 'Falta acento: a forma com acento é muito mais comum.' : 'Grafia provável: existe uma palavra comum parecida.';
+      out.push({ start, end: start + word.length, original: word, replacement: keepCase(word, pick), rule, reason });
+    }
   }
   return out;
 }
@@ -154,4 +164,16 @@ export function applySuggestion(text: string, s: ProofreadSuggestion): string {
 /** Aplica várias sugestões (de trás para a frente, para não deslocar as posições). */
 export function applySuggestions(text: string, list: readonly ProofreadSuggestion[]): string {
   return [...list].sort((a, b) => b.start - a.start).reduce((acc, s) => applySuggestion(acc, s), text);
+}
+
+/**
+ * Camadas 1 e 2 juntas, em ordem de posição. Quando duas sugestões se tocam, vale a de ortografia (a de regra é descartada).
+ * Palavras ignoradas valem para as duas camadas.
+ */
+export function proofreadAll(text: string, index: FreqIndex, options: ProofreadOptions = {}): ProofreadSuggestion[] {
+  const spelling = proofread(text, index, options);
+  const rules = checkAgreement(text).filter(
+    (r) => !options.ignore?.has(r.original.toLocaleLowerCase('pt-BR')) && !spelling.some((s) => r.start < s.end && s.start < r.end),
+  );
+  return [...spelling, ...rules].sort((a, b) => a.start - b.start || a.end - b.end);
 }

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { loadFreqIndex } from '../../application/proofread-data';
-import { applySuggestion, applySuggestions, proofread } from '../../domain/proofread';
+import { applySuggestion, applySuggestions, proofreadAll, SPELLING_RULES } from '../../domain/proofread';
 import type { FreqIndex, ProofreadSuggestion } from '../../domain/proofread';
 
 interface Props {
@@ -13,7 +13,7 @@ interface Props {
   loadIndex?: () => Promise<FreqIndex>;
 }
 
-const RULE_LABEL = { acento: 'Acento', grafia: 'Grafia' } as const;
+const RULE_LABEL = { acento: 'Acento', grafia: 'Grafia', concordancia: 'Concordância', crase: 'Crase', uso: 'Uso da palavra' } as const;
 const CONTEXT_CHARS = 24;
 
 function contextOf(text: string, s: ProofreadSuggestion): string {
@@ -54,7 +54,7 @@ export function ProofreadMode({ text, onChange, onClear, onCopy, onAnnounce, loa
   }, [checked]);
 
   const run = (value: string, skip: ReadonlySet<string>, index: FreqIndex): ProofreadSuggestion[] => {
-    const suggestions = proofread(value, index, { ignore: skip });
+    const suggestions = proofreadAll(value, index, { ignore: skip });
     setChecked({ text: value, suggestions });
     return suggestions;
   };
@@ -80,7 +80,7 @@ export function ProofreadMode({ text, onChange, onClear, onCopy, onAnnounce, loa
     setIgnored(new Set());
     const found = run(text, new Set(), indexRef.current);
     focusAt.current = -1;
-    onAnnounce(found.length ? `${plural(found.length, 'sugestão encontrada', 'sugestões encontradas')}. Confira cada uma antes de aceitar.` : 'Nenhuma sugestão de acento ou grafia.');
+    onAnnounce(found.length ? `${plural(found.length, 'sugestão encontrada', 'sugestões encontradas')}. Confira cada uma antes de aceitar.` : 'Nenhuma sugestão.');
   };
 
   const accept = (index: number): void => {
@@ -94,14 +94,16 @@ export function ProofreadMode({ text, onChange, onClear, onCopy, onAnnounce, loa
     onAnnounce(`Trocado ${s.original} por ${s.replacement}. ${rest.length ? plural(rest.length, 'sugestão restante', 'sugestões restantes') : 'Nenhuma sugestão restante'}.`);
   };
 
-  const acceptAll = (): void => {
-    if (!current?.length || !indexRef.current) return;
-    const next = applySuggestions(text, current);
+  // Só acento e grafia entram em "aceitar todas": concordância, crase e uso de palavra pedem conferência uma a uma.
+  const spelling = current?.filter((s) => SPELLING_RULES.has(s.rule)) ?? [];
+  const acceptSpelling = (): void => {
+    if (!spelling.length || !indexRef.current) return;
+    const next = applySuggestions(text, spelling);
     setPrevious(text);
     onChange(next);
     const rest = run(next, ignored, indexRef.current);
     focusAt.current = 0;
-    onAnnounce(`${plural(current.length, 'troca aplicada', 'trocas aplicadas')}. ${rest.length ? plural(rest.length, 'sugestão restante', 'sugestões restantes') : 'Nenhuma sugestão restante'}.`);
+    onAnnounce(`${plural(spelling.length, 'troca aplicada', 'trocas aplicadas')}. ${rest.length ? plural(rest.length, 'sugestão restante', 'sugestões restantes') : 'Nenhuma sugestão restante'}.`);
   };
 
   const ignore = (index: number): void => {
@@ -123,10 +125,11 @@ export function ProofreadMode({ text, onChange, onClear, onCopy, onAnnounce, loa
 
   return (
     <section aria-labelledby="proofread-mode-title" className="stack">
-      <h2 id="proofread-mode-title">Corrigir ortografia e acentos</h2>
+      <h2 id="proofread-mode-title">Corrigir texto</h2>
       <p className="subtle">
-        Encontra acento ausente e palavras comuns escritas errado. Não corrige gramática nem concordância e pode deixar
-        passar erros. Nada é trocado sem a sua ação, e o texto não é enviado nem salvo.
+        Encontra acento ausente, palavras comuns escritas errado e erros frequentes de concordância, crase e uso de
+        palavras parecidas (mas e mais, há e a). Não é uma revisão gramatical completa e deixa passar erros. Nada é
+        trocado sem a sua ação, e o texto não é enviado nem salvo.
       </p>
       <form
         className="stack"
@@ -181,11 +184,11 @@ export function ProofreadMode({ text, onChange, onClear, onCopy, onAnnounce, loa
           </h3>
           {current.length === 0 ? (
             <p className="panel ok" role="status">
-              Não encontrei acento ausente nem palavra comum escrita errado. Isso não garante que o texto esteja correto.
+              Não encontrei nada pelas regras desta tela. Isso não garante que o texto esteja correto.
             </p>
           ) : (
             <>
-              <p className="subtle">Cada troca só acontece quando você aceita. Palavras ignoradas valem só até a próxima verificação.</p>
+              <p className="subtle">Cada troca só acontece quando você aceita; confira o motivo antes. Palavras ignoradas valem só até a próxima verificação.</p>
               <ol className="list" ref={listRef}>
                 {current.map((s, i) => (
                   <li key={`${s.start}-${s.original}`}>
@@ -194,6 +197,7 @@ export function ProofreadMode({ text, onChange, onClear, onCopy, onAnnounce, loa
                       {' '}
                       <span className="tag info">{RULE_LABEL[s.rule]}</span>
                     </p>
+                    <p className="subtle">{s.reason}</p>
                     <p className="subtle"><code className="ctx">{contextOf(text, s)}</code></p>
                     <div className="row">
                       <button type="button" onClick={() => accept(i)} aria-label={`Aceitar: trocar ${s.original} por ${s.replacement}`}>Aceitar</button>
@@ -202,9 +206,9 @@ export function ProofreadMode({ text, onChange, onClear, onCopy, onAnnounce, loa
                   </li>
                 ))}
               </ol>
-              {current.length > 1 && (
+              {spelling.length > 1 && (
                 <div className="row">
-                  <button type="button" onClick={acceptAll}>Aceitar todas ({current.length})</button>
+                  <button type="button" onClick={acceptSpelling}>Aceitar acentos e grafia ({spelling.length})</button>
                 </div>
               )}
             </>

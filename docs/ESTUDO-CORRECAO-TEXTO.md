@@ -143,7 +143,7 @@ Entregue no branch `claude/estudo-correcao` depois da aprovação do escopo.
 
 - **Camada 0:** `spellCheck` nos campos que não tinham (rascunho livre, prévia, texto a revisar e texto a corrigir). O `lang` já era `pt-BR` nas duas páginas, e um teste confere. Efeito prático pequeno, porque o navegador já verifica `textarea` por padrão. **Atenção de privacidade:** com a política `MicrosoftEditorProofingEnabled` ativada ou não configurada, o Edge pode enviar o texto digitado ao serviço Microsoft Editor. Isso já valia para qualquer página e não foi criado pela extensão, mas contradiz "nada sai da máquina" se a TI não desligar a política. Registrado em `PRIVACY.md` e `SECURITY.md`; a TI decide.
 - **Camada 1:** `src/domain/proofread.ts` (puro), limites em `src/config/proofread/rules.ts`, lista em `src/config/proofread/freq-pt.json` (118.326 palavras, cerca de 1 MB, gerada por `scripts/gerar-lista-frequencia.py`), carga por `import()` dinâmico e tela `ProofreadMode` como terceiro modo ("Corrigir ortografia"). Só sugere; aceitar, ignorar (só na sessão), aceitar todas e desfazer a última alteração; texto só em memória e coberto por "Limpar tudo", inatividade e "Desfazer limpeza".
-- **Fora desta entrega:** camada 2 (concordância e crase), contagem de sugestões nos campos do Gerar texto, contadores de uso do modo, camada 3 (IA do Edge).
+- **Fora desta entrega:** contagem de sugestões nos campos do Gerar texto, contadores de uso do modo, camada 3 (IA do Edge). A camada 2 veio na seção 10.
 
 ### Duas correções ao protótipo
 
@@ -160,3 +160,30 @@ Entregue no branch `claude/estudo-correcao` depois da aprovação do escopo.
 - No Chromium real, com a extensão empacotada e a CSP estrita: primeira verificação em cerca de 260 ms (inclui carregar o trecho de 1 MB), aceitar uma sugestão em cerca de 30 ms, sem erro de console e sem rolagem horizontal a 320 px.
 
 O conjunto continua sendo de autor único e escrito pelo mesmo autor das regras. O critério de aceite do piloto (seção 7) segue valendo.
+
+## 10. Implementação da camada 2 (concordância, crase e uso de palavras)
+
+`src/domain/agreement.ts` (regras), `src/config/proofread/agreement-lexicon.ts` (léxico de substantivos e nomes de pessoa) e `proofreadAll` em `src/domain/proofread.ts`, que junta as camadas 1 e 2 (se duas sugestões se tocam, vale a de ortografia). O modo ganhou o nome "Corrigir texto". Cada sugestão traz regra e motivo. "Aceitar acentos e grafia" aplica só ortografia; concordância, crase e uso pedem aceite individual.
+
+### O que mudou em relação ao protótipo (e por quê)
+
+| Mudança | Motivo |
+|---|---|
+| O número do determinante vale para o núcleo ("os computador" já conta como plural) | Sem isso, a regra do adjetivo "corrigia" `foram atualizados` para o singular. Eram 3 das 3 sugestões que pioravam o texto no conjunto de validação |
+| "a tarde" e "a noite" só levam crase depois de dia da semana, "hoje", "ontem" ou "amanhã"; "a espera de" só depois de estar, ficar ou permanecer; saíram "a vista" e "a frente" | "A tarde foi tranquila", "durante a tarde" e "e a noite não teve queda" estavam corretos e eram marcados |
+| `porque` só com a grafia exata (sem acento) | O protótipo "trocava" `porquê` por `porquê` |
+| "mais" só vira "mas" antes de ele, ela, eu, nós, não, ainda, isso e já; o artigo ficou de fora | ", mais o anexo" pode ser soma |
+| Nomes de pessoa (usuário, técnico, analista, gestor, cliente, colaborador, fornecedor) ficam sem regra de gênero; no adjetivo só se ajusta o número | "a analista" é correto, e "a usuário" pode ser erro no nome, não no artigo |
+| 20 verbos no pretérito entraram na lista de plural (verificou, concluiu, abriu e outros) | Cobertura de sujeito composto e plural; testados contra as frases corretas |
+
+### Medida (camadas 1 e 2 juntas, só os textos com erro de concordância, crase ou uso)
+
+| Conjunto | Exatamente corrigidos | Texto piorado | Frases corretas com sugestão |
+|---|---|---|---|
+| gold.json (calibração) | 30 de 32 | 0 | 0 de 30 |
+| gold-novo.json (validação) | 16 de 20 | 0 | 0 de 25 |
+| gold-3.json (novo) | 30 de 32 | 0 | 0 de 38 |
+
+- O protótipo, antes dos ajustes, no gold-3: 26 de 32, 4 textos piorados e 5 sugestões indevidas em frases corretas (3 de crase em "a tarde", 1 de porquê, mais as trocas de singular que o determinante evita).
+- **Leitura honesta:** o gold-novo foi usado para decidir os ajustes, então os 16 de 20 não são mais validação. O gold-3 foi escrito antes do porte e rodado uma vez, mas quem o escreveu conhecia as regras: ele mede a regressão e as armadilhas conhecidas, não a cobertura em texto real. A revocação em texto livre será menor. Os erros que escapam são, em geral, substantivos fora do léxico (`pendrive`, `filial`), verbos fora da lista e "mais o" no lugar de "mas o".
+- Limite de projeto mantido: nenhuma sugestão é aplicada sem ação, e o teste exige que um texto com erro nunca fique pior do que o original.

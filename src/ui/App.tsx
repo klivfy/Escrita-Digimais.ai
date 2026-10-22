@@ -611,7 +611,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
             Revisar texto pronto
           </button>
           <button type="button" className={mode === 'proofread' ? 'primary' : undefined} aria-pressed={mode === 'proofread'} onClick={() => setMode('proofread')}>
-            Corrigir ortografia
+            Corrigir texto
           </button>
         </div>
 
