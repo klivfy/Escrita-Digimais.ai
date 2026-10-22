@@ -56,6 +56,8 @@ Limites do experimento: 7 casos, sem GPU, sem o Aion-1.0-Instruct, sem modelos d
 ## 4.1 Decisão (16/10/2026)
 A equipe usa o **Microsoft Edge estável**. Segundo a documentação do Edge (atualizada em 06/10/2026), a Prompt API e as APIs Writer e Rewriter continuam em prévia só nos canais Canary e Dev. Portanto o recurso opcional "Sugerir reescrita" (opção 3) **não funcionaria hoje para ninguém da equipe** e fica adiado. Todo o esforço de naturalidade segue na prosa determinística. Reavaliar quando a API chegar ao Edge estável ou se a equipe adotar um canal de pré-lançamento.
 
+Atualização (22/10/2026): as notas do Edge 147 a 149 listam a Prompt API e a Proofreader API como testes de origem (origin trials) na versão estável, e a página da Prompt API (atualizada em 19/10/2026) ainda as descreve como prévia em Canary e Dev. A decisão continua valendo; o caminho atual está em `docs/ESTUDO-IA-APRENDIZADO.md` (fase 3: camada de correção pela IA do Edge, ligada por política, depois das travas de `src/domain/ai-guard.ts`).
+
 ## 5. Como reproduzir
 Os scripts e as saídas brutas estão em `scripts/estudo-ia/` (`rodar_reescrita.py`, `rodar_geracao.py`, `fatos.json`, `rascunhos.json`, `saidas-dos-modelos.json`). Requer Python, `torch` (CPU) e `transformers`; baixa os modelos da Hugging Face. Rode fora do pacote da extensão: nada disso entra no zip.
 

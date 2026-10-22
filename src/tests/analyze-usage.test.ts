@@ -2,8 +2,10 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { emptyCounters, exportCounters, increment } from '../application/usage-counters';
+import { emptyCounters, exportCounters, FIXED_KEYS, increment } from '../application/usage-counters';
+import { recordStep, recordUse, emptyStats, exportLearning } from '../application/style-learning';
 
 const SCRIPT = join(process.cwd(), 'scripts', 'analyze-usage.mjs');
 let dir = '';
@@ -109,3 +111,31 @@ describe('análise do piloto', () => {
     expect(out).toContain('2 arquivo(s) de aprendizado para 1 de uso');
   });
 });
+
+describe('o script do piloto acompanha as chaves da extensão', () => {
+  it('aceita todas as chaves fixas dos contadores e as chaves de uso do aprendizado', async () => {
+    const { readCounts, isLearnKey } = (await import(pathToFileURL(SCRIPT).href)) as {
+      readCounts: (raw: unknown) => { counts: Record<string, number>; ignored: number };
+      isLearnKey: (k: string) => boolean;
+    };
+    const all = Object.fromEntries(FIXED_KEYS.map((k) => [k, 1]));
+    expect(readCounts({ contadores: all }).ignored).toBe(0);
+    const learned = recordStep(recordUse(emptyStats(), 'pending'), 'request_information', 'progress_update');
+    for (const k of Object.keys(learned.counts)) expect(isLearnKey(k), k).toBe(true);
+    expect(isLearnKey('seq.pending.pending')).toBe(false);
+  });
+
+  it('o relatório mostra correção por regra, próximo passo e passos aprendidos', () => {
+    let c = emptyCounters('2026-10-01');
+    for (const k of ['proofread.run', 'proofread.acento.acc', 'proofread.acento.acc', 'proofread.concordancia.ign', 'next_step.shown', 'next_step.shown', 'next_step.used', 'recipient.user', 'generate.pending']) c = increment(c, k);
+    const usage = file('contadores-novos.json', exportCounters(c, new Date('2026-10-20T12:00:00Z')));
+    const learn = file('aprendizado-novo.json', exportLearning(recordStep(emptyStats(), 'request_information', 'pending')));
+    const out = run(usage, learn);
+    expect(out).toContain('Corrigir texto: 1 verificações');
+    expect(out).toContain('| acento | 2 | 0 | 100.0% |');
+    expect(out).toContain('Próximo passo: sugerido 2 vezes, usado 1 (50.0%');
+    expect(out).toContain('| request_information | pending | 1 |');
+    expect(out).not.toMatch(/ignoradas por não pertencerem/);
+  });
+});
+
