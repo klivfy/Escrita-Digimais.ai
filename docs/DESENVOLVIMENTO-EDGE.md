@@ -91,7 +91,7 @@ Verificado em Chromium real: com a chave, abrir o mesmo perfil a partir de outra
    ```powershell
    $pasta = 'C:\Extensoes\assistente-service-desk'
    Get-ChildItem $pasta -Force | Remove-Item -Recurse -Force
-   Expand-Archive -Path .\escrita-digimais.ai_v1.0.0.2.zip -DestinationPath $pasta
+   Expand-Archive -Path .\escrita-digimais.ai_v1.0.0.3.zip -DestinationPath $pasta
    ```
 3. Em `edge://extensions`, clique em **Recarregar** (Reload) no cartão da extensão.
 4. Abra **Configurações** no painel: a linha "Versão da extensão" deve mostrar a versão nova.

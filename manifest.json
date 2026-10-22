@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Assistente de Textos do Service Desk",
   "short_name": "Textos Service Desk",
-  "version": "1.0.0.2",
+  "version": "1.0.0.3",
   "description": "Auxilia analistas a redigir textos claros e cordiais para chamados. Funciona localmente, sem enviar dados.",
   "minimum_chrome_version": "116",
   "icons": { "16": "icons/icon16.png", "32": "icons/icon32.png", "48": "icons/icon48.png", "128": "icons/icon128.png" },
