@@ -1,5 +1,5 @@
 /* global chrome -- usado dentro de page.evaluate, que roda no navegador */
-// Ensaio ponta a ponta do piloto, em Chromium real e com a extensão carregada. Não roda no CI e NÃO produz dados de piloto:
+// Ensaio ponta a ponta do piloto, em Chromium real e com a extensão carregada. Roda também no CI (job e2e) e NÃO produz dados de piloto:
 // usa textos fictícios só para provar a cadeia ligar contadores, usar, exportar e analisar.
 // Uso: npm run build && node scripts/pilot-rehearsal.mjs [dist] [pasta-de-saida]
 // Requer o Playwright (PLAYWRIGHT_MODULE pode apontar para o módulo).

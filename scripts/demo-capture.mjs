@@ -1,6 +1,6 @@
 /* global document, chrome -- usados dentro de page.evaluate, que roda no navegador */
 // Executa o roteiro da demonstração (docs/DEMONSTRACAO.md) em Chromium real, com a extensão carregada, e salva imagens.
-// Serve para ensaiar a apresentação e para ter imagens de reserva. Dados fictícios. Não roda no CI.
+// Serve para ensaiar a apresentação e para ter imagens de reserva. Dados fictícios. Roda também no CI (job e2e), contra o zip extraído.
 // Uso: node scripts/demo-capture.mjs <pasta-da-extensao-descompactada> [pasta-de-saida]
 // Requer o Playwright (PLAYWRIGHT_MODULE pode apontar para o módulo).
 import { mkdirSync } from 'node:fs';
@@ -71,6 +71,31 @@ await page.getByRole('region', { name: 'Resultado da revisão' }).waitFor();
 const review = await bodyText();
 check(/Garantimos|compromisso|promete|prazo/i.test(review) || /Alerta/.test(review), 'revisão aponta alertas no texto pronto');
 await shot('05-revisao.png');
+await page.getByRole('button', { name: 'Gerar texto' }).click();
+
+// 4b. Rascunho livre: dividir, conferir e só então preencher
+await why().fill('');
+await questions().fill('');
+await page.getByText('Colar uma anotação livre (opcional)').click();
+await page.getByLabel('Anotação livre').fill('usuária sem acesso à pasta compartilhada\nqual o nome da pasta?\nqual o horário em que o erro começou?');
+await page.getByRole('button', { name: 'Dividir em campos' }).click();
+await page.getByText(/Confira a divisão/).waitFor();
+check((await questions().inputValue()).trim() === '', 'rascunho livre não preenche nada antes da conferência');
+await shot('05b-rascunho-livre.png');
+await page.getByRole('button', { name: 'Preencher o formulário' }).click();
+check((await questions().inputValue()).includes('qual o nome da pasta'), 'rascunho livre preenche as perguntas depois da conferência');
+check(/Usuária sem acesso/.test(await why().inputValue()), 'rascunho livre preenche o contexto depois da conferência');
+
+// 4c. Corrigir texto: a lista de palavras carrega sob a CSP, sugere e só troca ao aceitar
+await page.getByRole('button', { name: 'Corrigir texto' }).click();
+await page.getByLabel('Texto a corrigir').fill('o usuario nao consegue abrir a planilha');
+await page.getByRole('button', { name: 'Verificar texto' }).click();
+await page.getByRole('heading', { name: /^Sugestões \(/ }).waitFor({ timeout: 15000 });
+check((await page.getByLabel('Texto a corrigir').inputValue()) === 'o usuario nao consegue abrir a planilha', 'correção só sugere: o texto não muda antes do aceite');
+await shot('05c-corrigir.png');
+await page.getByRole('button', { name: 'Aceitar acentos e grafia (2)' }).click();
+check((await page.getByLabel('Texto a corrigir').inputValue()) === 'o usuário não consegue abrir a planilha', 'aceitar todas aplica as trocas');
+await page.getByRole('button', { name: 'Limpar texto' }).click();
 await page.getByRole('button', { name: 'Gerar texto' }).click();
 
 // 5. Configurações (contadores, perfil, camada da equipe)

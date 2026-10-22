@@ -23,6 +23,10 @@ Fluxo completo, com o resultado esperado:
 | 8 | "Revisar texto pronto", cole um texto, "Revisar agora" | Alertas e indicadores |
 | 9 | Configurações, importar perfil e camada da equipe (se houver) | Mensagem de validação |
 | 10 | Fechar e reabrir o painel | Nenhum conteúdo de chamado permanece |
+| 11 | "Colar uma anotação livre", cole 4 a 6 frases curtas, "Dividir em campos" | Lista de trechos com o campo sugerido; nada preenchido ainda |
+| 12 | Mude o campo de um trecho e clique em "Preencher o formulário" | Campos preenchidos sem apagar o que já estava escrito; anotação descartada |
+| 13 | Cole uma anotação com um valor com cara de senha (fictício) e divida | Recusa com o motivo, sem exibir o valor |
+| 14 | Gere o mesmo texto em "Natural" e em "Estruturada" (campo "Redação") | Natural fala "você" no lugar de "o usuário" e agrupa em parágrafos; Estruturada mantém as palavras como digitadas |
 
 ## 2. Formato no sistema de chamados (D6)
 Objetivo: confirmar que o texto gerado cola e é exibido corretamente no sistema de chamados real.
@@ -55,14 +59,14 @@ Duração mínima: 14 dias. Participantes: o grupo definido pela organização.
 
 1. Ligue os contadores: pela política `usageCounters` (`on`, ou `optional` com convite) ou pela caixa em Configurações. Eles guardam só números por categoria e ficam no navegador.
 2. Peça o feedback semanal em [FEEDBACK-PILOTO.md](FEEDBACK-PILOTO.md), por canal interno.
-3. Ao final, cada pessoa usa Configurações, "Exportar contadores", e entrega o arquivo `contadores-de-uso.json`. Não contém texto de chamado.
+3. Ao final, cada pessoa usa Configurações, "Exportar contadores", e entrega o arquivo `contadores-de-uso.json`. Quem ligou "Aprender com as redações que eu mantenho" também usa "Exportar aprendizado" e entrega `aprendizado-de-redacao.json` (o nome precisa continuar começando com "aprendizado"). Nenhum dos dois contém texto de chamado.
 4. Reúna os arquivos em uma pasta e rode:
 
 ```
 node scripts/analyze-usage.mjs pasta/*.json
 ```
 
-O resumo traz taxa de bloqueio, cópias por geração, variações, revisões, tipos mais usados, alertas mais frequentes e tempo até copiar, além de dizer quem atende ao corte (padrão: 30 gerações e 14 dias por pessoa; ajustável com `--min-geracoes` e `--min-dias`).
+O resumo traz, também, quantas divisões do rascunho livre chegam a preencher o formulário e as correções do analista (arquivos de aprendizado), além da taxa de bloqueio, cópias por geração, variações, revisões, tipos mais usados, destinatários, alertas mais frequentes e tempo até copiar; a taxa de aceite de cada regra do modo "Corrigir texto" (regra com aceite baixo é candidata a revisão); quantas vezes o atalho de próximo passo foi sugerido e usado (meta: 30%) e, nos arquivos de aprendizado, quais passos os analistas escolhem depois de cada tipo; além de dizer quem atende ao corte (padrão: 30 gerações e 14 dias por pessoa; ajustável com `--min-geracoes` e `--min-dias`).
 
 ### Ensaio ponta a ponta antes de ligar o piloto
 Para provar que a cadeia funciona no seu ambiente, antes de convidar o grupo:
@@ -85,6 +89,8 @@ Texto sugerido para o convite (ajuste ao seu canal): "A extensão passa a contar
 - Alerta frequente que a maioria ignora: candidato a rebaixar de gravidade ou ajustar a regra.
 - Tipo com muitas variações e poucas cópias: o modelo desse tipo precisa de revisão.
 - Taxa de bloqueio alta por um único motivo: olhar a regra do detector com o corpus de avaliação (`docs/AVALIACAO.md`) antes de mexer.
+- Rascunho livre: meta de pelo menos 70% das divisões chegando a preencher o formulário. Abaixo de 50%, o recurso atrapalha e deve voltar ao desenho. Muitas correções do mesmo tipo (por exemplo `result` para `action`) mostram qual regra de palavras ajustar.
+- Naturalidade: peça a cada participante 3 textos gerados que eles consideraram artificiais e o que escreveriam; use `CASOS_REAIS=1` (`docs/AVALIACAO-NATURALIDADE.md`) com esses casos, sempre anonimizados e fora do repositório.
 - Tempo até copiar sempre na faixa de menos de 1 minuto: pode indicar que o texto não está sendo lido; reforçar a orientação de revisar antes de copiar.
 
 ## 6. O que o piloto não consegue provar

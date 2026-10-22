@@ -1,6 +1,6 @@
 {
   "name": "assistente-textos-service-desk",
-  "version": "0.0.4",
+  "version": "1.0.0",
   "private": true,
   "description": "Extensão empresarial para Microsoft Edge que auxilia analistas de Service Desk na redação de textos de chamados. Funciona localmente, sem rede.",
   "license": "Unlicense",

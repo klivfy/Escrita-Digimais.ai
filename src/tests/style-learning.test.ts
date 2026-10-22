@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  acceptedEvents, draftBias, emptyStats, isLearnKey, MIN_NET, preferredIndexes, recordEvent, recordFix, rejectedEvents, sanitizeStats, StyleLearner,
+  acceptedEvents, draftBias, emptyStats, exportLearning, isLearnKey, MIN_NET, preferredIndexes, recordEvent, recordFix, rejectedEvents, sanitizeStats, StyleLearner,
 } from '../application/style-learning';
 import type { LearnedStats } from '../application/style-learning';
 import { MemoryArea } from './memory-storage';
@@ -199,5 +199,16 @@ describe('correções do rascunho livre', () => {
     learner.setEnabled(true);
     await learner.recordFixes([['result', 'action'], ['pending', 'ignore']]);
     expect((await learner.snapshot()).counts).toEqual({ 'fix.result.action': 1, 'fix.pending.ignore': 1 });
+  });
+});
+
+describe('exportação do aprendizado', () => {
+  it('traz só as contagens e a data, sem texto', () => {
+    let s = recordFix(emptyStats(), 'result', 'action');
+    s = recordEvent(s, 'acc', 'lead', 'any', 1);
+    const out = JSON.parse(exportLearning(s, new Date('2026-10-16T10:00:00Z')));
+    expect(out.exportadoEm).toBe('2026-10-16');
+    expect(out.contadores).toEqual({ 'fix.result.action': 1, 'acc.lead.any.1': 1 });
+    expect(Object.keys(out).sort()).toEqual(['contadores', 'exportadoEm', 'nota']);
   });
 });

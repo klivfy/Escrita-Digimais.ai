@@ -49,8 +49,18 @@ input[type='text']:focus, input[type='date']:focus, select:focus, textarea:focus
   border-color: var(--md-sys-color-primary); box-shadow: inset 0 0 0 1px var(--md-sys-color-primary);
 }
 input[type='file'] { font: inherit; max-width: 100%; }
+/* O botão nativo do seletor de arquivo tem 22 px e cor do sistema: usa o mesmo botão delineado do painel (40 px). */
+input[type='file']::file-selector-button {
+  font: inherit; font-weight: 500; letter-spacing: 0.007em; cursor: pointer; min-height: 2.5rem; padding: 0.5rem 1.5rem; margin-right: 0.75rem;
+  border-radius: var(--md-sys-shape-corner-full); border: 1px solid var(--md-sys-color-outline); background: transparent; color: var(--md-sys-color-primary);
+  transition: background-color var(--md-sys-motion-duration-short2) var(--md-sys-motion-easing-standard);
+}
+input[type='file']::file-selector-button:hover { background: color-mix(in srgb, var(--md-sys-color-primary) calc(var(--md-sys-state-hover) * 100%), transparent); }
+input[type='file']::file-selector-button:active { background: color-mix(in srgb, var(--md-sys-color-primary) calc(var(--md-sys-state-pressed) * 100%), transparent); transition: none; }
 /* Caixa de seleção de 20 px (a nativa tem 13 px) na cor de destaque do tema. */
 input[type='checkbox'] { width: 1.25rem; height: 1.25rem; margin: 0; flex: none; accent-color: var(--md-sys-color-primary); }
+/* O rótulo da caixa de seleção também é área de toque: pelo menos 40 px de altura. */
+input[type='checkbox'] + label { display: inline-flex; align-items: center; min-height: 2.5rem; }
 textarea { resize: vertical; min-height: 3.5rem; }
 input[aria-invalid='true'], select[aria-invalid='true'], textarea[aria-invalid='true'],
 input[aria-invalid='true']:hover, select[aria-invalid='true']:hover, textarea[aria-invalid='true']:hover,
@@ -82,7 +92,7 @@ button:disabled { cursor: not-allowed; color: color-mix(in srgb, var(--md-sys-co
 button.primary:disabled { background: color-mix(in srgb, var(--md-sys-color-on-surface) 12%, transparent); border-color: transparent; }
 button:disabled::after { display: none; }
 
-.error-text { color: var(--md-sys-color-error); font-weight: 500; font-size: 0.8125rem; margin: 0; }
+.error-text { color: var(--md-sys-color-error); font-weight: 500; margin: 0; }
 
 /* Cartões e contêineres semânticos. */
 .panel {
@@ -97,6 +107,8 @@ button:disabled::after { display: none; }
 .panel.block .error-text, .panel.warn .error-text { color: inherit; }
 /* Botões dentro de contêineres coloridos herdam o par on-container (contorno >= 3:1 também no tema escuro). */
 .panel.block button:not(.danger), .panel.warn button:not(.danger), .panel.info button:not(.danger), .panel.ok button:not(.danger) { color: inherit; border-color: currentColor; }
+/* A ação principal dentro de um contêiner colorido mantém o par on-primary/primary (a regra acima a deixaria ilegível). */
+.panel.block button.primary, .panel.warn button.primary, .panel.info button.primary, .panel.ok button.primary { background: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); border-color: transparent; }
 /* A ação destrutiva dentro de um contêiner colorido é preenchida com a cor de erro, para não ser confundida com Cancelar. */
 .panel button.danger { background: var(--md-sys-color-error); color: var(--md-sys-color-on-error); border-color: transparent; }
 .panel button.danger:disabled { background: color-mix(in srgb, var(--md-sys-color-on-surface) 12%, transparent); }
@@ -113,7 +125,7 @@ button:disabled::after { display: none; }
 .tag.warning { background: var(--md-sys-color-warning-container); color: var(--md-sys-color-on-warning-container); }
 .tag.info { background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); }
 
-mark { background: var(--md-sys-color-warning-container); color: var(--md-sys-color-on-warning-container); padding: 0 0.125rem; border-radius: 2px; }
+mark { background: var(--md-sys-color-warning-container); color: var(--md-sys-color-on-warning-container); padding: 0 0.125rem; border-radius: var(--md-sys-shape-corner-extra-small); }
 code.ctx { white-space: pre-wrap; word-break: break-word; font-size: 0.75rem; font-family: var(--md-sys-typescale-mono); }
 /* O resumo é o alvo de toque: altura de pelo menos 36 px (WCAG 2.5.8 pede 24 px). */
 details { border: 1px solid var(--md-sys-color-outline-variant); border-radius: var(--md-sys-shape-corner-medium); padding: 0 0.75rem; }
@@ -158,10 +170,12 @@ body.popup { width: 17.5rem; padding: 1rem; }
 }
 
 /* Seletor de modo segmentado: botões com aria-pressed, unidos em um só controle. */
-.segmented { display: inline-flex; }
+.segmented { display: flex; }
+/* Três modos em 320 px: cada botão divide a largura e o rótulo quebra em duas linhas, sem rolagem horizontal. */
+.segmented button { flex: 1 1 0; padding-inline: 0.75rem; }
 .segmented button { border-radius: 0; margin-left: -1px; }
-.segmented button:first-child { border-radius: 999px 0 0 999px; margin-left: 0; }
-.segmented button:last-child { border-radius: 0 999px 999px 0; }
+.segmented button:first-child { border-radius: var(--md-sys-shape-corner-full) 0 0 var(--md-sys-shape-corner-full); margin-left: 0; }
+.segmented button:last-child { border-radius: 0 var(--md-sys-shape-corner-full) var(--md-sys-shape-corner-full) 0; }
 .segmented button[aria-pressed='true'] { position: relative; z-index: 1; }
 details.more { border: 0; padding: 0; }
 details.more > summary { padding: 0.5rem 0; }

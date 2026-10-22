@@ -1,16 +1,28 @@
 // Verificação do pacote final: sem código remoto, sem eval, sem chamadas de rede, permissões mínimas.
-// Uso: node scripts/verify-dist.mjs [diretório]  (padrão: dist)
+// Uso: node scripts/verify-dist.mjs [diretório] [--com-chave]  (padrão: dist, sem chave)
+// Sem --com-chave o manifest NÃO pode ter `key` (pacote da loja e dist/). Com --com-chave ele precisa ter exatamente a chave registrada.
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
+import { extensionIdFromKey } from './extension-id.mjs';
 
 const problems = [];
 const walk = (dir) => readdirSync(dir).flatMap((n) => {
   const p = join(dir, n);
   return statSync(p).isDirectory() ? walk(p) : [p];
 });
-const dir = process.argv[2] ?? 'dist';
+const args = process.argv.slice(2);
+const withKey = args.includes('--com-chave');
+const dir = args.find((a) => !a.startsWith('--')) ?? 'dist';
 const files = walk(dir);
 const manifest = JSON.parse(readFileSync(join(dir, 'manifest.json'), 'utf8'));
+
+const registered = JSON.parse(readFileSync('scripts/extension-key.json', 'utf8'));
+if (withKey) {
+  if (manifest.key !== registered.publicKey) problems.push('O manifest do pacote instalável deve ter a chave pública registrada em scripts/extension-key.json.');
+  else if (extensionIdFromKey(manifest.key) !== registered.extensionId) problems.push('O ID derivado da chave não é o ID registrado.');
+} else if ('key' in manifest) {
+  problems.push('O manifest não pode ter `key` fora do pacote instalável (a loja define o ID).');
+}
 
 const allowedPermissions = ['sidePanel', 'storage'];
 for (const p of manifest.permissions ?? []) if (!allowedPermissions.includes(p)) problems.push(`Permissão não prevista: ${p}`);
@@ -50,4 +62,4 @@ if (problems.length) {
   console.error(`Verificação de ${dir} FALHOU:\n- ` + problems.join('\n- '));
   process.exit(1);
 }
-console.log(`Verificação de ${dir} aprovada (${files.length} arquivos, permissões: ${(manifest.permissions ?? []).join(', ')}).`);
+console.log(`Verificação de ${dir}${withKey ? ' (com chave)' : ''} aprovada (${files.length} arquivos, permissões: ${(manifest.permissions ?? []).join(', ')}).`);

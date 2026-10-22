@@ -24,7 +24,7 @@ for f in FACTS:
     msgs=[{"role":"system","content":SYSTEM}]
     for u,a in SHOTS: msgs += [{"role":"user","content":u},{"role":"assistant","content":a}]
     msgs.append({"role":"user","content":f['facts']})
-    ids = tok.apply_chat_template(msgs, add_generation_prompt=True, return_tensors='pt', return_dict=True)
+    ids = tok.apply_chat_template(msgs, add_generation_prompt=True, return_tensors='pt', return_dict=True, enable_thinking=False)
     t=time.time()
     with torch.no_grad():
         o = m.generate(**ids, max_new_tokens=300, do_sample=False, repetition_penalty=1.05)

@@ -55,7 +55,7 @@ Recarregar no cartão também limpa o estado em memória do painel, o que equiva
 - **Popup:** clique com o botão direito no ícone da extensão e escolha **Inspecionar pop-up** (Inspect popup).
 - **Service worker:** no cartão em `edge://extensions`, clique no link **service worker** em "Inspecionar modos de exibição" (Inspect views).
 - **Erros de execução:** botão **Erros** (Errors) no cartão da extensão.
-- **Dados guardados:** no console do service worker, `await chrome.storage.local.get(null)` deve mostrar apenas `preferences` e, se você importou um perfil, `languageProfile`. Qualquer outra chave indica regressão de privacidade.
+- **Dados guardados:** no console do service worker, `await chrome.storage.local.get(null)` deve mostrar apenas chaves da lista permitida: `preferences`, `languageProfile`, `profileSignature`, `profileOverlay` e, se você ligou as opções opcionais, `usageCounters` (contadores) e `learnedStyle` (preferências de redação, só números). Qualquer outra chave indica regressão de privacidade.
 
 ### 5. Antes de abrir um PR
 ```
@@ -76,14 +76,40 @@ Carregue a pasta `dist/`. É exatamente o conteúdo que vai para o `.zip` (minif
 3. Mova o conteúdo extraído para uma pasta estável, por exemplo `C:\Extensoes\assistente-service-desk\`, antes de carregar (veja a seção sobre o ID).
 4. Siga os passos de "Carregar a extensão" do caminho A, selecionando essa pasta. Ela deve conter `manifest.json` diretamente, sem subpasta intermediária.
 
-Para atualizar: substitua o conteúdo da mesma pasta pela nova versão e clique em **Recarregar** no cartão.
+## Atualizar sem duplicar a extensão
+O zip instalável (`escrita-digimais.ai_vX.Y.Z.zip`) leva no manifest a chave pública de `scripts/extension-key.json`, que fixa o **ID da extensão** em `khilafnebmdhmlpkajikadidlgbcepdn`, em qualquer pasta e em qualquer máquina. Por isso:
+
+- uma versão nova é a **mesma extensão**, nunca uma segunda cópia ao lado da antiga;
+- preferências, perfil importado e aprendizado ficam (o armazenamento pertence ao ID);
+- a chave de política (próxima seção) e o ID que a TI cadastra são sempre os mesmos.
+
+Verificado em Chromium real: com a chave, abrir o mesmo perfil a partir de outra pasta manteve o ID e as preferências; sem a chave, o ID mudou e as preferências ficaram para trás.
+
+### Passo a passo para atualizar (uma vez por versão)
+1. Feche o painel lateral da extensão.
+2. **Na mesma pasta de sempre**, apague o conteúdo antigo e extraia o zip novo ali. No PowerShell (não executado neste ambiente):
+   ```powershell
+   $pasta = 'C:\Extensoes\assistente-service-desk'
+   Get-ChildItem $pasta -Force | Remove-Item -Recurse -Force
+   Expand-Archive -Path .\escrita-digimais.ai_v1.0.0.3.zip -DestinationPath $pasta
+   ```
+3. Em `edge://extensions`, clique em **Recarregar** (Reload) no cartão da extensão.
+4. Abra **Configurações** no painel: a linha "Versão da extensão" deve mostrar a versão nova.
+
+> **Não clique em Remover antes de atualizar.** Remover a extensão apaga as preferências e o aprendizado guardados no navegador. Se precisar carregar a versão nova de **outra pasta**, o ID é o mesmo e o Edge não mantém duas cópias; se ele avisar que a extensão já existe, volte ao passo 2 na pasta original **(confirmar no seu Edge)**.
+
+### O que este método não faz
+Instalar por pasta **nunca atualiza sozinho**: alguém precisa repetir os passos acima a cada versão. Atualização automática, sem ação do analista, só existe com a loja de extensões do Edge ou com instalação forçada por política (veja [DISTRIBUICAO.md](DISTRIBUICAO.md), opção B). O pacote da loja (`..._loja.zip`) não leva a chave: a loja define o ID dela, e esse ID é diferente do da instalação por pasta.
+
+### Quem já instalou uma versão anterior
+As versões até 1.0.0.1 foram carregadas **sem** chave, e o ID delas veio do caminho da pasta. A primeira instalação do zip com chave vira, uma única vez, uma extensão nova (ID fixo): as preferências e o aprendizado anteriores não passam para ela, e a configuração é refeita. Remova a extensão antiga só depois de conferir que a nova abre. Daqui em diante o ID não muda mais.
 
 ## ID da extensão e dados locais
-Em modo desenvolvedor, o Edge calcula o ID a partir do caminho absoluto da pasta carregada. O ID aparece no cartão em `edge://extensions`.
+O ID aparece no cartão em `edge://extensions` e deve ser `khilafnebmdhmlpkajikadidlgbcepdn` para o zip instalável. Se for outro, a pasta foi carregada de um build sem a chave (por exemplo `dist/` ou `dist-dev/`, que são para desenvolvimento).
 
-- Mover ou renomear a pasta gera um ID novo: preferências e perfil importado ficam para trás, e a chave de política (próxima seção) precisa usar o ID novo.
-- Por isso, mantenha a pasta em um local fixo durante os testes.
-- Decisão desta versão: não fixamos o ID com a chave `key` no manifesto. Isso exigiria gerar e guardar um par de chaves fora do repositório, e o ganho só importa para testes longos de política. Quando a extensão for publicada na loja ou distribuída por política, o ID passa a ser o definitivo.
+- **Build de desenvolvimento (`dist/`, `dist-dev/`):** sem a chave. O ID vem do caminho da pasta; mover ou renomear a pasta gera um ID novo e as preferências ficam para trás. Mantenha a pasta fixa durante os testes.
+- **Zip instalável:** com a chave, ID fixo. A chave registrada é **pública**: ela só fixa o ID de uma extensão carregada da pasta. A chave privada correspondente foi descartada de propósito, porque não é necessária para isso.
+- **Se a organização for hospedar o pacote assinado (CRX próprio):** isso exige um par de chaves novo e, portanto, muda o ID. Decida antes de a TI cadastrar políticas pelo ID.
 
 ## Testar a política gerenciada (opcional, Windows)
 Simula o perfil de linguagem distribuído pela TI, que tem precedência sobre o importado. Use apenas em máquina de teste e com o perfil de exemplo, nunca com dados reais.

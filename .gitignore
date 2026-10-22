@@ -8,3 +8,7 @@ release/
 *.pem
 *.key
 .claude-flow/
+
+# Casos reais locais (nunca versionar)
+casos-reais.local.json
+casos-reais.relatorio.local.md

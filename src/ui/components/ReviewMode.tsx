@@ -56,6 +56,7 @@ export function ReviewMode({ form, onChange, profile, result, problem, onReview,
             rows={12}
             value={form.text}
             autoComplete="off"
+            spellCheck
             aria-describedby="review-counter"
             aria-invalid={problem ? true : undefined}
             onChange={(e) => onChange({ text: e.target.value })}

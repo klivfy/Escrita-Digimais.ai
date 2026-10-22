@@ -1,0 +1,188 @@
+{
+ "HuggingFaceTB/SmolLM3-3B": {
+  "model": "HuggingFaceTB/SmolLM3-3B",
+  "load_sec": 26.5,
+  "results": [
+   {
+    "type": "progress_update",
+    "facts": "Tipo: atualização de andamento\nSituação: usuário sem acesso à VPN desde ontem\nFeito: resetamos a senha no AD; testamos a conexão com a conta do usuário\nResultado: a conexão funcionou no nosso teste\nPendente: aguardando o teste do usuário\nPróximo passo: validar com o usuário amanhã",
+    "draft": "Olá, Maria,\n\nPassamos para informar o andamento do seu chamado.\n\nResumo da situação: Usuário sem acesso à VPN desde ontem.\n\nAté aqui, resetamos a senha no AD e testamos conexão com a conta dele.\n\nO que observamos: Conexão ok no nosso teste.\n\nO que ainda está pendente: Aguardando teste do usuário.\n\nEm seguida, vamos validar com o usuário amanhã.\n\nAgradecemos a colaboração.\nEquipe de Service Desk",
+    "rewrite": "Atualizamos o seu chamado sobre o acesso à VPN do usuário. Após o reset da senha no Active Directory e o teste da conexão, a conexão funcionou no nosso teste. Agora, estamos esperando que o usuário faça o teste para confirmar se o problema foi resolvido.\n\nVamos validar com você amanhã.",
+    "sec": 22.4,
+    "tokens": 74
+   },
+   {
+    "type": "solution_confirmation",
+    "facts": "Tipo: confirmação da solução\nSituação: Outlook travando ao abrir anexos\nFeito: reparamos o perfil do Outlook; limpamos o cache\nResultado: os anexos estão abrindo normalmente\nPedido: confirmar se a situação foi resolvida",
+    "draft": "Olá, João,\n\nRealizamos as ações descritas abaixo e gostaríamos de confirmar se a situação foi resolvida.\n\nResumo da situação: Outlook travando ao abrir anexos.\n\nAté aqui, reparamos o perfil do outlook e limpamos o cache.\n\nO que observamos: Anexos abrindo normalmente.\n\nA sua confirmação nos permitirá registrar o resultado do atendimento.\n\nAgradecemos a colaboração.\nEquipe de Service Desk",
+    "rewrite": "A situação está resolvida. Os anexos estão abrindo normalmente no Outlook. Por favor, confirme se essa é a informação que você esperava receber.",
+    "sec": 10.8,
+    "tokens": 40
+   },
+   {
+    "type": "request_information",
+    "facts": "Tipo: pedido de informações\nSituação: erro ao abrir a planilha de custos\nPerguntas: 1. Qual mensagem de erro aparece na tela? 2. O erro ocorre com outros arquivos?\nPrazo: 20/10/2026 às 17h",
+    "draft": "Olá, Ana,\n\nPara continuarmos a análise, precisamos de algumas informações.\n\nResumo da situação: Erro ao abrir a planilha de custos.\n\nPara avançarmos, precisamos saber:\n1. Qual mensagem de erro aparece na tela?\n2. O erro ocorre com outros arquivos?\n\nPrazo para retorno: 20/10/2026 às 17h\n\nPor segurança, não envie senhas, tokens ou outros dados de acesso neste chamado.\n\nO seu retorno permitirá que continuemos a análise.\n\nAgradecemos a colaboração.\nEquipe de Service Desk",
+    "rewrite": "Precisamos de mais detalhes para entender melhor o problema com a planilha de custos:\n\n1. Qual mensagem de erro aparece na tela?\n2. O erro ocorre com outros arquivos?\n\nPor favor, nos informe até 20/10/2026 às 17h.",
+    "sec": 17.1,
+    "tokens": 62
+   },
+   {
+    "type": "pending",
+    "facts": "Tipo: registro de pendência\nPendente: envio da planilha corrigida\nPendente com: o usuário\nAção esperada: enviar o arquivo atualizado",
+    "draft": "Olá, Carlos,\n\nO atendimento permanece pendente. Seguem os detalhes.\n\nO que ainda está pendente: Envio da planilha corrigida.\n\nO que precisamos de você: Enviar o arquivo atualizado.\n\nAguardamos a conclusão do item acima para seguirmos com o atendimento.\n\nAgradecemos a colaboração.\nEquipe de Service Desk",
+    "rewrite": "O usuário está pendente no envio da planilha corrigida. A ação esperada é que ele nos envie o arquivo atualizado.",
+    "sec": 9.5,
+    "tokens": 32
+   },
+   {
+    "type": "closure_resolved",
+    "facts": "Tipo: encerramento com solução\nSituação: impressora não imprimia\nFeito: reinstalamos o driver da impressora\nResultado validado: página de teste impressa e confirmada\nConfirmação do usuário: sim",
+    "draft": "Olá, Paula,\n\nEstamos encerrando este chamado com a situação solucionada, conforme descrito abaixo.\n\nResumo da situação: Impressora não imprimia.\n\nAté aqui, reinstalamos o driver da impressora.\n\nResultado validado: Página de teste impressa e confirmada.\n\nO usuário confirmou a solução.\n\nSe precisar de apoio novamente, entre em contato conosco.\n\nAgradecemos a colaboração.\nEquipe de Service Desk",
+    "rewrite": "Encerrando o seu caso. Reinstalamos o driver da impressora e agora a página de teste foi impressa e confirmada. Você confirma que tudo está funcionando corretamente?",
+    "sec": 13.6,
+    "tokens": 42
+   },
+   {
+    "type": "manager_approval",
+    "facts": "Tipo: pedido de De acordo ao gestor\nObjeto: instalação do software de modelagem no equipamento patrimonial 00123\nJustificativa: necessário para o fechamento mensal\nEfeito da aprovação: a instalação será agendada\nResposta esperada: “De acordo” ou “Não aprovado”",
+    "draft": "Prezado(a) gestor(a),\n\nSolicitamos a sua manifestação formal quanto ao item descrito abaixo.\n\nObjeto da aprovação: Instalação do software de modelagem no equipamento patrimonial 00123.\n\nJustificativa: Necessário para o fechamento mensal.\n\nEfeito da aprovação: A instalação será agendada.\n\nSolicitamos que a manifestação seja registrada como “De acordo” ou “Não aprovado”.\n\nAtenciosamente,\nEquipe de Service Desk",
+    "rewrite": "Gestor, estamos solicitando a instalação do software de modelagem no equipamento patrimonial 00123, conforme solicitado. A justificativa é que essa instalação é necessária para o fechamento mensal. Se você concordar, a instalação será agendada. Caso contrário, informaremos a razão pela qual a aprovação foi negada.",
+    "sec": 23.3,
+    "tokens": 87
+   },
+   {
+    "type": "redirect_or_escalate",
+    "facts": "Tipo: encaminhamento\nDestino: Equipe de Infraestrutura\nMotivo: a análise exige acesso administrativo ao armazenamento\nJá verificado: validamos as permissões do usuário",
+    "draft": "Olá, Lucia,\n\nPara que a análise tenha continuidade, estamos encaminhando este atendimento. Destino: Equipe de Infraestrutura.\n\nMotivo do encaminhamento: A análise exige acesso administrativo ao armazenamento.\n\nAté aqui, validamos as permissões do usuário.\n\nO atendimento seguirá com a equipe indicada.\n\nAgradecemos a colaboração.\nEquipe de Service Desk",
+    "rewrite": "A análise exige acesso administrativo ao armazenamento, então encaminhamos o caso para a Equipe de Infraestrutura. Já validamos as permissões do usuário, mas precisamos de mais acesso para prosseguir.",
+    "sec": 15.2,
+    "tokens": 53
+   }
+  ]
+ },
+ "Qwen/Qwen3-1.7B": {
+  "model": "Qwen/Qwen3-1.7B",
+  "load_sec": 26.1,
+  "results": [
+   {
+    "type": "progress_update",
+    "facts": "Tipo: atualização de andamento\nSituação: usuário sem acesso à VPN desde ontem\nFeito: resetamos a senha no AD; testamos a conexão com a conta do usuário\nResultado: a conexão funcionou no nosso teste\nPendente: aguardando o teste do usuário\nPróximo passo: validar com o usuário amanhã",
+    "draft": "Olá, Maria,\n\nPassamos para informar o andamento do seu chamado.\n\nResumo da situação: Usuário sem acesso à VPN desde ontem.\n\nAté aqui, resetamos a senha no AD e testamos conexão com a conta dele.\n\nO que observamos: Conexão ok no nosso teste.\n\nO que ainda está pendente: Aguardando teste do usuário.\n\nEm seguida, vamos validar com o usuário amanhã.\n\nAgradecemos a colaboração.\nEquipe de Service Desk",
+    "rewrite": "Atualizamos o seu chamado sobre o problema do usuário sem acesso à VPN. Resetamos a senha no AD e testamos a conexão com a conta do usuário. O resultado do teste no nosso ambiente foi positivo. Aguardamos agora o teste do usuário amanhã.",
+    "sec": 12.7,
+    "tokens": 59
+   },
+   {
+    "type": "solution_confirmation",
+    "facts": "Tipo: confirmação da solução\nSituação: Outlook travando ao abrir anexos\nFeito: reparamos o perfil do Outlook; limpamos o cache\nResultado: os anexos estão abrindo normalmente\nPedido: confirmar se a situação foi resolvida",
+    "draft": "Olá, João,\n\nRealizamos as ações descritas abaixo e gostaríamos de confirmar se a situação foi resolvida.\n\nResumo da situação: Outlook travando ao abrir anexos.\n\nAté aqui, reparamos o perfil do outlook e limpamos o cache.\n\nO que observamos: Anexos abrindo normalmente.\n\nA sua confirmação nos permitirá registrar o resultado do atendimento.\n\nAgradecemos a colaboração.\nEquipe de Service Desk",
+    "rewrite": "A situação com o Outlook travando ao abrir anexos foi resolvida. Após reparamos o perfil do Outlook e limpamos o cache, os anexos estão abrindo normalmente. Confirme se a situação está correta.",
+    "sec": 10.5,
+    "tokens": 53
+   },
+   {
+    "type": "request_information",
+    "facts": "Tipo: pedido de informações\nSituação: erro ao abrir a planilha de custos\nPerguntas: 1. Qual mensagem de erro aparece na tela? 2. O erro ocorre com outros arquivos?\nPrazo: 20/10/2026 às 17h",
+    "draft": "Olá, Ana,\n\nPara continuarmos a análise, precisamos de algumas informações.\n\nResumo da situação: Erro ao abrir a planilha de custos.\n\nPara avançarmos, precisamos saber:\n1. Qual mensagem de erro aparece na tela?\n2. O erro ocorre com outros arquivos?\n\nPrazo para retorno: 20/10/2026 às 17h\n\nPor segurança, não envie senhas, tokens ou outros dados de acesso neste chamado.\n\nO seu retorno permitirá que continuemos a análise.\n\nAgradecemos a colaboração.\nEquipe de Service Desk",
+    "rewrite": "Para auxiliar no diagnóstico do erro ao abrir a planilha de custos, preciso de duas respostas:\n\n1. Qual mensagem de erro aparece na tela?\n2. O erro ocorre com outros arquivos?\n\nPor favor, responda até 20/10/2026 às 17h.",
+    "sec": 14.3,
+    "tokens": 73
+   },
+   {
+    "type": "pending",
+    "facts": "Tipo: registro de pendência\nPendente: envio da planilha corrigida\nPendente com: o usuário\nAção esperada: enviar o arquivo atualizado",
+    "draft": "Olá, Carlos,\n\nO atendimento permanece pendente. Seguem os detalhes.\n\nO que ainda está pendente: Envio da planilha corrigida.\n\nO que precisamos de você: Enviar o arquivo atualizado.\n\nAguardamos a conclusão do item acima para seguirmos com o atendimento.\n\nAgradecemos a colaboração.\nEquipe de Service Desk",
+    "rewrite": "Registro de pendência: envio da planilha corrigida. Pendente com: o usuário. Ação esperada: enviar o arquivo atualizado.",
+    "sec": 6.4,
+    "tokens": 33
+   },
+   {
+    "type": "closure_resolved",
+    "facts": "Tipo: encerramento com solução\nSituação: impressora não imprimia\nFeito: reinstalamos o driver da impressora\nResultado validado: página de teste impressa e confirmada\nConfirmação do usuário: sim",
+    "draft": "Olá, Paula,\n\nEstamos encerrando este chamado com a situação solucionada, conforme descrito abaixo.\n\nResumo da situação: Impressora não imprimia.\n\nAté aqui, reinstalamos o driver da impressora.\n\nResultado validado: Página de teste impressa e confirmada.\n\nO usuário confirmou a solução.\n\nSe precisar de apoio novamente, entre em contato conosco.\n\nAgradecemos a colaboração.\nEquipe de Service Desk",
+    "rewrite": "Nós reinstituímos o driver da impressora e já confirmamos que a página de teste foi impressa com sucesso. A solução está concluída e o usuário confirma a validação.",
+    "sec": 7.8,
+    "tokens": 42
+   },
+   {
+    "type": "manager_approval",
+    "facts": "Tipo: pedido de De acordo ao gestor\nObjeto: instalação do software de modelagem no equipamento patrimonial 00123\nJustificativa: necessário para o fechamento mensal\nEfeito da aprovação: a instalação será agendada\nResposta esperada: “De acordo” ou “Não aprovado”",
+    "draft": "Prezado(a) gestor(a),\n\nSolicitamos a sua manifestação formal quanto ao item descrito abaixo.\n\nObjeto da aprovação: Instalação do software de modelagem no equipamento patrimonial 00123.\n\nJustificativa: Necessário para o fechamento mensal.\n\nEfeito da aprovação: A instalação será agendada.\n\nSolicitamos que a manifestação seja registrada como “De acordo” ou “Não aprovado”.\n\nAtenciosamente,\nEquipe de Service Desk",
+    "rewrite": "Nós concordamos com a instalação do software de modelagem no equipamento patrimonial 00123, já que é necessário para o fechamento mensal. A instalação será agendada conforme solicitado.",
+    "sec": 8.9,
+    "tokens": 53
+   },
+   {
+    "type": "redirect_or_escalate",
+    "facts": "Tipo: encaminhamento\nDestino: Equipe de Infraestrutura\nMotivo: a análise exige acesso administrativo ao armazenamento\nJá verificado: validamos as permissões do usuário",
+    "draft": "Olá, Lucia,\n\nPara que a análise tenha continuidade, estamos encaminhando este atendimento. Destino: Equipe de Infraestrutura.\n\nMotivo do encaminhamento: A análise exige acesso administrativo ao armazenamento.\n\nAté aqui, validamos as permissões do usuário.\n\nO atendimento seguirá com a equipe indicada.\n\nAgradecemos a colaboração.\nEquipe de Service Desk",
+    "rewrite": "Encaminhamos o seu chamado para a Equipe de Infraestrutura, pois a análise exige acesso administrativo ao armazenamento. As permissões do usuário já foram validadas.",
+    "sec": 7.4,
+    "tokens": 43
+   }
+  ]
+ },
+ "Qwen/Qwen3-4B": {
+  "model": "Qwen/Qwen3-4B",
+  "load_sec": 26.1,
+  "results": [
+   {
+    "type": "progress_update",
+    "facts": "Tipo: atualização de andamento\nSituação: usuário sem acesso à VPN desde ontem\nFeito: resetamos a senha no AD; testamos a conexão com a conta do usuário\nResultado: a conexão funcionou no nosso teste\nPendente: aguardando o teste do usuário\nPróximo passo: validar com o usuário amanhã",
+    "draft": "Olá, Maria,\n\nPassamos para informar o andamento do seu chamado.\n\nResumo da situação: Usuário sem acesso à VPN desde ontem.\n\nAté aqui, resetamos a senha no AD e testamos conexão com a conta dele.\n\nO que observamos: Conexão ok no nosso teste.\n\nO que ainda está pendente: Aguardando teste do usuário.\n\nEm seguida, vamos validar com o usuário amanhã.\n\nAgradecemos a colaboração.\nEquipe de Service Desk",
+    "rewrite": "Atualizamos o seu chamado sobre o problema de acesso à VPN. Resetamos a senha no AD e testamos a conexão com a conta do usuário, e a conexão funcionou no nosso teste. Agora estamos aguardando o teste do usuário. Amanhã, vamos validar com você.",
+    "sec": 22.9,
+    "tokens": 64
+   },
+   {
+    "type": "solution_confirmation",
+    "facts": "Tipo: confirmação da solução\nSituação: Outlook travando ao abrir anexos\nFeito: reparamos o perfil do Outlook; limpamos o cache\nResultado: os anexos estão abrindo normalmente\nPedido: confirmar se a situação foi resolvida",
+    "draft": "Olá, João,\n\nRealizamos as ações descritas abaixo e gostaríamos de confirmar se a situação foi resolvida.\n\nResumo da situação: Outlook travando ao abrir anexos.\n\nAté aqui, reparamos o perfil do outlook e limpamos o cache.\n\nO que observamos: Anexos abrindo normalmente.\n\nA sua confirmação nos permitirá registrar o resultado do atendimento.\n\nAgradecemos a colaboração.\nEquipe de Service Desk",
+    "rewrite": "Os anexos do Outlook agora estão abrindo normalmente após a reparação do perfil e a limpeza do cache. Por favor, confirme se a situação foi resolvida.",
+    "sec": 15.0,
+    "tokens": 42
+   },
+   {
+    "type": "request_information",
+    "facts": "Tipo: pedido de informações\nSituação: erro ao abrir a planilha de custos\nPerguntas: 1. Qual mensagem de erro aparece na tela? 2. O erro ocorre com outros arquivos?\nPrazo: 20/10/2026 às 17h",
+    "draft": "Olá, Ana,\n\nPara continuarmos a análise, precisamos de algumas informações.\n\nResumo da situação: Erro ao abrir a planilha de custos.\n\nPara avançarmos, precisamos saber:\n1. Qual mensagem de erro aparece na tela?\n2. O erro ocorre com outros arquivos?\n\nPrazo para retorno: 20/10/2026 às 17h\n\nPor segurança, não envie senhas, tokens ou outros dados de acesso neste chamado.\n\nO seu retorno permitirá que continuemos a análise.\n\nAgradecemos a colaboração.\nEquipe de Service Desk",
+    "rewrite": "Para analisar o erro ao abrir a planilha de custos, precisamos de duas informações suas:\n\n1. Qual mensagem de erro aparece na tela?\n2. O erro ocorre com outros arquivos?\n\nSe puder responder até 20/10/2026 às 17h, conseguimos seguir com a análise.",
+    "sec": 24.9,
+    "tokens": 74
+   },
+   {
+    "type": "pending",
+    "facts": "Tipo: registro de pendência\nPendente: envio da planilha corrigida\nPendente com: o usuário\nAção esperada: enviar o arquivo atualizado",
+    "draft": "Olá, Carlos,\n\nO atendimento permanece pendente. Seguem os detalhes.\n\nO que ainda está pendente: Envio da planilha corrigida.\n\nO que precisamos de você: Enviar o arquivo atualizado.\n\nAguardamos a conclusão do item acima para seguirmos com o atendimento.\n\nAgradecemos a colaboração.\nEquipe de Service Desk",
+    "rewrite": "O usuário ainda não enviou a planilha corrigida. A ação esperada é que ele envie o arquivo atualizado.",
+    "sec": 11.4,
+    "tokens": 29
+   },
+   {
+    "type": "closure_resolved",
+    "facts": "Tipo: encerramento com solução\nSituação: impressora não imprimia\nFeito: reinstalamos o driver da impressora\nResultado validado: página de teste impressa e confirmada\nConfirmação do usuário: sim",
+    "draft": "Olá, Paula,\n\nEstamos encerrando este chamado com a situação solucionada, conforme descrito abaixo.\n\nResumo da situação: Impressora não imprimia.\n\nAté aqui, reinstalamos o driver da impressora.\n\nResultado validado: Página de teste impressa e confirmada.\n\nO usuário confirmou a solução.\n\nSe precisar de apoio novamente, entre em contato conosco.\n\nAgradecemos a colaboração.\nEquipe de Service Desk",
+    "rewrite": "A impressora do 2º andar agora está funcionando corretamente. Reinstalamos o driver da impressora e validamos o resultado com a impressão de uma página de teste, que foi confirmada por você.",
+    "sec": 18.5,
+    "tokens": 49
+   },
+   {
+    "type": "manager_approval",
+    "facts": "Tipo: pedido de De acordo ao gestor\nObjeto: instalação do software de modelagem no equipamento patrimonial 00123\nJustificativa: necessário para o fechamento mensal\nEfeito da aprovação: a instalação será agendada\nResposta esperada: “De acordo” ou “Não aprovado”",
+    "draft": "Prezado(a) gestor(a),\n\nSolicitamos a sua manifestação formal quanto ao item descrito abaixo.\n\nObjeto da aprovação: Instalação do software de modelagem no equipamento patrimonial 00123.\n\nJustificativa: Necessário para o fechamento mensal.\n\nEfeito da aprovação: A instalação será agendada.\n\nSolicitamos que a manifestação seja registrada como “De acordo” ou “Não aprovado”.\n\nAtenciosamente,\nEquipe de Service Desk",
+    "rewrite": "Tipo: pedido de de acordo ao gestor  \nObjeto: instalação do software de modelagem no equipamento patrimonial 00123  \nJustificativa: necessário para o fechamento mensal  \nEfeito da aprovação: a instalação será agendada  \nResposta esperada: “De acordo” ou “Não aprovado”",
+    "sec": 27.2,
+    "tokens": 80
+   },
+   {
+    "type": "redirect_or_escalate",
+    "facts": "Tipo: encaminhamento\nDestino: Equipe de Infraestrutura\nMotivo: a análise exige acesso administrativo ao armazenamento\nJá verificado: validamos as permissões do usuário",
+    "draft": "Olá, Lucia,\n\nPara que a análise tenha continuidade, estamos encaminhando este atendimento. Destino: Equipe de Infraestrutura.\n\nMotivo do encaminhamento: A análise exige acesso administrativo ao armazenamento.\n\nAté aqui, validamos as permissões do usuário.\n\nO atendimento seguirá com a equipe indicada.\n\nAgradecemos a colaboração.\nEquipe de Service Desk",
+    "rewrite": "Encaminhamos o seu chamado para a Equipe de Infraestrutura. A análise exige acesso administrativo ao armazenamento, e já validamos as permissões do usuário.",
+    "sec": 16.3,
+    "tokens": 42
+   }
+  ]
+ }
+}

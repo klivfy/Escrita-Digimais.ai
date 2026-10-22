@@ -1,0 +1,89 @@
+('extensao', 'amostras', 'produto') {'n': 10}
+('extensao', 'gold-3.json', 'erros') {'n': 32, 'exato': 30}
+('extensao', 'gold-3.json', 'limpo') {'n': 38}
+('extensao', 'gold-novo.json', 'erros') {'n': 31, 'exato': 23, 'piorou_ou_parcial': 1}
+('extensao', 'gold-novo.json', 'limpo') {'n': 25}
+('extensao', 'gold.json', 'erros') {'n': 54, 'exato': 47, 'piorou_ou_parcial': 2}
+('extensao', 'gold.json', 'limpo') {'n': 30}
+('languagetool', 'amostras', 'produto') {'n': 10}
+('languagetool', 'gold-3.json', 'erros') {'n': 32, 'exato': 14, 'piorou_ou_parcial': 3}
+('languagetool', 'gold-3.json', 'limpo') {'n': 38}
+('languagetool', 'gold-novo.json', 'erros') {'n': 31, 'exato': 15, 'piorou_ou_parcial': 4}
+('languagetool', 'gold-novo.json', 'limpo') {'n': 25}
+('languagetool', 'gold.json', 'erros') {'n': 54, 'exato': 34, 'piorou_ou_parcial': 3}
+('languagetool', 'gold.json', 'limpo') {'n': 30, 'com_sugestao': 8}
+('uniao', 'amostras', 'produto') {'n': 10}
+('uniao', 'gold-3.json', 'erros') {'n': 32, 'exato': 29, 'piorou_ou_parcial': 2}
+('uniao', 'gold-3.json', 'limpo') {'n': 38}
+('uniao', 'gold-novo.json', 'erros') {'n': 31, 'exato': 26, 'piorou_ou_parcial': 2}
+('uniao', 'gold-novo.json', 'limpo') {'n': 25}
+('uniao', 'gold.json', 'erros') {'n': 54, 'exato': 48, 'piorou_ou_parcial': 3}
+('uniao', 'gold.json', 'limpo') {'n': 30, 'com_sugestao': 8}
+
+FALSOS POSITIVOS do LanguageTool:
+   ('Resetamos a senha no AD e testamos a conexão com a VPN.', [('Resetamos', 'Remetamos', 'MORFOLOGIK_RULE_PT_BR')])
+   ('A impressora HP LaserJet do 2º andar voltou a imprimir em cores.', [('LaserJet', 'Laser Jet', 'MORFOLOGIK_RULE_PT_BR')])
+   ('Foram reiniciados os serviços de spooler e de DNS no servidor SRV-FIN01.', [('spooler', 'spoiler', 'MORFOLOGIK_RULE_PT_BR'), ('SRV', 'SRI', 'MORFOLOGIK_RULE_PT_BR')])
+   ('O login jsilva relatou o erro 0x80070005 ao salvar o arquivo.', [('jsilva', 'Silva', 'MORFOLOGIK_RULE_PT_BR')])
+   ('O chamado INC-2026-0451 foi encerrado com a solução validada por você.', [('INC', 'INC.', 'MORFOLOGIK_RULE_PT_BR')])
+   ('A VPN GlobalProtect conecta, mas a pasta de rede \\\\srv-arq\\financeiro não abre.', [('srv', 'sob', 'MORFOLOGIK_RULE_PT_BR'), ('arq', 'ar', 'MORFOLOGIK_RULE_PT_BR')])
+   ('A conta foi desbloqueada no Active Directory e o usuário já consegue entrar.', [('Active', 'Aclive', 'MORFOLOGIK_RULE_PT_BR'), ('Directory', 'Diretor', 'MORFOLOGIK_RULE_PT_BR')])
+   ('O plugin do Teams foi reinstalado e a câmera foi detectada.', [('plugin', 'plugam', 'MORFOLOGIK_RULE_PT_BR'), ('do Teams', 'do team', 'GENERAL_NUMBER_AGREEMENT_ERRORS')])
+
+ERROS que o LanguageTool não resolve (amostra):
+   ('a impressora do segundo andar esta sem toner', '(nada)', 'a impressora do segundo andar está sem toner')
+   ('o usuario informou que o erro acontece toda manha', 'o usuário informou que o erro acontece toda manha', 'o usuário informou que o erro acontece toda manhã')
+   ('a atualizaçao do windows travou na metade', 'a atualização do Windows travou na metade', 'a atualização do windows travou na metade')
+   ('pedimos que reenvie o aquivo corrigido', '(nada)', 'pedimos que reenvie o arquivo corrigido')
+   ('as impressoras do financeiro estão quebrado', '(nada)', 'as impressoras do financeiro estão quebradas')
+   ('a planilha de custos está corrompido', '(nada)', 'a planilha de custos está corrompida')
+   ('essas senhas expiraram e precisam ser trocado', '(nada)', 'essas senhas expiraram e precisam ser trocadas')
+   ('as contas bloqueada foram liberadas', '(nada)', 'as contas bloqueadas foram liberadas')
+   ('os arquivos compartilhado estão inacessíveis', '(nada)', 'os arquivos compartilhados estão inacessíveis')
+   ('os chamados abertas ontem foram encerrados', '(nada)', 'os chamados abertos ontem foram encerrados')
+   ('as permissões foram ajustado', '(nada)', 'as permissões foram ajustadas')
+   ('os usuários relatou lentidão', '(nada)', 'os usuários relataram lentidão')
+   ('o problema e a falha persiste', '(nada)', 'o problema e a falha persistem')
+   ('houveram duas quedas de energia', '(nada)', 'houve duas quedas de energia')
+   ('as senhas foi resetadas', 'as senhas foram renetadas', 'as senhas foram resetadas')
+   ('vou encaminhar o chamado a equipe de redes', '(nada)', 'vou encaminhar o chamado à equipe de redes')
+   ('o chamado foi encaminhado a infraestrutura', '(nada)', 'o chamado foi encaminhado à infraestrutura')
+   ('conforme solicitado, segue a baixo o resumo', '(nada)', 'conforme solicitado, segue abaixo o resumo')
+   ('o acesso foi liberado, mais o usuário ainda não entra', '(nada)', 'o acesso foi liberado, mas o usuário ainda não entra')
+   ('o usuário perguntou se ouve alguma mudança', '(nada)', 'o usuário perguntou se houve alguma mudança')
+   ('o relatorio de incidentes sera enviado amanha', 'o relatório de incidentes será enviado amanha', 'o relatório de incidentes será enviado amanhã')
+   ('a caixa do usuario esta cheia', 'a caixa do usuário esta cheia', 'a caixa do usuário está cheia')
+   ('as licenças estão vencido', '(nada)', 'as licenças estão vencidas')
+   ('os tickets abertas hoje foram classificados', '(nada)', 'os tickets abertos hoje foram classificados')
+   ('a senha temporário foi enviada', '(nada)', 'a senha temporária foi enviada')
+   ('os computador do setor foram atualizados', 'o computador do setor foram atualizados', 'os computadores do setor foram atualizados')
+   ('as solicitação foram aprovadas', 'as solicitações foi aprovadas', 'as solicitações foram aprovadas')
+   ('o conta do usuário foi bloqueada', '(nada)', 'a conta do usuário foi bloqueada')
+   ('duas pasta compartilhadas ficaram inacessíveis', '(nada)', 'duas pastas compartilhadas ficaram inacessíveis')
+   ('os técnicos verificou a rede', '(nada)', 'os técnicos verificaram a rede')
+   ('a equipe e o fornecedor concluiu a análise', '(nada)', 'a equipe e o fornecedor concluíram a análise')
+   ('a reunião foi remarcada para quinta-feira a tarde', '(nada)', 'a reunião foi remarcada para quinta-feira à tarde')
+   ('enviamos o formulário a gerência', '(nada)', 'enviamos o formulário à gerência')
+   ('ficamos a espera do retorno do fornecedor', '(nada)', 'ficamos à espera do retorno do fornecedor')
+   ('o erro persiste, mais já abrimos o chamado', '(nada)', 'o erro persiste, mas já abrimos o chamado')
+   ('o acesso remoto esta indisponível desde cedo', '(nada)', 'o acesso remoto está indisponível desde cedo')
+   ('as impressora do andar estão desligadas', 'a impressora do andar estão desligadas', 'as impressoras do andar estão desligadas')
+   ('três chamado foram abertos hoje', '(nada)', 'três chamados foram abertos hoje')
+   ('as configuração estão corretas', 'as configurações está corretas', 'as configurações estão corretas')
+   ('a lentidão foi resolvido', '(nada)', 'a lentidão foi resolvida')
+
+ERROS que a união não resolve:
+   ('a impressora do segundo andar esta sem toner', '(nada)', 'a impressora do segundo andar está sem toner')
+   ('a atualizaçao do windows travou na metade', 'a atualização do Windows travou na metade', 'a atualização do windows travou na metade')
+   ('pedimos que reenvie o aquivo corrigido', 'pedimos que reenvie o aquilo corrigido', 'pedimos que reenvie o arquivo corrigido')
+   ('essas senhas expiraram e precisam ser trocado', '(nada)', 'essas senhas expiraram e precisam ser trocadas')
+   ('as senhas foi resetadas', 'as senhas foram renetadas', 'as senhas foram resetadas')
+   ('o acesso foi liberado, mais o usuário ainda não entra', '(nada)', 'o acesso foi liberado, mas o usuário ainda não entra')
+   ('a caixa do usuario esta cheia', 'a caixa do usuário esta cheia', 'a caixa do usuário está cheia')
+   ('os tickets abertas hoje foram classificados', '(nada)', 'os tickets abertos hoje foram classificados')
+   ('a senha temporário foi enviada', '(nada)', 'a senha temporária foi enviada')
+   ('as solicitação foram aprovadas', 'as solicitações foi aprovadas', 'as solicitações foram aprovadas')
+   ('o acesso remoto esta indisponível desde cedo', '(nada)', 'o acesso remoto está indisponível desde cedo')
+   ('as configuração estão corretas', 'as configurações está corretas', 'as configurações estão corretas')
+   ('os pendrive estão infectados', 'os pendrives está infectados', 'os pendrives estão infectados')
+   ('tentamos reiniciar, mais o erro continua', '(nada)', 'tentamos reiniciar, mas o erro continua')

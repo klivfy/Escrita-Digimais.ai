@@ -116,4 +116,22 @@ describe('aprendizado com as correções do rascunho', () => {
     await waitFor(() => expect((local.data.learnedStyle as { counts: Record<string, number> }).counts['fix.result.action']).toBe(1));
     expect(JSON.stringify(local.data)).not.toMatch(/VPN|login ok/);
   });
+
+  it('leva o foco para o resultado ao dividir e de volta ao campo ao concluir, e anuncia a divisão', async () => {
+    const { user } = setup();
+    fireEvent.change(screen.getByLabelText('Tipo de comunicação'), { target: { value: 'progress_update' } });
+    await openDraft(user);
+    const heading = await screen.findByRole('heading', { name: /Confira a divisão/ });
+    expect(document.activeElement).toBe(heading);
+    await waitFor(() => expect(screen.getAllByRole('status').some((e) => /dividida em 6 trechos/.test(e.textContent ?? ''))).toBe(true));
+    await user.click(screen.getByRole('button', { name: 'Preencher o formulário' }));
+    expect(document.activeElement).toBe(screen.getByLabelText('Anotação livre'));
+  });
+
+  it('descartar devolve o foco ao campo da anotação', async () => {
+    const { user } = setup();
+    await openDraft(user);
+    await user.click(await screen.findByRole('button', { name: 'Descartar a anotação' }));
+    expect(document.activeElement).toBe(screen.getByLabelText('Anotação livre'));
+  });
 });

@@ -1,0 +1,5 @@
+{
+  "nota": "Chave PÚBLICA que fixa o ID da extensão nos pacotes instaláveis. Não é segredo. A chave privada correspondente foi descartada de propósito: ela só seria necessária para assinar um CRX de hospedagem própria (isso mudaria o ID).",
+  "publicKey": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAq6sXjWK0wvP63w5wyTsxdbyNnf2eHVpkJAL4y6TxTkDurdUKVtahuFHs7jYbwUClRg/JwnNq8RmEnG0PNqSUjgygRagYXkLvguUHHkW10I/FZhsYUES/sDU/pCpkJA1yzDEr9o9Rhhz0DNtqq00emvNK5nnT7RhWiY3MyUYDP+1/xrhw4a9UZdUpWCkOGEW0mj3ZiJkKQRcM6a8DRly9qrxeIgmI9Y3EY/qK2Ix/ViwPKgUD5RB1OiP/ao8EhahLyQC15qND3Nh8K4W97X4fIO7xVtswkxWvGvVVMmg3Vp7I0ffsJanjMq06qIsM8KVZ58YWyxoXCBZaX4WCwl897wIDAQAB",
+  "extensionId": "khilafnebmdhmlpkajikadidlgbcepdn"
+}

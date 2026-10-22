@@ -1,4 +1,4 @@
-import { useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { DRAFT_CLASS_LABELS, DRAFT_CLASSES } from '../../config/draft-rules';
 import type { DraftClass } from '../../config/draft-rules';
 import { assembleDraft, classifyDraft, LOW_CONFIDENCE } from '../../domain/draft';
@@ -39,6 +39,8 @@ interface Props {
   onFixes: (fixes: [DraftClass, FixTarget][]) => void;
   /** Contadores de uso (sem conteúdo): dividiu uma anotação, preencheu o formulário. */
   onEvent: (event: 'draft_split' | 'draft_apply') => void;
+  /** Anúncio para leitores de tela, na região ao vivo única do painel. */
+  onAnnounce: (message: string) => void;
 }
 
 const isAvailable = (t: DraftTarget, available: ReadonlySet<ContextField>): boolean =>
@@ -53,11 +55,21 @@ function initialTarget(seg: DraftSegment, available: ReadonlySet<ContextField>):
  * Rascunho livre: o analista cola a anotação bruta, confere a divisão sugerida e só então os campos são preenchidos.
  * O texto vive apenas neste componente e é descartado ao aplicar, limpar ou trocar de tela.
  */
-export function DraftPanel({ available, internalDomains, bias, onApply, onFixes, onEvent }: Props) {
+export function DraftPanel({ available, internalDomains, bias, onApply, onFixes, onEvent, onAnnounce }: Props) {
   const id = useId();
   const [raw, setRaw] = useState('');
   const [rows, setRows] = useState<Row[] | null>(null);
   const [error, setError] = useState('');
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const rawRef = useRef<HTMLTextAreaElement>(null);
+  const hadRows = useRef(false);
+
+  // O botão que o analista acionou sai da tela: leva o foco para o resultado (ao dividir) ou de volta ao campo (ao concluir).
+  useEffect(() => {
+    if (rows && !hadRows.current) headingRef.current?.focus();
+    if (!rows && hadRows.current) rawRef.current?.focus();
+    hadRows.current = rows !== null;
+  }, [rows]);
 
   const divide = (): void => {
     setError('');
@@ -81,6 +93,7 @@ export function DraftPanel({ available, internalDomains, bias, onApply, onFixes,
       return;
     }
     onEvent('draft_split');
+    onAnnounce(`Anotação dividida em ${segs.length} ${segs.length === 1 ? 'trecho' : 'trechos'}. Confira o campo de cada um e preencha o formulário.`);
     setRows(segs.map((seg) => ({ seg, target: initialTarget(seg, available) })));
   };
 
@@ -102,6 +115,7 @@ export function DraftPanel({ available, internalDomains, bias, onApply, onFixes,
   };
 
   const discard = (): void => {
+    onAnnounce('Anotação descartada.');
     setRows(null);
     setRaw('');
     setError('');
@@ -117,7 +131,7 @@ export function DraftPanel({ available, internalDomains, bias, onApply, onFixes,
         </p>
         <div className="field">
           <label htmlFor={`${id}-raw`}>Anotação livre</label>
-          <textarea id={`${id}-raw`} rows={5} value={raw} onChange={(e) => setRaw(e.target.value)} disabled={rows !== null} />
+          <textarea ref={rawRef} id={`${id}-raw`} rows={5} value={raw} spellCheck onChange={(e) => setRaw(e.target.value)} disabled={rows !== null} />
         </div>
         {error && <p className="error-text" role="alert">{error}</p>}
         {rows === null ? (
@@ -126,7 +140,7 @@ export function DraftPanel({ available, internalDomains, bias, onApply, onFixes,
           </div>
         ) : (
           <section aria-labelledby={`${id}-title`} className="panel info">
-            <h3 id={`${id}-title`}>Confira a divisão ({rows.length} trechos)</h3>
+            <h3 id={`${id}-title`} ref={headingRef} tabIndex={-1}>Confira a divisão ({rows.length} trechos)</h3>
             <p className="subtle">
               A sugestão pode errar. Ajuste o campo de cada trecho. Trechos de campos que não existem neste tipo de texto
               vão para Observações ou são descartados.

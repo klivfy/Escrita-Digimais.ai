@@ -56,5 +56,49 @@ Limites do experimento: 7 casos, sem GPU, sem o Aion-1.0-Instruct, sem modelos d
 ## 4.1 Decisão (16/10/2026)
 A equipe usa o **Microsoft Edge estável**. Segundo a documentação do Edge (atualizada em 06/10/2026), a Prompt API e as APIs Writer e Rewriter continuam em prévia só nos canais Canary e Dev. Portanto o recurso opcional "Sugerir reescrita" (opção 3) **não funcionaria hoje para ninguém da equipe** e fica adiado. Todo o esforço de naturalidade segue na prosa determinística. Reavaliar quando a API chegar ao Edge estável ou se a equipe adotar um canal de pré-lançamento.
 
+Atualização (22/10/2026): as notas do Edge 147 a 149 listam a Prompt API e a Proofreader API como testes de origem (origin trials) na versão estável, e a página da Prompt API (atualizada em 19/10/2026) ainda as descreve como prévia em Canary e Dev. A decisão continua valendo; o caminho atual está em `docs/ESTUDO-IA-APRENDIZADO.md` (fase 3: camada de correção pela IA do Edge, ligada por política, depois das travas de `src/domain/ai-guard.ts`).
+
 ## 5. Como reproduzir
 Os scripts e as saídas brutas estão em `scripts/estudo-ia/` (`rodar_reescrita.py`, `rodar_geracao.py`, `fatos.json`, `rascunhos.json`, `saidas-dos-modelos.json`). Requer Python, `torch` (CPU) e `transformers`; baixa os modelos da Hugging Face. Rode fora do pacote da extensão: nada disso entra no zip.
+
+## 6. Rodada 2 (16/10/2026): interpretar e refinar textos curtos
+
+Pergunta: um modelo simples e embarcado consegue interpretar anotações curtas e refiná-las? Separei em duas partes, porque têm riscos diferentes.
+
+### 6.1 Interpretar (sugerir o campo de cada trecho do rascunho livre)
+Comparei o pipeline atual (regras + Naive Bayes) com classificadores treinados no mesmo corpus fictício de 165 trechos, em três conjuntos: fácil (48), bagunçado (24) e deslocado (60, vocabulário que o corpus e as regras não cobrem, em `scripts/estudo-ia/deslocado.json`). Reproduzir: `scripts/estudo-ia/embeddings.py`.
+
+Correção de método: classificar cada trecho isolado o tratava como primeiro da anotação e lhe dava +1,5 para contexto, o que rebaixava o pipeline (68%). Na posição realista ele acerta 47/60 (78%).
+
+| Método | Fácil (48) | Bagunçado (24) | Deslocado (60) |
+|---|---|---|---|
+| Pipeline atual | 48 | 21 | 47 |
+| n-gramas de caracteres (regressão logística), sozinho | 46 | 14 | 50 |
+| Embeddings estáticos (potion-multilingual-128M), sozinho | 39 | 14 | 47 |
+| multilingual-e5-small (118 MB quantizado), sozinho | 46 | 17 | 53 |
+| paraphrase-multilingual-MiniLM (118 MB), sozinho | 41 | 9 | 49 |
+| Pipeline + n-gramas, somados à pontuação (peso 0,5) | 48 | 20 | 54 |
+| Pipeline + e5, somados à pontuação (peso 0,5 a 1) | 48 | 21 | 54 |
+
+Leitura:
+- O ganho existe e vem de somar um classificador discriminativo à pontuação, sem regressão nos conjuntos antigos para pesos até 1 (peso escolhido nos dois conjuntos antigos, o deslocado ficou de fora).
+- **O encoder não se distingue dos n-gramas**: 3 acertos exclusivos contra 2 (p=1). Os n-gramas custam de 60 a 150 KB e rodam em TypeScript puro; o e5 custa 118 MB, mais ONNX Runtime em WASM e `wasm-unsafe-eval` na CSP.
+- A fusão com n-gramas contra o pipeline puro: 7 contra 1 casos discordantes (p=0,07). Provável, não provado.
+- Limites: corpus e conjuntos escritos pela mesma pessoa; nenhum dado real.
+
+### 6.2 Refinar (reescrever o texto do motor)
+Mesmo desenho do item 2, com modelos mais novos (CPU, determinístico, 7 textos; saídas em `saidas-rodada2.json`):
+
+| Modelo | Textos usáveis (leitura humana) | Falhas principais |
+|---|---|---|
+| Qwen3-1.7B | 1 a 2 de 7 | aprova em nome do gestor, "foi resolvida" onde só se pede confirmação, palavra errada ("reinstituímos"), "amanhã" muda de dono |
+| SmolLM3-3B | 1 a 2 de 7 | "A situação está resolvida" sem confirmação, promessa nova ("informaremos a razão da negativa"), "precisamos de mais acesso" |
+| Qwen3-4B | 4 de 7 | vazou "2º andar" do exemplo para outro chamado, devolveu o pedido ao gestor como lista de fatos, afirmou "ainda não enviou" sem esse dado; cerca de 20 s por texto |
+
+A conclusão da seção 2 se mantém: abaixo de cerca de 4 bilhões de parâmetros há invenção de compromissos, e mesmo no limite os erros mudam o sentido.
+
+### 6.3 Decisão
+1. Nenhum modelo generativo é embarcado. Nenhum encoder é embarcado.
+2. Próximo passo de menor risco: somar à pontuação do rascunho livre um classificador de n-gramas de caracteres, gerado de forma reprodutível a partir do corpus, com peso fixo e o aprendizado local desempatando como hoje. Sem nova permissão e sem mudança de CSP.
+3. Para "refinar" o que o analista digita: corretor determinístico de abreviações e acentos (vc, pq, nao), sempre como sugestão. Hoje o motor só detecta gíria.
+4. Critério para reabrir: casos reais anonimizados mostrando que o ganho some, ou API de IA do Edge no canal estável.

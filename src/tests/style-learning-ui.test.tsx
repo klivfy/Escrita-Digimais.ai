@@ -80,6 +80,7 @@ describe('aprendizado de redação na interface', () => {
     await user.click(screen.getByRole('button', { name: /Configurações/ }));
     expect(screen.getByText(/Desligado pela política da organização/)).toBeTruthy();
     expect(screen.queryByLabelText('Aprender com as redações que eu mantenho')).toBeNull();
+    expect((screen.getByRole('button', { name: 'Exportar aprendizado' }) as HTMLButtonElement).disabled).toBe(true);
   });
 
   it('zerar aprendizado remove os dados', async () => {
@@ -89,5 +90,22 @@ describe('aprendizado de redação na interface', () => {
     await user.click(screen.getByRole('button', { name: 'Zerar aprendizado' }));
     await waitFor(() => expect(local.data.learnedStyle).toBeUndefined());
     expect(await screen.findByText('Observações registradas: 0')).toBeTruthy();
+  });
+
+  it('as configurações oferecem exportar o aprendizado', async () => {
+    const { user } = setup({ preferences: { learnStyle: true } });
+    await user.click(screen.getByRole('button', { name: /Configurações/ }));
+    expect(screen.getByRole('button', { name: 'Exportar aprendizado' })).toBeTruthy();
+  });
+
+  it('as configurações mostram a versão instalada quando o navegador a informa', async () => {
+    vi.stubGlobal('chrome', { runtime: { getManifest: () => ({ version: '9.8.7.6' }) } });
+    try {
+      const { user } = setup();
+      await user.click(screen.getByRole('button', { name: /Configurações/ }));
+      expect(screen.getByTestId('extension-version').textContent).toContain('9.8.7.6');
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });

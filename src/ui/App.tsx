@@ -2,11 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { emptyContent, initialForm, TEXT_FORM_FIELDS, toGenerationInput } from '../application/form';
 import type { FormState, TextFormField } from '../application/form';
 import { DEFAULT_PREFERENCES } from '../application/preferences';
-import { acceptedEvents, draftBias, emptyStats, preferredIndexes, rejectedEvents, StyleLearner } from '../application/style-learning';
-import type { LearnedStats } from '../application/style-learning';
-import {
-  effectiveUsageMode, exportCounters, generationKeys, timeBucket, UsageRecorder,
-} from '../application/usage-counters';
+import { acceptedEvents, draftBias, frequentTypes, preferredIndexes, rankNextSteps, rejectedEvents } from '../application/style-learning';
+import { MAX_NEXT_STEPS } from '../config/dialogue';
+import { nextStepCandidates } from '../domain/dialogue';
+import { generationKeys, timeBucket } from '../application/usage-counters';
 import type { UsagePolicy } from '../application/usage-counters';
 import type { Preferences } from '../application/preferences';
 import { hasReviewContent, initialReviewForm, reviewInputProblem, toReviewContext } from '../application/review-form';
@@ -31,13 +30,17 @@ import type {
 } from '../domain/types';
 import { copyText } from '../infrastructure/clipboard';
 import { AppStorage } from '../infrastructure/storage';
+import { extensionVersion } from '../infrastructure/extension';
 import { loadAiPolicy, loadSigningKeys, loadUsagePolicy } from '../infrastructure/policy';
+import { useStyleLearning } from './hooks/useStyleLearning';
+import { useUsageCounters } from './hooks/useUsageCounters';
 import { DiffView } from './components/DiffView';
 import { DraftPanel } from './components/DraftPanel';
 import type { DraftFields } from '../domain/draft';
 import { FieldControl } from './components/FieldControl';
 import type { Requirement } from './components/FieldControl';
 import { QualityPanel, WarningsList } from './components/ReviewPanel';
+import { ProofreadMode } from './components/ProofreadMode';
 import { ReviewMode } from './components/ReviewMode';
 import { SensitivePanel } from './components/SensitivePanel';
 import { SettingsPanel } from './components/SettingsPanel';
@@ -85,6 +88,7 @@ interface SavedContent {
   initialText: string;
   review: ReviewFormState;
   reviewResult: ReviewResult | null;
+  proofText: string;
 }
 
 export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigningKeys, loadUsage = loadUsagePolicy, copy = copyText, providerFactory = createProvider, now }: AppProps) {
@@ -98,8 +102,6 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
   const [policy, setPolicy] = useState<AiPolicy>(DISABLED_AI_POLICY);
   const [signingKeys, setSigningKeys] = useState<string[]>([]);
   const [usagePolicy, setUsagePolicy] = useState<UsagePolicy>('optional');
-  const [usageTotal, setUsageTotal] = useState(0);
-  const [learned, setLearned] = useState<LearnedStats>(emptyStats);
   const [draftKey, setDraftKey] = useState(0);
   const [result, setResult] = useState<GenerationResult | null>(null);
   const [text, setText] = useState('');
@@ -116,7 +118,8 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
   const [busy, setBusy] = useState(false);
   const [undo, setUndo] = useState<{ field: TextFormField; previous: string; label: string } | null>(null);
   const [activity, setActivity] = useState(0);
-  const [mode, setMode] = useState<'generate' | 'review'>('generate');
+  const [mode, setMode] = useState<'generate' | 'review' | 'proofread'>('generate');
+  const [proofText, setProofText] = useState('');
   const [reviewForm, setReviewForm] = useState<ReviewFormState>(initialReviewForm);
   const [reviewResult, setReviewResult] = useState<ReviewResult | null>(null);
   const [reviewProblem, setReviewProblem] = useState<string | null>(null);
@@ -125,28 +128,14 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
   const previewRef = useRef<HTMLTextAreaElement>(null);
   const confirmRef = useRef<HTMLElement>(null);
   const clearButtonRef = useRef<HTMLButtonElement>(null);
+  const typeRef = useRef<HTMLSelectElement>(null);
+  // Tipo do último texto copiado: base do atalho de próximo passo.
+  const [copiedType, setCopiedType] = useState<CommunicationType | null>(null);
   const generatedAt = useRef(0);
-  const recorder = useMemo(
-    () => new UsageRecorder({ load: () => store.loadCounters(), save: (c) => store.saveCounters(c) }),
-    [store],
-  );
-  const usage = effectiveUsageMode(usagePolicy, prefs.usageCounters);
-  useEffect(() => recorder.setEnabled(usage.enabled), [recorder, usage.enabled]);
-  // Aprendizado de redação: opt-in do analista, desligado por política quando a organização proíbe contadores locais.
-  const learning = { enabled: prefs.learnStyle && usagePolicy !== 'off', locked: usagePolicy === 'off' };
-  const learner = useMemo(
-    () => new StyleLearner({ load: () => store.loadLearning(), save: (s) => store.saveLearning(s) }),
-    [store],
-  );
-  useEffect(() => learner.setEnabled(learning.enabled), [learner, learning.enabled]);
-  const shownChoices = useRef<GenerationResult['choices']>(undefined);
-  const acceptedAt = useRef(0);
-  const remember = useCallback(
-    (events: Parameters<StyleLearner['record']>[0]): void => {
-      void learner.record(events).then(() => learner.snapshot()).then(setLearned);
-    },
-    [learner],
-  );
+  const usageCounters = useUsageCounters(store, usagePolicy, prefs.usageCounters);
+  const { recorder, mode: usage } = usageCounters;
+  const learning = useStyleLearning(store, prefs.learnStyle, usagePolicy);
+  const { setStats: setLearnedStats } = learning;
 
   useEffect(() => {
     let alive = true;
@@ -163,13 +152,13 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
       setSigningKeys(keys);
       setOverlay(ov);
       setUsagePolicy(usagePol);
-      setLearned(await store.loadLearning());
+      setLearnedStats(await store.loadLearning());
       setForm((f) => ({ ...f, techLevel: p.techLevel, formality: p.formality, length: p.length, textStyle: p.textStyle }));
     })();
     return () => {
       alive = false;
     };
-  }, [store, loadPolicy, loadKeys, loadUsage]);
+  }, [store, loadPolicy, loadKeys, loadUsage, setLearnedStats]);
 
   // Ao abrir a confirmação, o foco vai para ela; ao fechar, volta ao botão que a abriu.
   useEffect(() => {
@@ -205,6 +194,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
   }, []);
 
   const clearContent = useCallback(() => {
+    setProofText('');
     setDraftKey((k) => k + 1);
     setForm((f) => ({ ...f, ...emptyContent(), variant: 0 }));
     setResult(null);
@@ -241,22 +231,26 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
    * Em ambos os casos o conteúdo anterior fica em memória por 30 segundos para "Desfazer limpeza".
    */
   const manualClear = useCallback(
-    (scope: 'all' | 'review' = 'all') => {
+    (scope: 'all' | 'review' | 'proofread' = 'all') => {
       const reviewHasContent = hasReviewContent(reviewForm) || Boolean(reviewResult);
+      const proofHasContent = Boolean(proofText.trim());
       const hasContent =
-        scope === 'review' ? reviewHasContent : reviewHasContent || Boolean(result) || TEXT_FORM_FIELDS.some((f) => form[f].trim());
+        scope === 'review' ? reviewHasContent
+          : scope === 'proofread' ? proofHasContent
+            : reviewHasContent || proofHasContent || Boolean(result) || TEXT_FORM_FIELDS.some((f) => form[f].trim());
       if (!hasContent) {
         if (scope === 'all') clearContent();
         setLive('Não há conteúdo para limpar.');
         return;
       }
-      const saved: SavedContent = { form, result, text, initialText, review: reviewForm, reviewResult };
+      const saved: SavedContent = { form, result, text, initialText, review: reviewForm, reviewResult, proofText };
       if (scope === 'review') clearReview();
+      else if (scope === 'proofread') setProofText('');
       else clearContent();
       setRestorable(saved);
       setLive('Conteúdo limpo. É possível desfazer por 30 segundos.');
     },
-    [form, result, text, initialText, reviewForm, reviewResult, clearContent, clearReview, setLive],
+    [form, result, text, initialText, reviewForm, reviewResult, proofText, clearContent, clearReview, setLive],
   );
 
   const onRestore = (): void => {
@@ -267,6 +261,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
     setInitialText(restorable.initialText);
     setReviewForm(restorable.review);
     setReviewResult(restorable.reviewResult);
+    setProofText(restorable.proofText);
     setSnapshot(null);
     setRestorable(null);
     setActivity((n) => n + 1);
@@ -328,6 +323,35 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
     touch();
   };
 
+  const disabledTypes = useMemo(
+    () => new Set<CommunicationType>(profile.closureRules.noResponseEnabled ? [] : ['closure_no_response']),
+    [profile.closureRules.noResponseEnabled],
+  );
+  const nextSteps = copiedType
+    ? (learning.enabled ? rankNextSteps(learning.stats, copiedType, nextStepCandidates(copiedType, disabledTypes)) : nextStepCandidates(copiedType, disabledTypes)).slice(0, MAX_NEXT_STEPS)
+    : [];
+  const frequent = learning.enabled ? frequentTypes(learning.stats, form.type).filter((t) => !disabledTypes.has(t)) : [];
+
+  /** Atalho: troca o tipo mantendo os campos preenchidos, e leva o foco ao seletor de tipo. */
+  const switchType = (type: CommunicationType, message: string): void => {
+    setType(type);
+    setCopied('none');
+    setCopiedType(null);
+    typeRef.current?.focus();
+    setLive(message);
+  };
+
+  const onNextStep = (to: CommunicationType): void => {
+    if (copiedType) learning.rememberStep(copiedType, to);
+    void recorder.record('next_step.used');
+    switchType(to, `Tipo alterado para ${profile.categoryNames[to]}. Os campos foram mantidos: revise e gere a prévia.`);
+  };
+
+  const onFrequentType = (to: CommunicationType): void => {
+    void recorder.record('shortcut.type');
+    switchType(to, `Tipo alterado para ${profile.categoryNames[to]}.`);
+  };
+
   const setType = (type: CommunicationType): void => {
     setForm((f) => ({ ...f, type, variant: 0 }));
     setResult(null);
@@ -353,13 +377,12 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
     setCopied('none');
     const provider = providerFactory(policy);
     const input = toGenerationInput(next);
-    if (learning.enabled) input.settings.learned = preferredIndexes(learned, next.type, next.formality);
+    if (learning.enabled) input.settings.learned = preferredIndexes(learning.stats, next.type, next.formality);
     const outcome = await generateWithFallback(provider, { input, profile, now: now?.() });
     const r = outcome.result;
-    if (isVariant && shownChoices.current && r.choices) {
-      remember(rejectedEvents(shownChoices.current, r.choices, next.type, next.formality));
-    }
-    shownChoices.current = r.choices;
+    const before = learning.previousShown();
+    if (isVariant && before && r.choices) learning.remember(rejectedEvents(before, r.choices, next.type, next.formality));
+    learning.setShown(r.choices);
     setResult(outcome.notice ? { ...r, warnings: [...r.warnings, outcome.notice] } : r);
     setText(r.text);
     setInitialText(r.text);
@@ -368,7 +391,9 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
     setBusy(false);
     generatedAt.current = Date.now();
     void recorder.record(
-      isVariant ? ['variant'] : generationKeys(next.type, r.blocked ? r.blockReason : undefined, r.warnings.map((w) => w.code)),
+      isVariant
+        ? ['variant']
+        : [...generationKeys(next.type, r.blocked ? r.blockReason : undefined, r.warnings.map((w) => w.code)), ...(r.blocked ? [] : [`recipient.${next.recipient}`])],
     );
     if (r.blocked) setLive('Geração bloqueada. O motivo está na seção de prévia e revisão.');
     else setLive(`Prévia gerada com ${r.warnings.length} alerta(s). Revise antes de copiar.`);
@@ -395,9 +420,14 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
     const ok = await copy(text);
     setCopied(ok ? 'ok' : 'fail');
     if (ok) void recorder.record(['copy', `time_to_copy.${timeBucket(Date.now() - generatedAt.current)}`]);
-    if (ok && result?.choices && acceptedAt.current !== generatedAt.current) {
-      acceptedAt.current = generatedAt.current;
-      remember(acceptedEvents(result.choices, form.type, form.formality));
+    if (ok) {
+      learning.rememberUse(generatedAt.current, form.type);
+      setCopiedType(form.type);
+      if (nextStepCandidates(form.type, disabledTypes).length) void recorder.record('next_step.shown');
+    }
+    if (ok && result?.choices) {
+      const choices = result.choices;
+      learning.acceptOnce(generatedAt.current, () => acceptedEvents(choices, form.type, form.formality));
     }
     setLive(ok ? 'Texto copiado.' : 'Não foi possível copiar. Selecione o texto e copie manualmente.');
   };
@@ -438,6 +468,11 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
     setReviewResult(r);
     setLive(`Revisão concluída: ${r.warnings.length} alerta(s) no texto.`);
     touch();
+  };
+
+  const onProofCopy = async (value: string): Promise<void> => {
+    const ok = await copy(value);
+    setLive(ok ? 'Texto copiado.' : 'Não foi possível copiar. Selecione o texto e copie manualmente.');
   };
 
   const doClearAll = async (): Promise<void> => {
@@ -497,21 +532,6 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
     setLive('Camada da equipe removida.');
   };
 
-  const refreshUsageTotal = useCallback(async (): Promise<void> => {
-    const snap = await recorder.snapshot();
-    setUsageTotal(Object.values(snap.counts).reduce((a, b) => a + b, 0));
-  }, [recorder]);
-
-  const onExportUsage = async (): Promise<void> => {
-    const blob = new Blob([exportCounters(await recorder.snapshot())], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'contadores-de-uso.json';
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
   const applyDraft = (fields: DraftFields): void => {
     const keyOf: Record<keyof DraftFields, TextFormField> = {
       summary: 'summary', actions: 'actions', observedResult: 'observedResult', pendingItem: 'pendingItem',
@@ -533,16 +553,12 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
   };
 
   const onResetLearning = async (): Promise<void> => {
-    await learner.snapshot();
-    await store.resetLearning();
-    setLearned(emptyStats());
+    await learning.reset();
     setLive('Preferências de redação zeradas.');
   };
 
   const onResetUsage = async (): Promise<void> => {
-    await recorder.snapshot();
-    await store.resetCounters();
-    setUsageTotal(0);
+    await usageCounters.reset();
     setLive('Contadores de uso zerados.');
   };
 
@@ -609,7 +625,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
       <header className="app-header">
         <h1>Assistente de Textos do Service Desk</h1>
         <div className="row">
-          <button type="button" onClick={() => { if (!showSettings) void refreshUsageTotal(); setShowSettings((s) => !s); }} aria-expanded={showSettings}>
+          <button type="button" onClick={() => { if (!showSettings) void usageCounters.refreshTotal(); setShowSettings((s) => !s); }} aria-expanded={showSettings}>
             Configurações
           </button>
           <button type="button" className="danger" ref={clearButtonRef} onClick={() => setConfirmClear(true)}>
@@ -634,6 +650,9 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
           </button>
           <button type="button" className={mode === 'review' ? 'primary' : undefined} aria-pressed={mode === 'review'} onClick={() => setMode('review')}>
             Revisar texto pronto
+          </button>
+          <button type="button" className={mode === 'proofread' ? 'primary' : undefined} aria-pressed={mode === 'proofread'} onClick={() => setMode('proofread')}>
+            Corrigir texto
           </button>
         </div>
 
@@ -688,15 +707,26 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
             overlay={overlay}
             onImportOverlay={onImportOverlay}
             onRemoveOverlay={() => void onRemoveOverlay()}
-            usage={{ ...usage, policy: usagePolicy, total: usageTotal }}
-            learn={{ ...learning, total: Object.values(learned.counts).reduce((a, b) => a + b, 0) }}
+            usage={{ ...usage, policy: usagePolicy, total: usageCounters.total }}
+            learn={{ enabled: learning.enabled, locked: learning.locked, total: learning.total }}
+            version={extensionVersion()}
             onResetLearning={() => void onResetLearning()}
-            onExportUsage={() => void onExportUsage()}
+            onExportLearning={() => void learning.exportFile()}
+            onExportUsage={() => void usageCounters.exportFile()}
             onResetUsage={() => void onResetUsage()}
           />
         )}
 
-        {mode === 'review' ? (
+        {mode === 'proofread' ? (
+          <ProofreadMode
+            text={proofText}
+            onChange={(v) => { setProofText(v); touch(); }}
+            onClear={() => manualClear('proofread')}
+            onCopy={onProofCopy}
+            onAnnounce={setLive}
+            onEvent={(keys) => void recorder.record(keys)}
+          />
+        ) : mode === 'review' ? (
           <ReviewMode
             form={reviewForm}
             onChange={onReviewChange}
@@ -712,7 +742,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
           <h2>1. Tipo de comunicação</h2>
           <div className="field">
             <label htmlFor="type">Tipo de comunicação</label>
-            <select id="type" value={form.type} onChange={(e) => setType(e.target.value as CommunicationType)}>
+            <select id="type" ref={typeRef} value={form.type} onChange={(e) => setType(e.target.value as CommunicationType)}>
               {COMMUNICATION_TYPES.map((t) => (
                 <option key={t} value={t}>
                   {profile.categoryNames[t]}
@@ -721,6 +751,14 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
               ))}
             </select>
           </div>
+          {frequent.length > 0 && (
+            <div className="row" role="group" aria-label="Tipos que você mais usa">
+              <span className="subtle">Mais usados:</span>
+              {frequent.map((t) => (
+                <button key={t} type="button" onClick={() => onFrequentType(t)}>{profile.categoryNames[t]}</button>
+              ))}
+            </div>
+          )}
           {noResponseOff && (
             <p className="panel info" role="note">
               Este tipo está desativado pela organização. Um administrador pode habilitá-lo no perfil de linguagem
@@ -739,10 +777,11 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
             key={draftKey}
             available={new Set<ContextField>([...fields.main, ...fields.advanced])}
             internalDomains={profile.internalDomains}
-            bias={learning.enabled ? draftBias(learned) : {}}
+            bias={learning.enabled ? draftBias(learning.stats) : {}}
             onApply={applyDraft}
             onEvent={(e) => void recorder.record(e)}
-            onFixes={(fixes) => { void learner.recordFixes(fixes).then(() => learner.snapshot()).then(setLearned); }}
+            onAnnounce={setLive}
+            onFixes={learning.rememberFixes}
           />
           {fields.main.map(renderField)}
           <details>
@@ -832,6 +871,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
                   rows={14}
                   value={text}
                   autoComplete="off"
+                  spellCheck
                   aria-describedby="preview-counter"
                   onChange={(e) => {
                     setText(e.target.value);
@@ -869,6 +909,16 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
                     <button type="button" onClick={() => manualClear('all')}>Limpar agora</button>
                     <button type="button" onClick={() => setCopied('none')}>Manter</button>
                   </div>
+                  {nextSteps.length > 0 && (
+                    <div className="stack" role="group" aria-labelledby="next-step-title">
+                      <p id="next-step-title" className="subtle">Próximo passo comum neste atendimento (os campos são mantidos):</p>
+                      <div className="row">
+                        {nextSteps.map((t) => (
+                          <button key={t} type="button" onClick={() => onNextStep(t)}>Preparar: {profile.categoryNames[t]}</button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
               {copied === 'fail' && <p role="alert" className="error-text">Não foi possível copiar automaticamente. Selecione o texto da prévia e copie manualmente.</p>}

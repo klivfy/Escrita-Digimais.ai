@@ -9,3 +9,12 @@ export async function openSidePanel(): Promise<boolean> {
     return false;
   }
 }
+
+/** Versão da extensão instalada (do manifest). Vazio fora do navegador. */
+export function extensionVersion(): string {
+  try {
+    return chrome.runtime?.getManifest?.().version ?? '';
+  } catch {
+    return '';
+  }
+}

@@ -33,6 +33,8 @@ const TEXT_PAIRS: [string, string][] = [
 // Contornos de controles, indicador de foco e erro de campo (WCAG 1.4.11).
 const COMPONENT_PAIRS: [string, string][] = [
   ['outline', 'surface'], ['primary', 'surface'], ['error', 'surface'], ['outline', 'surface-container-high'],
+  // Botão principal sobre o painel informativo ("Preencher o formulário").
+  ['primary', 'primary-container'],
 ];
 
 describe.each(Object.entries(themes))('contraste WCAG 2.1 AA, tema %s', (_name, tokens) => {

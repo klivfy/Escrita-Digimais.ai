@@ -1,4 +1,5 @@
-import { COMMUNICATION_TYPES } from '../domain/types';
+import { PROOFREAD_RULES } from '../domain/proofread';
+import { COMMUNICATION_TYPES, RECIPIENTS } from '../domain/types';
 
 /**
  * Contadores de uso agregados, sem conteúdo. Servem para medir se a ferramenta ajuda (quais tipos são usados,
@@ -26,6 +27,12 @@ export const FIXED_KEYS: readonly string[] = [
   'draft_split',
   'draft_apply',
   ...TIME_BUCKETS.map((b) => `time_to_copy.${b}`),
+  ...RECIPIENTS.map((r) => `recipient.${r}`),
+  'proofread.run',
+  ...PROOFREAD_RULES.flatMap((r) => [`proofread.${r}.acc`, `proofread.${r}.ign`]),
+  'next_step.shown',
+  'next_step.used',
+  'shortcut.type',
 ];
 
 const FIXED_SET = new Set(FIXED_KEYS);
