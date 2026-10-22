@@ -159,7 +159,6 @@ for (const e of gold.erros) {
   else { r.nada++; falhas.push({ cat: e.cat, entrada: e.entrada, obtido: '(sem sugestão)', esperado: e.esperado }); }
 }
 
-const limpos = [...gold.limpos];
 const blocks = [...readFileSync(amostrasPath, 'utf8').matchAll(/```text\n([\s\S]*?)```/g)].map((m) => m[1]);
 const fpGold = gold.limpos.map((t) => ({ t, ed: suggest(t) })).filter((x) => x.ed.length);
 const fpAmostras = blocks.map((t) => ({ t, ed: suggest(t) })).filter((x) => x.ed.length);

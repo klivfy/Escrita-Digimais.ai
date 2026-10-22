@@ -180,7 +180,7 @@ export function SettingsPanel({
       <fieldset className="stack">
         <legend className="legend">Perfil de linguagem</legend>
         <p>
-          Versão <strong>{profile.profileVersion}</strong>
+          Versão do perfil <strong>{profile.profileVersion}</strong>
           {profile.organizationName && <> da organização <strong>{profile.organizationName}</strong></>}. Origem: {SOURCE_LABEL[profileSource]}.
         </p>
         <p className="subtle">
