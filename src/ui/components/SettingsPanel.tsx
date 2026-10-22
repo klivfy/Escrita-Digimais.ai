@@ -124,8 +124,9 @@ export function SettingsPanel({
       <fieldset className="stack">
         <legend className="legend">Contadores de uso (opcional)</legend>
         <p className="subtle">
-          Guardam apenas números por categoria, como quantos textos de cada tipo foram gerados, quantos foram bloqueados
-          e em que faixa de tempo o texto foi copiado. Nunca guardam o que você digita, datas de cada uso ou dados de
+          Guardam apenas números por categoria, como quantos textos de cada tipo e para cada destinatário foram gerados,
+          quantos foram bloqueados, em que faixa de tempo o texto foi copiado, quantas sugestões de correção foram aceitas ou
+          ignoradas por regra e quantas vezes os atalhos foram usados. Nunca guardam o que você digita, datas de cada uso ou dados de
           chamados. Ficam somente neste navegador e só saem se você exportar o arquivo.
         </p>
         {usage.locked ? (
@@ -154,7 +155,7 @@ export function SettingsPanel({
         <legend className="legend">Aprender minhas preferências de redação (opcional)</legend>
         <p className="subtle">
           Quando ligado, a extensão passa a mostrar primeiro as aberturas, fechos e frases de ligação que você mantém e
-          a evitar as que você troca. Também aprende com as correções que você faz ao dividir uma anotação livre. Guarda apenas números (qual das redações prontas foi usada, ou de qual campo para qual um trecho foi movido), nunca o que você
+          a evitar as que você troca. Também aprende com as correções que você faz ao dividir uma anotação livre, com os tipos de texto que você mais copia (atalho "Mais usados") e com o próximo passo que você escolhe depois de copiar. Guarda apenas números (qual das redações prontas foi usada, de qual campo para qual um trecho foi movido, quantas vezes copiou cada tipo e qual passo escolheu depois), nunca o que você
           digita nem o texto gerado. Fica somente neste navegador e você pode zerar a qualquer momento.
         </p>
         {learn.locked ? (

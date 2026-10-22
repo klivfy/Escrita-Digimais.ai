@@ -10,7 +10,8 @@ import { PROOFREAD_DOMAIN_TERMS, PROOFREAD_LIMITS } from '../config/proofread/ru
 import { checkAgreement } from './agreement';
 import { FUTURE_FIRST_PERSON, PARTICIPLE_OPENERS, PAST_FIRST_PERSON, POSSESSIVES } from '../config/voice-lists';
 
-export type ProofreadRule = 'acento' | 'grafia' | 'concordancia' | 'crase' | 'uso';
+export const PROOFREAD_RULES = ['acento', 'grafia', 'concordancia', 'crase', 'uso'] as const;
+export type ProofreadRule = (typeof PROOFREAD_RULES)[number];
 
 /** Regras de ortografia (camada 1): trocas de baixo risco, que "Aceitar acentos e grafia" aplica de uma vez. */
 export const SPELLING_RULES: ReadonlySet<ProofreadRule> = new Set<ProofreadRule>(['acento', 'grafia']);
@@ -33,7 +34,7 @@ export interface FreqIndex {
   byStripped: ReadonlyMap<string, readonly string[]>;
 }
 
-const strip = (s: string): string => s.normalize('NFD').replace(/\p{Mn}/gu, '').toLowerCase();
+export const strip = (s: string): string => s.normalize('NFD').replace(/\p{Mn}/gu, '').toLowerCase();
 
 /** Palavras que o próprio produto escreve e que são corretas, mesmo quando raras na lista geral. */
 const PRODUCT_WORDS: ReadonlySet<string> = new Set(
@@ -86,7 +87,7 @@ function candidates(lower: string, index: FreqIndex): string[] {
 const WORD = /\p{L}[\p{L}\p{N}_'’-]*/gu;
 
 /** Siglas, códigos, nomes próprios no meio da frase, caminhos e termos de TI não são verificados. */
-function ignorable(word: string, start: number, text: string): boolean {
+export function ignorable(word: string, start: number, text: string): boolean {
   if (/\p{Nd}/u.test(word)) return true;
   if (text[start + word.length] === '@') return true;
   if (/^[A-ZÀ-Ú]{2,}$/.test(word)) return true;
@@ -109,7 +110,7 @@ function best(options: string[], zipf: ReadonlyMap<string, number>): string {
   });
 }
 
-function keepCase(original: string, replacement: string): string {
+export function keepCase(original: string, replacement: string): string {
   return /^\p{Lu}/u.test(original) ? replacement.charAt(0).toLocaleUpperCase('pt-BR') + replacement.slice(1) : replacement;
 }
 

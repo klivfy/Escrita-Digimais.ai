@@ -9,6 +9,8 @@ interface Props {
   onClear: () => void;
   onCopy: (text: string) => Promise<void>;
   onAnnounce: (message: string) => void;
+  /** Contadores de uso (sem conteúdo): verificação feita, sugestão aceita ou ignorada por regra. */
+  onEvent?: (keys: string[]) => void;
   /** Carrega a lista de palavras. Padrão: a lista do pacote. Existe para os testes. */
   loadIndex?: () => Promise<FreqIndex>;
 }
@@ -28,7 +30,7 @@ const plural = (n: number, one: string, many: string): string => `${n} ${n === 1
  * Corrige acento e grafia de palavras comuns. Só sugere: cada troca exige uma ação do analista, e a anterior pode ser
  * desfeita. O texto vive apenas em memória (no App) e some com "Limpar tudo" ou por inatividade.
  */
-export function ProofreadMode({ text, onChange, onClear, onCopy, onAnnounce, loadIndex = loadFreqIndex }: Props) {
+export function ProofreadMode({ text, onChange, onClear, onCopy, onAnnounce, onEvent = () => {}, loadIndex = loadFreqIndex }: Props) {
   const [checked, setChecked] = useState<{ text: string; suggestions: ProofreadSuggestion[] } | null>(null);
   const [ignored, setIgnored] = useState<ReadonlySet<string>>(new Set());
   const [previous, setPrevious] = useState<string | null>(null);
@@ -79,6 +81,7 @@ export function ProofreadMode({ text, onChange, onClear, onCopy, onAnnounce, loa
     setLoading(false);
     setIgnored(new Set());
     const found = run(text, new Set(), indexRef.current);
+    onEvent(['proofread.run']);
     focusAt.current = -1;
     onAnnounce(found.length ? `${plural(found.length, 'sugestão encontrada', 'sugestões encontradas')}. Confira cada uma antes de aceitar.` : 'Nenhuma sugestão.');
   };
@@ -86,6 +89,7 @@ export function ProofreadMode({ text, onChange, onClear, onCopy, onAnnounce, loa
   const accept = (index: number): void => {
     if (!current || !indexRef.current) return;
     const s = current[index];
+    onEvent([`proofread.${s.rule}.acc`]);
     const next = applySuggestion(text, s);
     setPrevious(text);
     onChange(next);
@@ -98,6 +102,7 @@ export function ProofreadMode({ text, onChange, onClear, onCopy, onAnnounce, loa
   const spelling = current?.filter((s) => SPELLING_RULES.has(s.rule)) ?? [];
   const acceptSpelling = (): void => {
     if (!spelling.length || !indexRef.current) return;
+    onEvent(spelling.map((s) => `proofread.${s.rule}.acc`));
     const next = applySuggestions(text, spelling);
     setPrevious(text);
     onChange(next);
@@ -108,6 +113,7 @@ export function ProofreadMode({ text, onChange, onClear, onCopy, onAnnounce, loa
 
   const ignore = (index: number): void => {
     if (!current || !indexRef.current) return;
+    onEvent([`proofread.${current[index].rule}.ign`]);
     const word = current[index].original.toLocaleLowerCase('pt-BR');
     const skip = new Set(ignored).add(word);
     setIgnored(skip);

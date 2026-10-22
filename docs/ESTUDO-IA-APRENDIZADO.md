@@ -159,6 +159,27 @@ Nenhuma dessas peças pede permissão nova ao manifest. A Prompt API e a Proofre
 - O LanguageTool foi medido sem os 8 GB de n-gramas e sem as regras da versão paga; com eles, a cobertura de palavras confundíveis melhora, mas o custo e a rede continuam.
 - O Aion-1.0-Instruct não estava publicado no Hugging Face na data do estudo e não foi medido.
 
+## 11. Implementação das fases 1 e 2 (22/10/2026)
+
+### Fase 1: aprender com o uso, sem conteúdo
+
+- **Contadores (opt-in, `application/usage-counters.ts`):** destinatário de cada geração (`recipient.<destinatário>`), verificações do modo "Corrigir texto" (`proofread.run`), sugestões aceitas e ignoradas por regra (`proofread.<regra>.acc|ign`), atalho de próximo passo exibido e usado (`next_step.shown`, `next_step.used`) e atalho de tipo usado (`shortcut.type`). Todas são chaves fechadas.
+- **Aprendizado (opt-in, `application/style-learning.ts`):** `use.<tipo>` a cada texto copiado (uma vez por geração) e `seq.<tipo>.<tipo>` quando o analista escolhe um próximo passo. Esquecimento gradual igual ao das outras chaves.
+- **Sequência de diálogo:** passos comuns em `config/dialogue.ts`, filtrados por `domain/dialogue.ts` (sem o próprio tipo e sem tipos desativados pela organização). Depois de copiar, o painel mostra até dois passos ("Preparar: Comunicar andamento"). Escolher troca o tipo, mantém os campos, leva o foco ao tipo e anuncia a mudança. Com aprendizado, a ordem segue o que o analista escolhe.
+- **Mais usados:** com aprendizado e pelo menos 3 cópias de um tipo, até três tipos aparecem como atalho abaixo do seletor.
+- **Testes:** `src/tests/usage-learning.test.tsx` cobre chaves, ordenação, esquecimento, tipos desativados, o fluxo na interface e prova que nenhum texto vai para o armazenamento.
+
+### Fase 2: travas para IA, sem chamar IA
+
+`src/domain/ai-guard.ts`, limites em `src/config/ai-guard.ts`, testes em `src/tests/ai-guard.test.ts`.
+
+| Trava | Medida com saídas gravadas | Resultado |
+|---|---|---|
+| `guardCorrections` (correções do modelo) | Phi-4-mini nos conjuntos gold e gold-novo | 67 das 93 trocas esperadas passam, 0 troca errada passa, 0 mudança nas 55 frases corretas. O modelo sozinho propôs mais de 10 trocas erradas |
+| `checkFacts` (reescritas) | 21 reescritas da rodada 2 (três modelos) | Barra as 7 violações claras da leitura humana: solução afirmada (2), compromisso novo ou retirado (2), concordância em nome do gestor, "ainda não enviou" sem esse dado e "2º andar" vazado do exemplo. Reescritas fiéis passam |
+
+Limites conhecidos da trava de fatos: não percebe troca de dono de uma ação ("validar com o usuário" virando "validar com você"), afirmação nova sem palavra-chave ("precisamos de mais acesso") nem formato inadequado (reescrita que vira lista de campos). Por isso a reescrita, quando existir, continua sendo alternativa que o analista lê antes de copiar. Também barra mudanças inofensivas, como trocar a sigla "AD" por "Active Directory": preferimos recusar uma reescrita boa a deixar passar um fato alterado.
+
 ## Fontes
 
 - [Proofreader API, Microsoft Edge (atualizado em 02/09/2026)](https://learn.microsoft.com/en-us/microsoft-edge/web-platform/proofreader-api)

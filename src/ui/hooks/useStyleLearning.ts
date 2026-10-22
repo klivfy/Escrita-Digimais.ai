@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { emptyStats, exportLearning, StyleLearner } from '../../application/style-learning';
+import { emptyStats, exportLearning, recordStep, recordUse, StyleLearner } from '../../application/style-learning';
 import type { LearnedStats } from '../../application/style-learning';
 import type { UsagePolicy } from '../../application/usage-counters';
 import type { AppStorage } from '../../infrastructure/storage';
-import type { GenerationResult } from '../../domain/types';
+import type { CommunicationType, GenerationResult } from '../../domain/types';
 import { downloadJson } from '../download';
 
 /**
@@ -57,10 +57,28 @@ export function useStyleLearning(store: AppStorage, userOptIn: boolean, usagePol
     [remember],
   );
 
+  /** Texto copiado: conta o tipo uma vez por geração, para a lista de tipos mais usados. */
+  const usedAt = useRef(0);
+  const rememberUse = useCallback(
+    (generationId: number, type: CommunicationType): void => {
+      if (usedAt.current === generationId) return;
+      usedAt.current = generationId;
+      void learner.recordUsage((st) => recordUse(st, type)).then(() => learner.snapshot()).then(setStats);
+    },
+    [learner],
+  );
+  /** Próximo passo escolhido depois de copiar um texto do tipo `from`. */
+  const rememberStep = useCallback(
+    (from: CommunicationType, to: CommunicationType): void => {
+      void learner.recordUsage((st) => recordStep(st, from, to)).then(() => learner.snapshot()).then(setStats);
+    },
+    [learner],
+  );
+
   const exportFile = useCallback(async (): Promise<void> => {
     downloadJson('aprendizado-de-redacao.json', exportLearning(await learner.snapshot()));
   }, [learner]);
 
   const total = Object.values(stats.counts).reduce((a, b) => a + b, 0);
-  return { enabled, locked, stats, setStats, total, previousShown, setShown, acceptOnce, remember, rememberFixes, reset, exportFile };
+  return { enabled, locked, stats, setStats, total, previousShown, setShown, acceptOnce, remember, rememberFixes, rememberUse, rememberStep, reset, exportFile };
 }

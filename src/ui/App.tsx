@@ -2,7 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { emptyContent, initialForm, TEXT_FORM_FIELDS, toGenerationInput } from '../application/form';
 import type { FormState, TextFormField } from '../application/form';
 import { DEFAULT_PREFERENCES } from '../application/preferences';
-import { acceptedEvents, draftBias, preferredIndexes, rejectedEvents } from '../application/style-learning';
+import { acceptedEvents, draftBias, frequentTypes, preferredIndexes, rankNextSteps, rejectedEvents } from '../application/style-learning';
+import { MAX_NEXT_STEPS } from '../config/dialogue';
+import { nextStepCandidates } from '../domain/dialogue';
 import { generationKeys, timeBucket } from '../application/usage-counters';
 import type { UsagePolicy } from '../application/usage-counters';
 import type { Preferences } from '../application/preferences';
@@ -126,6 +128,9 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
   const previewRef = useRef<HTMLTextAreaElement>(null);
   const confirmRef = useRef<HTMLElement>(null);
   const clearButtonRef = useRef<HTMLButtonElement>(null);
+  const typeRef = useRef<HTMLSelectElement>(null);
+  // Tipo do último texto copiado: base do atalho de próximo passo.
+  const [copiedType, setCopiedType] = useState<CommunicationType | null>(null);
   const generatedAt = useRef(0);
   const usageCounters = useUsageCounters(store, usagePolicy, prefs.usageCounters);
   const { recorder, mode: usage } = usageCounters;
@@ -318,6 +323,35 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
     touch();
   };
 
+  const disabledTypes = useMemo(
+    () => new Set<CommunicationType>(profile.closureRules.noResponseEnabled ? [] : ['closure_no_response']),
+    [profile.closureRules.noResponseEnabled],
+  );
+  const nextSteps = copiedType
+    ? (learning.enabled ? rankNextSteps(learning.stats, copiedType, nextStepCandidates(copiedType, disabledTypes)) : nextStepCandidates(copiedType, disabledTypes)).slice(0, MAX_NEXT_STEPS)
+    : [];
+  const frequent = learning.enabled ? frequentTypes(learning.stats, form.type).filter((t) => !disabledTypes.has(t)) : [];
+
+  /** Atalho: troca o tipo mantendo os campos preenchidos, e leva o foco ao seletor de tipo. */
+  const switchType = (type: CommunicationType, message: string): void => {
+    setType(type);
+    setCopied('none');
+    setCopiedType(null);
+    typeRef.current?.focus();
+    setLive(message);
+  };
+
+  const onNextStep = (to: CommunicationType): void => {
+    if (copiedType) learning.rememberStep(copiedType, to);
+    void recorder.record('next_step.used');
+    switchType(to, `Tipo alterado para ${profile.categoryNames[to]}. Os campos foram mantidos: revise e gere a prévia.`);
+  };
+
+  const onFrequentType = (to: CommunicationType): void => {
+    void recorder.record('shortcut.type');
+    switchType(to, `Tipo alterado para ${profile.categoryNames[to]}.`);
+  };
+
   const setType = (type: CommunicationType): void => {
     setForm((f) => ({ ...f, type, variant: 0 }));
     setResult(null);
@@ -357,7 +391,9 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
     setBusy(false);
     generatedAt.current = Date.now();
     void recorder.record(
-      isVariant ? ['variant'] : generationKeys(next.type, r.blocked ? r.blockReason : undefined, r.warnings.map((w) => w.code)),
+      isVariant
+        ? ['variant']
+        : [...generationKeys(next.type, r.blocked ? r.blockReason : undefined, r.warnings.map((w) => w.code)), ...(r.blocked ? [] : [`recipient.${next.recipient}`])],
     );
     if (r.blocked) setLive('Geração bloqueada. O motivo está na seção de prévia e revisão.');
     else setLive(`Prévia gerada com ${r.warnings.length} alerta(s). Revise antes de copiar.`);
@@ -384,6 +420,11 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
     const ok = await copy(text);
     setCopied(ok ? 'ok' : 'fail');
     if (ok) void recorder.record(['copy', `time_to_copy.${timeBucket(Date.now() - generatedAt.current)}`]);
+    if (ok) {
+      learning.rememberUse(generatedAt.current, form.type);
+      setCopiedType(form.type);
+      if (nextStepCandidates(form.type, disabledTypes).length) void recorder.record('next_step.shown');
+    }
     if (ok && result?.choices) {
       const choices = result.choices;
       learning.acceptOnce(generatedAt.current, () => acceptedEvents(choices, form.type, form.formality));
@@ -683,6 +724,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
             onClear={() => manualClear('proofread')}
             onCopy={onProofCopy}
             onAnnounce={setLive}
+            onEvent={(keys) => void recorder.record(keys)}
           />
         ) : mode === 'review' ? (
           <ReviewMode
@@ -700,7 +742,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
           <h2>1. Tipo de comunicação</h2>
           <div className="field">
             <label htmlFor="type">Tipo de comunicação</label>
-            <select id="type" value={form.type} onChange={(e) => setType(e.target.value as CommunicationType)}>
+            <select id="type" ref={typeRef} value={form.type} onChange={(e) => setType(e.target.value as CommunicationType)}>
               {COMMUNICATION_TYPES.map((t) => (
                 <option key={t} value={t}>
                   {profile.categoryNames[t]}
@@ -709,6 +751,14 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
               ))}
             </select>
           </div>
+          {frequent.length > 0 && (
+            <div className="row" role="group" aria-label="Tipos que você mais usa">
+              <span className="subtle">Mais usados:</span>
+              {frequent.map((t) => (
+                <button key={t} type="button" onClick={() => onFrequentType(t)}>{profile.categoryNames[t]}</button>
+              ))}
+            </div>
+          )}
           {noResponseOff && (
             <p className="panel info" role="note">
               Este tipo está desativado pela organização. Um administrador pode habilitá-lo no perfil de linguagem
@@ -859,6 +909,16 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
                     <button type="button" onClick={() => manualClear('all')}>Limpar agora</button>
                     <button type="button" onClick={() => setCopied('none')}>Manter</button>
                   </div>
+                  {nextSteps.length > 0 && (
+                    <div className="stack" role="group" aria-labelledby="next-step-title">
+                      <p id="next-step-title" className="subtle">Próximo passo comum neste atendimento (os campos são mantidos):</p>
+                      <div className="row">
+                        {nextSteps.map((t) => (
+                          <button key={t} type="button" onClick={() => onNextStep(t)}>Preparar: {profile.categoryNames[t]}</button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
               {copied === 'fail' && <p role="alert" className="error-text">Não foi possível copiar automaticamente. Selecione o texto da prévia e copie manualmente.</p>}

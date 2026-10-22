@@ -120,6 +120,9 @@ O botão “Corrigir texto” abre um modo que sugere correções em duas camada
 
 Limites: não é revisão gramatical completa e deixa passar muitos erros (só substantivos do léxico em `src/config/proofread/agreement-lexicon.ts` entram nas regras; nomes de pessoa ficam sem regra de gênero). Siglas, códigos, caminhos, e-mails, nomes próprios no meio da frase e termos de TI são ignorados. A lista de palavras (cerca de 1 MB) fica em arquivo separado e só é carregada na primeira verificação. Os campos de texto também pedem a verificação do próprio navegador em português. O texto nunca é enviado nem salvo. Medidas e limites em `docs/ESTUDO-CORRECAO-TEXTO.md`.
 
+### Próximo passo e tipos mais usados
+Depois de copiar um texto, o painel sugere até dois próximos passos comuns daquele atendimento (por exemplo, depois de "Solicitar informações": "Comunicar andamento" ou "Registrar pendência"). Escolher um passo troca o tipo e mantém os campos preenchidos para revisão; nada é gerado nem copiado sozinho. Os passos ficam em `src/config/dialogue.ts` e respeitam os tipos desativados pela organização. Com "Aprender com as redações que eu mantenho" ligado, a extensão reordena os passos pelo que o analista costuma escolher e mostra, abaixo do tipo, os tipos que ele mais copia ("Mais usados"). Só contagens são guardadas (`use.<tipo>` e `seq.<tipo>.<tipo>`), nunca texto.
+
 ### Revisar um texto pronto
 O botão “Revisar texto pronto” abre um modo só de revisão: cole um texto que você já escreveu, escolha o tipo e o destinatário e receba alertas, sugestões e indicadores pelas mesmas regras locais. O texto nunca é alterado, enviado ou salvo. O contexto opcional (evidência registrada, confirmação do usuário, prazo já definido) evita alertas indevidos, porque o revisor não vê o chamado.
 
