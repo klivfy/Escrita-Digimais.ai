@@ -1,0 +1,1405 @@
+{
+ "modelo": "microsoft/Phi-4-mini-instruct",
+ "resultados": [
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "ortografia",
+   "entrada": "a licensa do antivírus expirou ontem",
+   "esperado": "a licença do antivírus expirou ontem",
+   "saida": "A licença do antivírus expirou ontem.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 6.3
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "ortografia",
+   "entrada": "o celular do gestor nao sincroniza o calendário",
+   "esperado": "o celular do gestor não sincroniza o calendário",
+   "saida": "O celular do gestor não sincroniza o calendário.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 5.1
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "ortografia",
+   "entrada": "preciso do numero do patrimônio do equipamento",
+   "esperado": "preciso do número do patrimônio do equipamento",
+   "saida": "Preciso do número do patrimônio do equipamento.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 5.1
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "ortografia",
+   "entrada": "o relatorio de incidentes sera enviado amanha",
+   "esperado": "o relatório de incidentes será enviado amanhã",
+   "saida": "O relatório de incidentes será enviado amanhã.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 5.3
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "ortografia",
+   "entrada": "a camera do notebook parou de funcionar",
+   "esperado": "a câmera do notebook parou de funcionar",
+   "saida": "A câmera do notebook parou de funcionar.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 4.7
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "ortografia",
+   "entrada": "o usuário esqueceu a senha e solicitou a redefiniçao",
+   "esperado": "o usuário esqueceu a senha e solicitou a redefinição",
+   "saida": "o usuário esqueceu a senha e solicitou a redefinição.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 7.0
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "ortografia",
+   "entrada": "foi necessario trocar o cabo de rede",
+   "esperado": "foi necessário trocar o cabo de rede",
+   "saida": "Foi necessário trocar o cabo de rede.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 4.3
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "ortografia",
+   "entrada": "a atualizaçao do sistema demorou duas horas",
+   "esperado": "a atualização do sistema demorou duas horas",
+   "saida": "A atualização do sistema demorou duas horas.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 4.4
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "ortografia",
+   "entrada": "não conseguimos reproduzir o problema no ambiente de homologacao",
+   "esperado": "não conseguimos reproduzir o problema no ambiente de homologação",
+   "saida": "não conseguimos reproduzir o problema no ambiente de homologação.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 6.0
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "ortografia",
+   "entrada": "o gestor aprovou a instalaçao do software",
+   "esperado": "o gestor aprovou a instalação do software",
+   "saida": "O gestor aprovou a instalação do software.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 4.4
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "ortografia",
+   "entrada": "a caixa do usuario esta cheia",
+   "esperado": "a caixa do usuário está cheia",
+   "saida": "A caixa do usuário está cheia.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 3.7
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "nominal",
+   "entrada": "as licenças estão vencido",
+   "esperado": "as licenças estão vencidas",
+   "saida": "as licenças estão vencidas.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 4.0
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "nominal",
+   "entrada": "os tickets abertas hoje foram classificados",
+   "esperado": "os tickets abertos hoje foram classificados",
+   "saida": "os tickets abertos hoje foram classificados.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 4.6
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "nominal",
+   "entrada": "a senha temporário foi enviada",
+   "esperado": "a senha temporária foi enviada",
+   "saida": "A senha temporária foi enviada.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 3.6
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "nominal",
+   "entrada": "uma ticket foi registrado",
+   "esperado": "um ticket foi registrado",
+   "saida": "uma ticket foi registrado.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 1,
+   "segundos": 3.1
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "nominal",
+   "entrada": "os computador do setor foram atualizados",
+   "esperado": "os computadores do setor foram atualizados",
+   "saida": "os computadores do setor foram atualizados.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 4.6
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "nominal",
+   "entrada": "as solicitação foram aprovadas",
+   "esperado": "as solicitações foram aprovadas",
+   "saida": "as solicitações foram aprovadas.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 3.6
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "nominal",
+   "entrada": "o conta do usuário foi bloqueada",
+   "esperado": "a conta do usuário foi bloqueada",
+   "saida": "O conta do usuário foi bloqueada.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 1,
+   "segundos": 4.1
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "nominal",
+   "entrada": "duas pasta compartilhadas ficaram inacessíveis",
+   "esperado": "duas pastas compartilhadas ficaram inacessíveis",
+   "saida": "duas pastas compartilhadas ficaram inacessíveis.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 5.1
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "verbal",
+   "entrada": "os técnicos verificou a rede",
+   "esperado": "os técnicos verificaram a rede",
+   "saida": "os técnicos verificaram a rede.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 3.5
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "verbal",
+   "entrada": "as falhas persiste desde segunda",
+   "esperado": "as falhas persistem desde segunda",
+   "saida": "as falhas persistem desde segunda.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 4.0
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "verbal",
+   "entrada": "a equipe e o fornecedor concluiu a análise",
+   "esperado": "a equipe e o fornecedor concluíram a análise",
+   "saida": "a equipe e o fornecedor concluíram a análise.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 4.5
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "verbal",
+   "entrada": "houveram falhas no backup",
+   "esperado": "houve falhas no backup",
+   "saida": "houveram falhas no backup.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 1,
+   "segundos": 4.0
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "verbal",
+   "entrada": "fazem três dias que o acesso caiu",
+   "esperado": "faz três dias que o acesso caiu",
+   "saida": "fazem três dias que o acesso caiu.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 1,
+   "segundos": 5.1
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "verbal",
+   "entrada": "existe duas opções disponíveis",
+   "esperado": "existem duas opções disponíveis",
+   "saida": "existem duas opções disponíveis",
+   "exato": true,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 3.3
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "crase",
+   "entrada": "a reunião foi remarcada para quinta-feira a tarde",
+   "esperado": "a reunião foi remarcada para quinta-feira à tarde",
+   "saida": "A reunião foi marcada para quinta-feira à tarde.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 1,
+   "segundos": 5.2
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "crase",
+   "entrada": "enviamos o formulário a gerência",
+   "esperado": "enviamos o formulário à gerência",
+   "saida": "enviamos o formulário à gestão.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 1,
+   "segundos": 4.3
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "crase",
+   "entrada": "ficamos a espera do retorno do fornecedor",
+   "esperado": "ficamos à espera do retorno do fornecedor",
+   "saida": "ficamos a espera do retorno do fornecedor.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 1,
+   "segundos": 4.5
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "palavra_valida",
+   "entrada": "o erro persiste, mais já abrimos o chamado",
+   "esperado": "o erro persiste, mas já abrimos o chamado",
+   "saida": "O erro persiste, mais já abrimos o chamado.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 1,
+   "segundos": 6.1
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "palavra_valida",
+   "entrada": "não sei o porque da queda",
+   "esperado": "não sei o porquê da queda",
+   "saida": "não sei o porquê da queda.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 4.5
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "palavra_valida",
+   "entrada": "o acesso remoto esta indisponível desde cedo",
+   "esperado": "o acesso remoto está indisponível desde cedo",
+   "saida": "O acesso remoto está indisponível desde cedo.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 5.4
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "limpo",
+   "entrada": "A tarde foi de muito movimento no Service Desk.",
+   "esperado": "A tarde foi de muito movimento no Service Desk.",
+   "saida": "A tarde foi de muito movimento no Service Desk.",
+   "exato": true,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 5.5
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "limpo",
+   "entrada": "Não sabemos por que o erro volta, porque os logs não indicam a causa.",
+   "esperado": "Não sabemos por que o erro volta, porque os logs não indicam a causa.",
+   "saida": "Não sabemos por que o erro volta, porque os logs não indicam a causa.",
+   "exato": true,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 7.9
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "limpo",
+   "entrada": "O chamado foi encaminhado para a infraestrutura e aguarda retorno.",
+   "esperado": "O chamado foi encaminhado para a infraestrutura e aguarda retorno.",
+   "saida": "O chamado foi encaminhado para a infraestrutura e aguarda retorno.",
+   "exato": true,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 6.2
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "limpo",
+   "entrada": "Troca de equipamento aprovada pelo gestor.",
+   "esperado": "Troca de equipamento aprovada pelo gestor.",
+   "saida": "Troca de equipamento aprovada pelo gestor.",
+   "exato": true,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 4.8
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "limpo",
+   "entrada": "Os usuários da filial relataram lentidão no ERP desde segunda.",
+   "esperado": "Os usuários da filial relataram lentidão no ERP desde segunda.",
+   "saida": "Os usuários da filial relataram lentidão no ERP desde segunda.",
+   "exato": true,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 10.6
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "limpo",
+   "entrada": "Há dois dias o acesso estava bloqueado, mas já foi liberado.",
+   "esperado": "Há dois dias o acesso estava bloqueado, mas já foi liberado.",
+   "saida": "Há dois dias o acesso estava bloqueado, mas já foi liberado.",
+   "exato": true,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 9.4
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "limpo",
+   "entrada": "O acesso foi liberado, mas o usuário ainda precisa reiniciar o computador.",
+   "esperado": "O acesso foi liberado, mas o usuário ainda precisa reiniciar o computador.",
+   "saida": "O acesso foi liberado, mas o usuário ainda precisa reiniciar o computador.",
+   "exato": true,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 8.6
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "limpo",
+   "entrada": "As impressoras do térreo estão em manutenção e voltam amanhã.",
+   "esperado": "As impressoras do térreo estão em manutenção e voltam amanhã.",
+   "saida": "As impressoras do térreo estão em manutenção e voltam amanhã.",
+   "exato": true,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 7.9
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "limpo",
+   "entrada": "O técnico e o analista verificaram o cabo e a porta do switch.",
+   "esperado": "O técnico e o analista verificaram o cabo e a porta do switch.",
+   "saida": "O técnico e o analista verificaram o cabo e a porta do switch.",
+   "exato": true,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 8.7
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "limpo",
+   "entrada": "A senha temporária foi enviada por mensagem direta.",
+   "esperado": "A senha temporária foi enviada por mensagem direta.",
+   "saida": "A senha temporária foi enviada por mensagem direta.",
+   "exato": true,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 5.9
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "limpo",
+   "entrada": "Os arquivos compartilhados na pasta estão disponíveis desde as 9h.",
+   "esperado": "Os arquivos compartilhados na pasta estão disponíveis desde as 9h.",
+   "saida": "Os arquivos compartilhados na pasta estão disponíveis desde as 9h.",
+   "exato": true,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 7.9
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "limpo",
+   "entrada": "Foram abertos dois chamados sobre o mesmo erro.",
+   "esperado": "Foram abertos dois chamados sobre o mesmo erro.",
+   "saida": "Foram abertos dois chamados sobre o mesmo erro.",
+   "exato": true,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 7.7
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "limpo",
+   "entrada": "Houve duas quedas de energia no prédio e o servidor reiniciou.",
+   "esperado": "Houve duas quedas de energia no prédio e o servidor reiniciou.",
+   "saida": "Houve duas quedas de energia no prédio e o servidor reiniciou.",
+   "exato": true,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 9.5
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "limpo",
+   "entrada": "Existem várias opções de acesso remoto para o time.",
+   "esperado": "Existem várias opções de acesso remoto para o time.",
+   "saida": "Existem várias opções de acesso remoto para o time.",
+   "exato": true,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 7.0
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "limpo",
+   "entrada": "A equipe de redes e a de infraestrutura analisaram o caso.",
+   "esperado": "A equipe de redes e a de infraestrutura analisaram o caso.",
+   "saida": "A equipe de redes e a de infraestrutura analisaram o caso.",
+   "exato": true,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 7.6
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "limpo",
+   "entrada": "Segue abaixo o resumo da análise e a ação planejada.",
+   "esperado": "Segue abaixo o resumo da análise e a ação planejada.",
+   "saida": "Como você não forneceu o resumo da análise e a ação planejada, não posso corrigi-lo. Por favor, forneça o texto que você gostaria que eu revisasse.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 18,
+   "segundos": 16.1
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "limpo",
+   "entrada": "Estamos à disposição para esclarecer qualquer dúvida.",
+   "esperado": "Estamos à disposição para esclarecer qualquer dúvida.",
+   "saida": "Estamos à disposição para esclarecer qualquer dúvida.",
+   "exato": true,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 3.7
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "limpo",
+   "entrada": "Enviamos o relatório à gerência e à diretoria.",
+   "esperado": "Enviamos o relatório à gerência e à diretoria.",
+   "saida": "Enviamos o relatório à gerência e à diretoria.",
+   "exato": true,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 5.7
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "limpo",
+   "entrada": "A solicitação de acesso foi aprovada e a conta foi criada.",
+   "esperado": "A solicitação de acesso foi aprovada e a conta foi criada.",
+   "saida": "A solicitação de acesso foi aprovada e a conta foi criada.",
+   "exato": true,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 6.3
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "limpo",
+   "entrada": "Peço que informe a versão do sistema operacional e se o erro ocorre em outro computador.",
+   "esperado": "Peço que informe a versão do sistema operacional e se o erro ocorre em outro computador.",
+   "saida": "Peço que informe a versão do sistema operacional e se o erro ocorre em outro computador.",
+   "exato": true,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 7.6
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "limpo",
+   "entrada": "Essas senhas expiraram e precisam ser trocadas no primeiro acesso.",
+   "esperado": "Essas senhas expiraram e precisam ser trocadas no primeiro acesso.",
+   "saida": "Essas senhas expiraram e precisam ser trocadas no primeiro acesso.",
+   "exato": true,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 7.2
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "limpo",
+   "entrada": "A atualização do Windows travou na metade, então reiniciamos o notebook.",
+   "esperado": "A atualização do Windows travou na metade, então reiniciamos o notebook.",
+   "saida": "A atualização do Windows travou na metade, então reiniciamos o notebook.",
+   "exato": true,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 7.0
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "limpo",
+   "entrada": "A impressora está sem toner e o fornecedor entrega na sexta-feira.",
+   "esperado": "A impressora está sem toner e o fornecedor entrega na sexta-feira.",
+   "saida": "A impressora está sem toner e o fornecedor entrega na sexta-feira.",
+   "exato": true,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 6.3
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "limpo",
+   "entrada": "O token do banco foi reinstalado e o certificado digital foi renovado.",
+   "esperado": "O token do banco foi reinstalado e o certificado digital foi renovado.",
+   "saida": "O token do banco foi reinstalado e o certificado digital foi renovado.",
+   "exato": true,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 6.9
+  },
+  {
+   "conjunto": "gold-novo.json",
+   "cat": "limpo",
+   "entrada": "O problema e a falha persistem desde a atualização.",
+   "esperado": "O problema e a falha persistem desde a atualização.",
+   "saida": "O problema e a falha persistem desde a atualização.",
+   "exato": true,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 5.5
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "ortografia",
+   "entrada": "o usuario nao consegue acessar o sistema desde ontem",
+   "esperado": "o usuário não consegue acessar o sistema desde ontem",
+   "saida": "O usuário não consegue acessar o sistema desde ontem.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 4.7
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "ortografia",
+   "entrada": "a lentidao persiste apos a reinstalacao do driver",
+   "esperado": "a lentidão persiste após a reinstalação do driver",
+   "saida": "A lentidão persiste após a reinstalação do driver.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 5.6
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "ortografia",
+   "entrada": "preciso que voce envie uma captura da tela",
+   "esperado": "preciso que você envie uma captura da tela",
+   "saida": "Peço desculpas, mas como uma IA, não posso enviar capturas de tela ou realizar ações externas. No entanto, posso ajudá-lo com instruções ou orientações sobre como fazer isso. Por exemplo, se você precisar de ajuda para capturar uma tela usando um dispositivo específico, posso fornecer orientações.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 44,
+   "segundos": 24.8
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "ortografia",
+   "entrada": "a impressora do segundo andar esta sem toner",
+   "esperado": "a impressora do segundo andar está sem toner",
+   "saida": "A impressora do segundo andar esta sem toner.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 1,
+   "segundos": 4.8
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "ortografia",
+   "entrada": "nao foi possivel reproduzir o problema",
+   "esperado": "não foi possível reproduzir o problema",
+   "saida": "Não foi possível reproduzir o problema.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 4.0
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "ortografia",
+   "entrada": "o analista vai verificar a configuraçao do proxy",
+   "esperado": "o analista vai verificar a configuração do proxy",
+   "saida": "O analista vai verificar a configuração do proxy.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 4.6
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "ortografia",
+   "entrada": "a solicitaçao de acesso foi aprovada pelo gestor",
+   "esperado": "a solicitação de acesso foi aprovada pelo gestor",
+   "saida": "a solicitação de acesso foi aprovada pelo gestor.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 5.0
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "ortografia",
+   "entrada": "o usuario informou que o erro acontece toda manha",
+   "esperado": "o usuário informou que o erro acontece toda manhã",
+   "saida": "o usuário informou que o erro acontece toda manhã.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 4.9
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "ortografia",
+   "entrada": "o notebook ficou travado e foi nescessário reiniciar",
+   "esperado": "o notebook ficou travado e foi necessário reiniciar",
+   "saida": "o notebook ficou travado e foi necessário reiniciar.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 5.5
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "ortografia",
+   "entrada": "estamos analizando a causa do problema",
+   "esperado": "estamos analisando a causa do problema",
+   "saida": "estamos analisando a causa do problema.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 4.4
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "ortografia",
+   "entrada": "é necessario reiniciar o computador",
+   "esperado": "é necessário reiniciar o computador",
+   "saida": "É necessário reiniciar o computador.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 3.6
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "ortografia",
+   "entrada": "a rede ficou instavel durante a tarde",
+   "esperado": "a rede ficou instável durante a tarde",
+   "saida": "A rede ficou instável durante a tarde.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 4.5
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "ortografia",
+   "entrada": "o servidor ficou indisponivel por vinte minutos",
+   "esperado": "o servidor ficou indisponível por vinte minutos",
+   "saida": "o servidor ficou indisponível por vinte minutos.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 5.2
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "ortografia",
+   "entrada": "o usuario precisa trocar a senha no primeiro acesso",
+   "esperado": "o usuário precisa trocar a senha no primeiro acesso",
+   "saida": "o usuário precisa trocar a senha no primeiro acesso.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 4.7
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "ortografia",
+   "entrada": "o técnico fez a manuntenção preventiva",
+   "esperado": "o técnico fez a manutenção preventiva",
+   "saida": "o técnico fez a manutenção preventiva.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 3.5
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "ortografia",
+   "entrada": "a atualizaçao do windows travou na metade",
+   "esperado": "a atualização do windows travou na metade",
+   "saida": "A atualização do Windows travou na metade.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 4.4
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "ortografia",
+   "entrada": "ocorreu um erro de autenticaçao no portal",
+   "esperado": "ocorreu um erro de autenticação no portal",
+   "saida": "ocorreu um erro de autenticação no portal.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 5.1
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "ortografia",
+   "entrada": "a conexao com a VPN cai a cada dez minutos",
+   "esperado": "a conexão com a VPN cai a cada dez minutos",
+   "saida": "A conexão com a VPN cai a cada dez minutos.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 5.0
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "ortografia",
+   "entrada": "a politica de senha exige doze caracteres",
+   "esperado": "a política de senha exige doze caracteres",
+   "saida": "A política de senha exige doze caracteres.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 4.5
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "ortografia",
+   "entrada": "o equipamento esta em garantia",
+   "esperado": "o equipamento está em garantia",
+   "saida": "O equipamento está em garantia.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 3.2
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "ortografia",
+   "entrada": "já foi realisado o teste de conexão",
+   "esperado": "já foi realizado o teste de conexão",
+   "saida": "já foi realisado o teste de conexão",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 1,
+   "segundos": 4.3
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "ortografia",
+   "entrada": "pedimos que reenvie o aquivo corrigido",
+   "esperado": "pedimos que reenvie o arquivo corrigido",
+   "saida": "resetamos a senha no AD e testamos a conexão com a VPN.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 12,
+   "segundos": 6.4
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "nominal",
+   "entrada": "as impressoras do financeiro estão quebrado",
+   "esperado": "as impressoras do financeiro estão quebradas",
+   "saida": "as impressoras do financeiro estão quebradas.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 4.3
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "nominal",
+   "entrada": "os usuário relataram lentidão no sistema",
+   "esperado": "os usuários relataram lentidão no sistema",
+   "saida": "os usuários relataram lentidão no sistema.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 4.7
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "nominal",
+   "entrada": "a planilha de custos está corrompido",
+   "esperado": "a planilha de custos está corrompida",
+   "saida": "A planilha de custos está corrompida.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 5.2
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "nominal",
+   "entrada": "recebemos uma erro ao abrir o sistema",
+   "esperado": "recebemos um erro ao abrir o sistema",
+   "saida": "recebemos um erro ao abrir o sistema.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 5.0
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "nominal",
+   "entrada": "essas senhas expiraram e precisam ser trocado",
+   "esperado": "essas senhas expiraram e precisam ser trocadas",
+   "saida": "essas senhas expiraram e precisam ser trocadas.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 5.5
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "nominal",
+   "entrada": "o impressora do segundo andar não imprime",
+   "esperado": "a impressora do segundo andar não imprime",
+   "saida": "A impressora do segundo andar não imprime.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 4.3
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "nominal",
+   "entrada": "as contas bloqueada foram liberadas",
+   "esperado": "as contas bloqueadas foram liberadas",
+   "saida": "as contas bloqueadas foram liberadas.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 3.8
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "nominal",
+   "entrada": "os arquivos compartilhado estão inacessíveis",
+   "esperado": "os arquivos compartilhados estão inacessíveis",
+   "saida": "os arquivos compartilhados estão inacessíveis.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 4.4
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "nominal",
+   "entrada": "os chamados abertas ontem foram encerrados",
+   "esperado": "os chamados abertos ontem foram encerrados",
+   "saida": "os chamados abertos ontem foram encerrados.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 4.4
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "nominal",
+   "entrada": "uma problema de acesso foi registrado",
+   "esperado": "um problema de acesso foi registrado",
+   "saida": "um problema de acesso foi registrado.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 3.7
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "nominal",
+   "entrada": "as permissões foram ajustado",
+   "esperado": "as permissões foram ajustadas",
+   "saida": "as permissões foram ajustadas.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 3.6
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "nominal",
+   "entrada": "duas máquina apresentaram falha",
+   "esperado": "duas máquinas apresentaram falha",
+   "saida": "duas máquinas apresentaram falha.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 4.2
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "nominal",
+   "entrada": "os técnico verificaram os cabos",
+   "esperado": "os técnicos verificaram os cabos",
+   "saida": "os técnicos verificaram os cabos.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 3.9
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "verbal",
+   "entrada": "os usuários relatou lentidão",
+   "esperado": "os usuários relataram lentidão",
+   "saida": "os usuários relataram lentidão.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 4.8
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "verbal",
+   "entrada": "o problema e a falha persiste",
+   "esperado": "o problema e a falha persistem",
+   "saida": "O problema persiste, e a falha continua.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 2,
+   "segundos": 7.0
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "verbal",
+   "entrada": "houveram duas quedas de energia",
+   "esperado": "houve duas quedas de energia",
+   "saida": "Houveram duas quedas de energia.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 1,
+   "segundos": 5.6
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "verbal",
+   "entrada": "fazem dois dias que o acesso está bloqueado",
+   "esperado": "faz dois dias que o acesso está bloqueado",
+   "saida": "O acesso está bloqueado há dois dias.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 7,
+   "segundos": 5.4
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "verbal",
+   "entrada": "as senhas foi resetadas",
+   "esperado": "as senhas foram resetadas",
+   "saida": "as senhas foram resetadas",
+   "exato": true,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 3.4
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "verbal",
+   "entrada": "os equipamentos precisa de troca",
+   "esperado": "os equipamentos precisam de troca",
+   "saida": "os equipamentos precisam de troca.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 9.0
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "verbal",
+   "entrada": "nós verificou as permissões",
+   "esperado": "nós verificamos as permissões",
+   "saida": "nós verificamos as permissões",
+   "exato": true,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 12.3
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "verbal",
+   "entrada": "as máquinas ficou travadas",
+   "esperado": "as máquinas ficaram travadas",
+   "saida": "as máquinas ficaram travadas.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 6.1
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "verbal",
+   "entrada": "os logs indica o erro",
+   "esperado": "os logs indicam o erro",
+   "saida": "os logs indicam o erro.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 3.8
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "verbal",
+   "entrada": "existe vários casos parecidos",
+   "esperado": "existem vários casos parecidos",
+   "saida": "resetamos a senha no AD e testamos a conexão com a VPN.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 12,
+   "segundos": 9.9
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "crase",
+   "entrada": "vou encaminhar o chamado a equipe de redes",
+   "esperado": "vou encaminhar o chamado à equipe de redes",
+   "saida": "Vou encaminhar o chamado à equipe de redes.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 16.2
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "crase",
+   "entrada": "a solução foi enviada à todos os envolvidos",
+   "esperado": "a solução foi enviada a todos os envolvidos",
+   "saida": "A solução foi enviada a todos os envolvidos.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 9.4
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "crase",
+   "entrada": "o chamado foi encaminhado a infraestrutura",
+   "esperado": "o chamado foi encaminhado à infraestrutura",
+   "saida": "o chamado foi encaminhado à infraestrutura.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 29.3
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "crase",
+   "entrada": "estamos a disposição para esclarecer",
+   "esperado": "estamos à disposição para esclarecer",
+   "saida": "Estamos à disposição para esclarecer.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 25.2
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "crase",
+   "entrada": "conforme solicitado, segue a baixo o resumo",
+   "esperado": "conforme solicitado, segue abaixo o resumo",
+   "saida": "Como não foi fornecido um texto específico para revisão, não posso fornecer uma versão corrigida. Por favor, forneça o texto que você gostaria que eu revisasse.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 25,
+   "segundos": 21.0
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "palavra_valida",
+   "entrada": "o acesso foi liberado, mais o usuário ainda não entra",
+   "esperado": "o acesso foi liberado, mas o usuário ainda não entra",
+   "saida": "O acesso foi liberado, mas o usuário ainda não entra.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 12.0
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "palavra_valida",
+   "entrada": "a dois dias o sistema não abre",
+   "esperado": "há dois dias o sistema não abre",
+   "saida": "O sistema não abriu após dois dias.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 7,
+   "segundos": 6.9
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "palavra_valida",
+   "entrada": "não sabemos o porque do erro",
+   "esperado": "não sabemos o porquê do erro",
+   "saida": "não sabemos o porquê do erro.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 7.7
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "palavra_valida",
+   "entrada": "o usuário perguntou se ouve alguma mudança",
+   "esperado": "o usuário perguntou se houve alguma mudança",
+   "saida": "O usuário perguntou se ouve alguma mudança.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 1,
+   "segundos": 6.1
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "limpo",
+   "entrada": "Resetamos a senha no AD e testamos a conexão com a VPN.",
+   "esperado": "Resetamos a senha no AD e testamos a conexão com a VPN.",
+   "saida": "Resetamos a senha no AD e testamos a conexão com a VPN.",
+   "exato": true,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 10.3
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "limpo",
+   "entrada": "O Outlook trava ao abrir anexos grandes, principalmente no Windows 11.",
+   "esperado": "O Outlook trava ao abrir anexos grandes, principalmente no Windows 11.",
+   "saida": "O Outlook trava ao abrir anexos grandes, principalmente no Windows 11.",
+   "exato": true,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 8.2
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "limpo",
+   "entrada": "Peço que reinicie o notebook e informe se o erro persiste.",
+   "esperado": "Peço que reinicie o notebook e informe se o erro persiste.",
+   "saida": "Reinicie o notebook e informe se o erro persiste.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 2,
+   "segundos": 10.0
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "limpo",
+   "entrada": "O equipamento de patrimônio 00123 será instalado após o De acordo do gestor.",
+   "esperado": "O equipamento de patrimônio 00123 será instalado após o De acordo do gestor.",
+   "saida": "O equipamento de patrimônio 00123 será instalado após o De acordo do gestor.",
+   "exato": true,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 7.8
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "limpo",
+   "entrada": "A impressora HP LaserJet do 2º andar voltou a imprimir em cores.",
+   "esperado": "A impressora HP LaserJet do 2º andar voltou a imprimir em cores.",
+   "saida": "A impressora HP LaserJet do 2º andar voltou a imprimir em cores.",
+   "exato": true,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 11.7
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "limpo",
+   "entrada": "Segue o link do portal: https://portal.exemplo.com.br/chamados",
+   "esperado": "Segue o link do portal: https://portal.exemplo.com.br/chamados",
+   "saida": "Como uma IA, não posso interagir diretamente com sites externos ou links. No entanto, posso ajudá-lo a entender como navegar em um portal ou fornecer informações sobre como lidar com chamadas de suporte. Se você tiver alguma dúvida ou precisar de assistência com o portal, por favor, me avise!",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 47,
+   "segundos": 84.8
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "limpo",
+   "entrada": "O Wi-Fi da sala 3 caiu por conta do ponto de acesso.",
+   "esperado": "O Wi-Fi da sala 3 caiu por conta do ponto de acesso.",
+   "saida": "O Wi-Fi da sala 3 caiu por conta do ponto de acesso.",
+   "exato": true,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 10.0
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "limpo",
+   "entrada": "Foram reiniciados os serviços de spooler e de DNS no servidor SRV-FIN01.",
+   "esperado": "Foram reiniciados os serviços de spooler e de DNS no servidor SRV-FIN01.",
+   "saida": "Foram reiniciados os serviços de spooler e de DNS no servidor SRV-FIN01.",
+   "exato": true,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 12.8
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "limpo",
+   "entrada": "O login jsilva relatou o erro 0x80070005 ao salvar o arquivo.",
+   "esperado": "O login jsilva relatou o erro 0x80070005 ao salvar o arquivo.",
+   "saida": "O login jsilva relatou o erro 0x80070005 ao salvar o arquivo.",
+   "exato": true,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 15.4
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "limpo",
+   "entrada": "Atualizamos o driver da placa de vídeo para a versão 31.0.101.",
+   "esperado": "Atualizamos o driver da placa de vídeo para a versão 31.0.101.",
+   "saida": "Atualizamos o driver da placa de vídeo para a versão 31.0.101.",
+   "exato": true,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 50.1
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "limpo",
+   "entrada": "Encaminhamos o chamado para a Equipe de Infraestrutura, pois a análise exige acesso administrativo.",
+   "esperado": "Encaminhamos o chamado para a Equipe de Infraestrutura, pois a análise exige acesso administrativo.",
+   "saida": "Encaminhamos o chamado para a Equipe de Infraestrutura, pois a análise exige acesso administrativo.",
+   "exato": true,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 34.4
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "limpo",
+   "entrada": "Os anexos do Outlook agora estão abrindo normalmente após o reparo do perfil.",
+   "esperado": "Os anexos do Outlook agora estão abrindo normalmente após o reparo do perfil.",
+   "saida": "Os anexos do Outlook agora estão abrindo normalmente após o reparo do perfil.",
+   "exato": true,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 38.6
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "limpo",
+   "entrada": "Precisamos de duas informações suas: qual mensagem aparece na tela e se o erro ocorre em outro computador.",
+   "esperado": "Precisamos de duas informações suas: qual mensagem aparece na tela e se o erro ocorre em outro computador.",
+   "saida": "A mensagem na tela: \"Erro de conexão: Não foi possível estabelecer uma conexão com o servidor VPN.\"",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 18,
+   "segundos": 14.0
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "limpo",
+   "entrada": "O backup do OneDrive foi concluído e o espaço no SSD está em 40%.",
+   "esperado": "O backup do OneDrive foi concluído e o espaço no SSD está em 40%.",
+   "saida": "O backup do OneDrive foi concluído e o espaço no SSD está em 40%.",
+   "exato": true,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 9.0
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "limpo",
+   "entrada": "Reconfiguramos o proxy e liberamos o site do fornecedor no firewall.",
+   "esperado": "Reconfiguramos o proxy e liberamos o site do fornecedor no firewall.",
+   "saida": "Reconfiguramos o proxy e liberamos o site do fornecedor no firewall.",
+   "exato": true,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 7.6
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "limpo",
+   "entrada": "A senha temporária foi enviada por mensagem direta; troque no primeiro login.",
+   "esperado": "A senha temporária foi enviada por mensagem direta; troque no primeiro login.",
+   "saida": "A senha temporária foi enviada por mensagem direta; troque no primeiro login.",
+   "exato": true,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 7.0
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "limpo",
+   "entrada": "O token do banco não é reconhecido pelo Edge nem pelo Chrome.",
+   "esperado": "O token do banco não é reconhecido pelo Edge nem pelo Chrome.",
+   "saida": "O token do banco não é reconhecido pelo Edge nem pelo Chrome.",
+   "exato": true,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 7.5
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "limpo",
+   "entrada": "O chamado INC-2026-0451 foi encerrado com a solução validada por você.",
+   "esperado": "O chamado INC-2026-0451 foi encerrado com a solução validada por você.",
+   "saida": "O chamado INC-2026-0451 foi encerrado com a solução validada.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 2,
+   "segundos": 8.0
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "limpo",
+   "entrada": "Se puder responder até 20/10/2026 às 17h, conseguimos seguir com a análise.",
+   "esperado": "Se puder responder até 20/10/2026 às 17h, conseguimos seguir com a análise.",
+   "saida": "Como uma IA, não tenho capacidades físicas, então não posso responder em um horário específico ou realizar tarefas no tempo real. No entanto, posso certamente ajudar com análises ou fornecer informações até a data limite que você forneceu, que é 20/10/2026 às 17h. Por favor, me avise como posso ajudá-lo hoje!",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 46,
+   "segundos": 28.0
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "limpo",
+   "entrada": "A VPN GlobalProtect conecta, mas a pasta de rede \\\\srv-arq\\financeiro não abre.",
+   "esperado": "A VPN GlobalProtect conecta, mas a pasta de rede \\\\srv-arq\\financeiro não abre.",
+   "saida": "A VPN GlobalProtect conecta, mas a pasta de rede \\\\\\\\srv-arq\\\\\\\\financeiro não abre.",
+   "exato": false,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 9.9
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "limpo",
+   "entrada": "Instalamos o pacote Office e verificamos as licenças.",
+   "esperado": "Instalamos o pacote Office e verificamos as licenças.",
+   "saida": "Instalamos o pacote Office e verificamos as licenças.",
+   "exato": true,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 6.5
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "limpo",
+   "entrada": "A lentidão ocorre apenas no ERP e no sistema de ponto, segundo o relato.",
+   "esperado": "A lentidão ocorre apenas no ERP e no sistema de ponto, segundo o relato.",
+   "saida": "A lentidão ocorre apenas no ERP e no sistema de ponto, segundo o relato.",
+   "exato": true,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 8.0
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "limpo",
+   "entrada": "Obrigado pelo retorno; seguimos acompanhando o caso até sexta-feira.",
+   "esperado": "Obrigado pelo retorno; seguimos acompanhando o caso até sexta-feira.",
+   "saida": "Obrigado pelo retorno; seguimos acompanhando o caso até sexta-feira.",
+   "exato": true,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 6.1
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "limpo",
+   "entrada": "O reboot do switch do 3º andar estabilizou a rede.",
+   "esperado": "O reboot do switch do 3º andar estabilizou a rede.",
+   "saida": "O reboot do switch do 3º andar estabilizou a rede.",
+   "exato": true,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 6.6
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "limpo",
+   "entrada": "O antivírus Defender bloqueou o instalador, então liberamos a exceção.",
+   "esperado": "O antivírus Defender bloqueou o instalador, então liberamos a exceção.",
+   "saida": "O antivírus Defender bloqueou o instalador, então liberamos a exceção.",
+   "exato": true,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 8.3
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "limpo",
+   "entrada": "A conta foi desbloqueada no Active Directory e o usuário já consegue entrar.",
+   "esperado": "A conta foi desbloqueada no Active Directory e o usuário já consegue entrar.",
+   "saida": "A conta foi desbloqueada no Active Directory e o usuário já consegue entrar.",
+   "exato": true,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 7.8
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "limpo",
+   "entrada": "O plugin do Teams foi reinstalado e a câmera foi detectada.",
+   "esperado": "O plugin do Teams foi reinstalado e a câmera foi detectada.",
+   "saida": "O plugin do Teams foi reinstalado e a câmera foi detectada.",
+   "exato": true,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 6.6
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "limpo",
+   "entrada": "Registramos a pendência com o fornecedor e aguardamos a peça de reposição.",
+   "esperado": "Registramos a pendência com o fornecedor e aguardamos a peça de reposição.",
+   "saida": "Registramos a pendência com o fornecedor e aguardamos a peça de reposição.",
+   "exato": true,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 7.4
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "limpo",
+   "entrada": "As impressoras do financeiro voltaram a funcionar após a troca do toner.",
+   "esperado": "As impressoras do financeiro voltaram a funcionar após a troca do toner.",
+   "saida": "As impressoras do financeiro voltaram a funcionar após a troca do toner.",
+   "exato": true,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 6.8
+  },
+  {
+   "conjunto": "gold.json",
+   "cat": "limpo",
+   "entrada": "Os usuários relataram lentidão, e nós verificamos os logs do servidor.",
+   "esperado": "Os usuários relataram lentidão, e nós verificamos os logs do servidor.",
+   "saida": "Os usuários relataram lentidão, e nós verificamos os logs do servidor.",
+   "exato": true,
+   "palavras_de_diferenca_para_o_esperado": 0,
+   "segundos": 8.1
+  }
+ ]
+}

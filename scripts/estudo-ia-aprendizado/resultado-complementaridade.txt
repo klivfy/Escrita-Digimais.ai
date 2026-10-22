@@ -1,0 +1,13 @@
+{'erros': 85, 'ours_ok': 70, 'phi_trava_ok': 59, 'phi_cru_ok': 66, 'algum_ok': 81, 'limpos': 55}
+Só o Phi com trava resolve:
+   ('a licensa do antivírus expirou ontem', 'a licença do antivírus expirou ontem')
+   ('a camera do notebook parou de funcionar', 'a câmera do notebook parou de funcionar')
+   ('o usuário esqueceu a senha e solicitou a redefiniçao', 'o usuário esqueceu a senha e solicitou a redefinição')
+   ('a caixa do usuario esta cheia', 'a caixa do usuário está cheia')
+   ('os tickets abertas hoje foram classificados', 'os tickets abertos hoje foram classificados')
+   ('a senha temporário foi enviada', 'a senha temporária foi enviada')
+   ('o acesso remoto esta indisponível desde cedo', 'o acesso remoto está indisponível desde cedo')
+   ('a lentidao persiste apos a reinstalacao do driver', 'a lentidão persiste após a reinstalação do driver')
+   ('o equipamento esta em garantia', 'o equipamento está em garantia')
+   ('essas senhas expiraram e precisam ser trocado', 'essas senhas expiraram e precisam ser trocadas')
+   ('o acesso foi liberado, mais o usuário ainda não entra', 'o acesso foi liberado, mas o usuário ainda não entra')

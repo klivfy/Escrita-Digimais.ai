@@ -128,8 +128,7 @@ export function ProofreadMode({ text, onChange, onClear, onCopy, onAnnounce, loa
       <h2 id="proofread-mode-title">Corrigir texto</h2>
       <p className="subtle">
         Encontra acento ausente, palavras comuns escritas errado e erros frequentes de concordância, crase e uso de
-        palavras parecidas (mas e mais, há e a). Não é uma revisão gramatical completa e deixa passar erros. Nada é
-        trocado sem a sua ação, e o texto não é enviado nem salvo.
+        palavras parecidas (mas e mais, há e a). Nada é trocado sem a sua ação, e o texto não é enviado nem salvo.
       </p>
       <form
         className="stack"
