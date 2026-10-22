@@ -13,6 +13,8 @@ Extensão MV3 para Microsoft Edge que gera sugestões de texto para chamados de 
 
 - Rascunho livre (`domain/draft.ts`, regras em `config/draft-rules.ts`, modelo em `config/draft-model.json`): só sugere campos; o analista confere antes de preencher; o texto colado nunca é persistido. O modelo é regenerado do corpus fictício com `UPDATE_MODEL=1 npx vitest run src/tests/draft-model.test.ts`. Mudou regra ou corpus? Rode a medida em `src/tests/draft.test.ts` e atualize `docs/AVALIACAO-RASCUNHO.md`.
 
+- Correção de texto (`domain/proofread.ts`, limites e termos de TI em `config/proofread/rules.ts`, lista em `config/proofread/freq-pt.json`, carga em `application/proofread-data.ts`, tela em `ui/components/ProofreadMode.tsx`): só sugere acento e grafia; nunca troca sem ação do analista; texto só em memória. A lista é regenerada com `python scripts/gerar-lista-frequencia.py` (wordfreq 3.1.1). Mexeu em limite ou regra? Rode `src/tests/proofread.test.ts` (confere 0 sinalizações indevidas nos conjuntos de `scripts/estudo-correcao` e em `docs/AMOSTRAS-FORMATO.md`) e atualize `docs/ESTUDO-CORRECAO-TEXTO.md`. Não use `fetch` para a lista.
+
 ## Comandos de verificação
 ```
 npm run check        # lint + typecheck + testes + build + verify:dist + build:dev

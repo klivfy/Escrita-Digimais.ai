@@ -18,7 +18,7 @@ Não recomendo embarcar Phi-4-mini nem outro modelo. O modelo corrige bem, mas s
 
 ## 2. O que existe hoje
 
-- Nenhum campo usa `spellcheck` explícito; o `lang` do documento é `pt-BR`.
+- Os campos do formulário (`FieldControl`) já tinham `spellCheck`; faltavam o rascunho livre, a prévia e o modo Revisar. O `lang` do documento já era `pt-BR`.
 - `reviewText` (`src/domain/review.ts`) só alerta, nunca corrige. Essa linha é a mesma que o `CLAUDE.md` impõe: nunca alterar o texto do analista em silêncio.
 - O modo Revisar já tem `DiffView` e foco/região ao vivo, que servem de base para a lista de sugestões.
 - Os textos gerados pelo motor já passam por regras de redação; a correção entra antes da geração (campos) e depois (prévia).
@@ -136,3 +136,27 @@ Decisão que depende do usuário: aprovar a seção exclusiva e o escopo de cama
 - Tempos do modelo medidos em CPU, não no Edge.
 - A licença dos dados de frequência ainda não foi confirmada.
 - Nenhum teste com texto real de chamado nem com analistas.
+
+## 9. Implementação das camadas 0 e 1
+
+Entregue no branch `claude/estudo-correcao` depois da aprovação do escopo.
+
+- **Camada 0:** `spellCheck` nos campos que não tinham (rascunho livre, prévia, texto a revisar e texto a corrigir). O `lang` já era `pt-BR` nas duas páginas, e um teste confere. Efeito prático pequeno, porque o navegador já verifica `textarea` por padrão. **Atenção de privacidade:** com a política `MicrosoftEditorProofingEnabled` ativada ou não configurada, o Edge pode enviar o texto digitado ao serviço Microsoft Editor. Isso já valia para qualquer página e não foi criado pela extensão, mas contradiz "nada sai da máquina" se a TI não desligar a política. Registrado em `PRIVACY.md` e `SECURITY.md`; a TI decide.
+- **Camada 1:** `src/domain/proofread.ts` (puro), limites em `src/config/proofread/rules.ts`, lista em `src/config/proofread/freq-pt.json` (118.326 palavras, cerca de 1 MB, gerada por `scripts/gerar-lista-frequencia.py`), carga por `import()` dinâmico e tela `ProofreadMode` como terceiro modo ("Corrigir ortografia"). Só sugere; aceitar, ignorar (só na sessão), aceitar todas e desfazer a última alteração; texto só em memória e coberto por "Limpar tudo", inatividade e "Desfazer limpeza".
+- **Fora desta entrega:** camada 2 (concordância e crase), contagem de sugestões nos campos do Gerar texto, contadores de uso do modo, camada 3 (IA do Edge).
+
+### Duas correções ao protótipo
+
+1. O 0 de sinalizações indevidas medido no protótipo dependia de `jsilva` estar na lista de termos de TI, entrada que eu tinha criado por causa de uma frase de teste. Na versão do produto essa entrada saiu e entraram duas regras gerais: a palavra seguida de `@` é ignorada e, na regra de grafia, o candidato precisa começar com a mesma letra (logins como `jsilva` ou `msouza` deixam de virar `silva` e `souza`). Em contrapartida, a lista de termos ganhou palavras de TI (por exemplo `reinstalamos`, `sharepoint`, `dhcp`), que só suprimem sugestões.
+2. O relatório dizia que nenhum campo usava `spellcheck`; o `FieldControl` já usava.
+
+### Medida da versão entregue
+
+`src/tests/proofread.test.ts` roda a implementação em TypeScript contra os mesmos conjuntos do estudo:
+
+- 0 sugestões nas 55 frases corretas dos dois conjuntos e nos 10 blocos gerados pelo produto.
+- Pelo menos 26 das 33 trocas esperadas de ortografia sugeridas corretamente (o protótipo em Python acertou 26: 18 de 22 e 8 de 11).
+- Nenhuma sugestão fora do esperado nos 52 textos com erro de concordância, crase e uso de palavra (esta camada não os cobre).
+- No Chromium real, com a extensão empacotada e a CSP estrita: primeira verificação em cerca de 260 ms (inclui carregar o trecho de 1 MB), aceitar uma sugestão em cerca de 30 ms, sem erro de console e sem rolagem horizontal a 320 px.
+
+O conjunto continua sendo de autor único e escrito pelo mesmo autor das regras. O critério de aceite do piloto (seção 7) segue valendo.

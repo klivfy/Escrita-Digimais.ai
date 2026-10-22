@@ -86,6 +86,18 @@ await page.getByRole('button', { name: 'Preencher o formulário' }).click();
 check((await questions().inputValue()).includes('qual o nome da pasta'), 'rascunho livre preenche as perguntas depois da conferência');
 check(/Usuária sem acesso/.test(await why().inputValue()), 'rascunho livre preenche o contexto depois da conferência');
 
+// 4c. Corrigir ortografia: a lista de palavras carrega sob a CSP, sugere e só troca ao aceitar
+await page.getByRole('button', { name: 'Corrigir ortografia' }).click();
+await page.getByLabel('Texto a corrigir').fill('o usuario nao consegue abrir a planilha');
+await page.getByRole('button', { name: 'Verificar texto' }).click();
+await page.getByRole('heading', { name: /^Sugestões \(/ }).waitFor({ timeout: 15000 });
+check((await page.getByLabel('Texto a corrigir').inputValue()) === 'o usuario nao consegue abrir a planilha', 'correção só sugere: o texto não muda antes do aceite');
+await shot('05c-corrigir.png');
+await page.getByRole('button', { name: 'Aceitar todas (2)' }).click();
+check((await page.getByLabel('Texto a corrigir').inputValue()) === 'o usuário não consegue abrir a planilha', 'aceitar todas aplica as trocas');
+await page.getByRole('button', { name: 'Limpar texto' }).click();
+await page.getByRole('button', { name: 'Gerar texto' }).click();
+
 // 5. Configurações (contadores, perfil, camada da equipe)
 await page.getByRole('button', { name: 'Configurações' }).click();
 check(await page.getByLabel(/Registrar contadores de uso/).isVisible(), 'contadores aparecem desligados e opcionais nas configurações');

@@ -38,6 +38,7 @@ import type { DraftFields } from '../domain/draft';
 import { FieldControl } from './components/FieldControl';
 import type { Requirement } from './components/FieldControl';
 import { QualityPanel, WarningsList } from './components/ReviewPanel';
+import { ProofreadMode } from './components/ProofreadMode';
 import { ReviewMode } from './components/ReviewMode';
 import { SensitivePanel } from './components/SensitivePanel';
 import { SettingsPanel } from './components/SettingsPanel';
@@ -85,6 +86,7 @@ interface SavedContent {
   initialText: string;
   review: ReviewFormState;
   reviewResult: ReviewResult | null;
+  proofText: string;
 }
 
 export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigningKeys, loadUsage = loadUsagePolicy, copy = copyText, providerFactory = createProvider, now }: AppProps) {
@@ -114,7 +116,8 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
   const [busy, setBusy] = useState(false);
   const [undo, setUndo] = useState<{ field: TextFormField; previous: string; label: string } | null>(null);
   const [activity, setActivity] = useState(0);
-  const [mode, setMode] = useState<'generate' | 'review'>('generate');
+  const [mode, setMode] = useState<'generate' | 'review' | 'proofread'>('generate');
+  const [proofText, setProofText] = useState('');
   const [reviewForm, setReviewForm] = useState<ReviewFormState>(initialReviewForm);
   const [reviewResult, setReviewResult] = useState<ReviewResult | null>(null);
   const [reviewProblem, setReviewProblem] = useState<string | null>(null);
@@ -186,6 +189,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
   }, []);
 
   const clearContent = useCallback(() => {
+    setProofText('');
     setDraftKey((k) => k + 1);
     setForm((f) => ({ ...f, ...emptyContent(), variant: 0 }));
     setResult(null);
@@ -222,22 +226,26 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
    * Em ambos os casos o conteúdo anterior fica em memória por 30 segundos para "Desfazer limpeza".
    */
   const manualClear = useCallback(
-    (scope: 'all' | 'review' = 'all') => {
+    (scope: 'all' | 'review' | 'proofread' = 'all') => {
       const reviewHasContent = hasReviewContent(reviewForm) || Boolean(reviewResult);
+      const proofHasContent = Boolean(proofText.trim());
       const hasContent =
-        scope === 'review' ? reviewHasContent : reviewHasContent || Boolean(result) || TEXT_FORM_FIELDS.some((f) => form[f].trim());
+        scope === 'review' ? reviewHasContent
+          : scope === 'proofread' ? proofHasContent
+            : reviewHasContent || proofHasContent || Boolean(result) || TEXT_FORM_FIELDS.some((f) => form[f].trim());
       if (!hasContent) {
         if (scope === 'all') clearContent();
         setLive('Não há conteúdo para limpar.');
         return;
       }
-      const saved: SavedContent = { form, result, text, initialText, review: reviewForm, reviewResult };
+      const saved: SavedContent = { form, result, text, initialText, review: reviewForm, reviewResult, proofText };
       if (scope === 'review') clearReview();
+      else if (scope === 'proofread') setProofText('');
       else clearContent();
       setRestorable(saved);
       setLive('Conteúdo limpo. É possível desfazer por 30 segundos.');
     },
-    [form, result, text, initialText, reviewForm, reviewResult, clearContent, clearReview, setLive],
+    [form, result, text, initialText, reviewForm, reviewResult, proofText, clearContent, clearReview, setLive],
   );
 
   const onRestore = (): void => {
@@ -248,6 +256,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
     setInitialText(restorable.initialText);
     setReviewForm(restorable.review);
     setReviewResult(restorable.reviewResult);
+    setProofText(restorable.proofText);
     setSnapshot(null);
     setRestorable(null);
     setActivity((n) => n + 1);
@@ -418,6 +427,11 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
     setReviewResult(r);
     setLive(`Revisão concluída: ${r.warnings.length} alerta(s) no texto.`);
     touch();
+  };
+
+  const onProofCopy = async (value: string): Promise<void> => {
+    const ok = await copy(value);
+    setLive(ok ? 'Texto copiado.' : 'Não foi possível copiar. Selecione o texto e copie manualmente.');
   };
 
   const doClearAll = async (): Promise<void> => {
@@ -596,6 +610,9 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
           <button type="button" className={mode === 'review' ? 'primary' : undefined} aria-pressed={mode === 'review'} onClick={() => setMode('review')}>
             Revisar texto pronto
           </button>
+          <button type="button" className={mode === 'proofread' ? 'primary' : undefined} aria-pressed={mode === 'proofread'} onClick={() => setMode('proofread')}>
+            Corrigir ortografia
+          </button>
         </div>
 
         {restorable && (
@@ -659,7 +676,15 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
           />
         )}
 
-        {mode === 'review' ? (
+        {mode === 'proofread' ? (
+          <ProofreadMode
+            text={proofText}
+            onChange={(v) => { setProofText(v); touch(); }}
+            onClear={() => manualClear('proofread')}
+            onCopy={onProofCopy}
+            onAnnounce={setLive}
+          />
+        ) : mode === 'review' ? (
           <ReviewMode
             form={reviewForm}
             onChange={onReviewChange}
@@ -796,6 +821,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
                   rows={14}
                   value={text}
                   autoComplete="off"
+                  spellCheck
                   aria-describedby="preview-counter"
                   onChange={(e) => {
                     setText(e.target.value);

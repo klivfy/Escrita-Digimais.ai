@@ -1,0 +1,19 @@
+Lista de frequência do português usada na correção de acento e grafia
+=====================================================================
+
+Arquivo: assets/freq-pt-*.js (gerado a partir de src/config/proofread/freq-pt.json)
+
+O arquivo contém uma lista de palavras do português e a frequência de cada uma, extraída do pacote wordfreq 3.1.1
+(Robyn Speer, https://github.com/rspeer/wordfreq; Zenodo: rspeer/wordfreq v3.0). Foram mantidas as 120 mil palavras mais
+frequentes, só as formadas por letras, agrupadas por valor de frequência (zipf x 100).
+
+Licença dos dados: Creative Commons Atribuição-CompartilhaIgual 4.0 Internacional (CC BY-SA 4.0),
+https://creativecommons.org/licenses/by-sa/4.0/ . A licença vale para este arquivo de dados; o código da extensão é
+um trabalho separado e segue o LICENSE do repositório. Quem redistribuir ou adaptar a lista deve manter esta atribuição
+e licenciar a adaptação da lista sob CC BY-SA 4.0.
+
+Fontes citadas pelo wordfreq para os dados em português (segundo o wordfreq, com termos de uso que permitem a
+redistribuição com atribuição): Google Books Ngrams (http://books.google.com/ngrams), Leeds Internet Corpus, Wikipedia, ParaCrawl e
+OPUS OpenSubtitles 2018 (http://opus.nlpl.eu/OpenSubtitles.php). Detalhes completos no LICENSE e no README do wordfreq.
+
+A lista foi alterada em relação à original: filtrada, agrupada e arredondada para duas casas decimais de zipf.

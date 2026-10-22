@@ -39,6 +39,7 @@ src/
     planner        plano de seções da mensagem
     renderer       formatação do plano em texto
     risks, review  riscos e estilo; revisão de texto gerado ou editado
+    proofread      correção de acento e grafia por lista de frequência (só sugere)
     quality        indicadores de 0 a 100 e regras acionadas
     engine         pipeline completo
   config/          dados: vocabulário, templates, blueprints, campos, perfil padrão, validação do perfil
@@ -112,6 +113,9 @@ A interface segue o Material Design 3: papéis de cor tonais (tema claro e escur
 5. Revise e edite a prévia. “Revisar novamente” reavalia o texto editado. “Comparar com o texto inicial” mostra as diferenças.
 6. “Copiar texto”. Em seguida, a extensão oferece limpar o conteúdo.
 7. Limpou sem querer? “Desfazer limpeza” fica disponível por 30 segundos e restaura o conteúdo. Depois disso, ele é descartado da memória. A limpeza por inatividade nunca é desfeita, e “Limpar tudo” com a opção de apagar os dados salvos também descarta a possibilidade de desfazer. Os botões de limpar têm um escopo cada: “Limpar tudo” (cabeçalho, com confirmação), “Limpar formulário e prévia” (em “Mais ações”, com desfazer) e, no modo “Revisar texto pronto”, “Limpar revisão”, que apaga só a revisão e preserva o formulário de geração.
+
+### Corrigir ortografia
+O botão “Corrigir ortografia” abre um modo que encontra acento ausente (“nao” por “não”) e palavras comuns escritas errado (“atualizaçao” por “atualização”). Cada sugestão mostra o trecho, a troca e o motivo, e só vale quando você aceita; “Desfazer a última alteração” volta o texto, “Ignorar” vale só até a próxima verificação e “Aceitar todas” aplica de uma vez. Não corrige gramática, concordância nem palavra válida no lugar errado (“mais” por “mas”), e pode deixar passar erros. Siglas, códigos, caminhos, e-mails, nomes próprios no meio da frase e termos de TI são ignorados. A lista de palavras (cerca de 1 MB) fica em arquivo separado e só é carregada na primeira verificação. Os campos de texto também pedem a verificação do próprio navegador em português. O texto nunca é enviado nem salvo. Medidas e limites em `docs/ESTUDO-CORRECAO-TEXTO.md`.
 
 ### Revisar um texto pronto
 O botão “Revisar texto pronto” abre um modo só de revisão: cole um texto que você já escreveu, escolha o tipo e o destinatário e receba alertas, sugestões e indicadores pelas mesmas regras locais. O texto nunca é alterado, enviado ou salvo. O contexto opcional (evidência registrada, confirmação do usuário, prazo já definido) evita alertas indevidos, porque o revisor não vê o chamado.

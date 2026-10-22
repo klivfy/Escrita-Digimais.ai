@@ -131,7 +131,7 @@ export function DraftPanel({ available, internalDomains, bias, onApply, onFixes,
         </p>
         <div className="field">
           <label htmlFor={`${id}-raw`}>Anotação livre</label>
-          <textarea ref={rawRef} id={`${id}-raw`} rows={5} value={raw} onChange={(e) => setRaw(e.target.value)} disabled={rows !== null} />
+          <textarea ref={rawRef} id={`${id}-raw`} rows={5} value={raw} spellCheck onChange={(e) => setRaw(e.target.value)} disabled={rows !== null} />
         </div>
         {error && <p className="error-text" role="alert">{error}</p>}
         {rows === null ? (

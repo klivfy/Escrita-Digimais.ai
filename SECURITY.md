@@ -22,6 +22,11 @@ Limitações conhecidas: a detecção é heurística e pode ter falsos negativos
 - `sidePanel`: exibir a interface principal no painel lateral.
 - `storage`: salvar preferências não sensíveis e o perfil de linguagem; ler política gerenciada (`storage.managed`).
 
+## Correção de texto e lista de palavras
+- A lista de frequência (`src/config/proofread/freq-pt.json`, cerca de 1 MB) entra por `import()` dinâmico, resolvido no build: não há `fetch`, host novo nem permissão nova. Ela vem do pacote `wordfreq` 3.1.1 (licença dos dados: CC BY-SA 4.0; veja `THIRD-PARTY-NOTICES.md`) e é regenerada por `scripts/gerar-lista-frequencia.py`.
+- A correção só sugere. Nenhuma troca acontece sem ação do analista, e o texto não é persistido.
+- O corretor do navegador (`spellcheck`) e o serviço Microsoft Editor do Edge não são controlados pela extensão: veja `PRIVACY.md` e a política `MicrosoftEditorProofingEnabled`.
+
 ## Reportar vulnerabilidade
 Envie um relato privado ao responsável de segurança da sua organização ou ao mantenedor do repositório, com passos de reprodução, versão e impacto. Não abra issue pública com detalhes exploráveis. Meta de resposta inicial: 5 dias úteis.
 
