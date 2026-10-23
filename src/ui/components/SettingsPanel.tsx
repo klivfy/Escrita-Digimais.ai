@@ -22,6 +22,8 @@ interface Props {
   onImportOverlay: (text: string) => Promise<string[]>;
   onRemoveOverlay: () => void;
   library: ModelLibrary | null;
+  /** Motivo de a biblioteca guardada não estar em uso (assinatura, arquivo inválido ou regras atuais). */
+  libraryProblem?: string | null;
   onImportLibrary: (text: string) => Promise<{ errors: string[]; notices: string[] }>;
   onRemoveLibrary: () => void;
   onExportLibrary: () => void;
@@ -55,7 +57,7 @@ const SOURCE_LABEL = { managed: 'política da organização', imported: 'arquivo
 
 export function SettingsPanel({
   prefs, onPrefs, profile, profileSource, onImport, onExport, onResetProfile, signingRequired, overlay, onImportOverlay, onRemoveOverlay,
-  library, onImportLibrary, onRemoveLibrary, onExportLibrary, usage, learn, version, onResetLearning, onExportLearning, onExportUsage, onResetUsage,
+  library, libraryProblem, onImportLibrary, onRemoveLibrary, onExportLibrary, usage, learn, version, onResetLearning, onExportLearning, onExportUsage, onResetUsage,
 }: Props) {
   const [errors, setErrors] = useState<string[]>([]);
   const [done, setDone] = useState(false);
@@ -270,6 +272,7 @@ export function SettingsPanel({
           apenas neste navegador. Cada modelo passa pelas mesmas verificações de dado sensível e de revisão do perfil;
           se algum for recusado, nada é importado. {signingRequired ? 'A organização exige biblioteca assinada.' : ''}
         </p>
+        {!library && libraryProblem && <p role="alert" className="panel warn">{libraryProblem}</p>}
         {library ? (
           <p>
             Biblioteca <strong>{library.libraryName}</strong>, versão <strong>{library.libraryVersion}</strong>:{' '}

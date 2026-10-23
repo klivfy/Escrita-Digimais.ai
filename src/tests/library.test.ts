@@ -1,11 +1,13 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { exportLibraryJson, importLibraryText, SIGNED_LIBRARY_FORMAT } from '../application/library-import';
 import { DEFAULT_PROFILE } from '../config/language-profile';
 import { MAX_LIBRARY_MODELS, MAX_MODEL_TEXT, MODEL_PLACEHOLDERS, placeholdersIn, validateLibrary } from '../config/library-schema';
 import type { ModelLibrary } from '../config/library-schema';
+import { reviewText } from '../domain/review';
 import { vetLibrary, vetModel, withSamples } from '../domain/library-vetting';
 import { AppStorage } from '../infrastructure/storage';
 import { MemoryArea } from './memory-storage';
@@ -202,6 +204,8 @@ describe('importação, assinatura e armazenamento', () => {
     expect((await store.loadLibrary([keys.publicKey]))?.models).toHaveLength(7);
     // Chave diferente na política: a assinatura guardada não verifica, a biblioteca some (falha fechada).
     expect(await store.loadLibrary([other.publicKey])).toBeNull();
+    expect(await store.loadLibraryChecked([other.publicKey])).toEqual({ library: null, problem: 'signature' });
+    expect((await store.loadLibraryChecked([keys.publicKey])).problem).toBeUndefined();
     // Sem assinatura guardada e com chaves exigidas, também não vale.
     await store.saveLibrary(imported.library);
     expect(await store.loadLibrary([keys.publicKey])).toBeNull();
@@ -270,5 +274,52 @@ describe('restaurar o perfil padrão', () => {
     expect(local.data.modelLibrarySignature).toBe('assinatura-biblioteca');
     expect(local.data.profileOverlay).toBeDefined();
     expect(local.data.usageCounters).toBeDefined();
+  });
+});
+
+describe('normalização do script de assinatura', () => {
+  it('é idêntica à do esquema (se divergirem, a assinatura deixa de bater com o que a extensão guarda)', async () => {
+    const { normalizeLibrary } = (await import(pathToFileURL(join(process.cwd(), 'scripts', 'sign-profile.mjs')).href)) as {
+      normalizeLibrary: (l: unknown) => unknown;
+    };
+    const cases: unknown[] = [
+      EXAMPLE,
+      lib([model({ id: ' a ', title: '  Título  ', text: '  linha 1\r\nlinha 2\r  ', types: ['pending', 'pending', 'request_information'], keywords: [' vpn ', 'vpn', 'rede'] })]),
+      lib([model({ recipients: ['user', 'user', 'manager'], reviewedAt: '' }), model({ id: 'b', reviewedAt: '2026-10-01' })]),
+      lib([model({ reviewedAt: undefined, keywords: undefined, recipients: undefined })], { libraryName: '  Nome  ', libraryVersion: ' 2026.10.1 ' }),
+    ];
+    for (const raw of cases) {
+      const checked = validateLibrary(raw);
+      expect(checked.ok).toBe(true);
+      if (checked.ok) expect(normalizeLibrary(raw)).toEqual(checked.library);
+    }
+  });
+});
+
+describe('revisão de campos entre chaves no texto', () => {
+  const ctx = { type: 'request_information', recipient: 'user', techLevel: 'simple' } as const;
+  const codes = (t: string) => reviewText(t, ctx, DEFAULT_PROFILE).warnings.map((w) => w.code);
+
+  it('campo da lista fechada sem preencher bloqueia a cópia', () => {
+    const r = reviewText('Encaminhamos {chamado} para a equipe.', ctx, DEFAULT_PROFILE);
+    expect(r.blocked).toBe(true);
+    expect(r.warnings.find((w) => w.code === 'unfilled_field')?.message).toMatch(/Faltam campos entre chaves: \{chamado\}/);
+  });
+
+  it('chaves fora da lista avisam sem bloquear; texto sem chaves não aciona nada', () => {
+    const stray = reviewText('Confira o item {x} antes de seguir.', ctx, DEFAULT_PROFILE);
+    expect(stray.warnings.map((w) => w.code)).toContain('stray_braces');
+    expect(stray.warnings.some((w) => w.code === 'unfilled_field')).toBe(false);
+    expect(stray.blocked).toBe(false);
+    expect(codes('Para analisarmos, envie uma captura de tela do erro.')).not.toContain('stray_braces');
+    expect(codes('Para analisarmos, envie uma captura de tela do erro.')).not.toContain('unfilled_field');
+  });
+});
+
+describe('biblioteca guardada que não pode ser usada', () => {
+  it('informa o motivo: arquivo inválido ou assinatura que não confere', async () => {
+    const bad = new AppStorage(new MemoryArea({ modelLibrary: { schemaVersion: 1, libraryName: 'x' } }), new MemoryArea());
+    expect(await bad.loadLibraryChecked([])).toEqual({ library: null, problem: 'invalid' });
+    expect((await new AppStorage(new MemoryArea(), new MemoryArea()).loadLibraryChecked([])).problem).toBeUndefined();
   });
 });

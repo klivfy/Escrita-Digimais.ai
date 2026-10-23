@@ -38,6 +38,7 @@ import { loadAiPolicy, loadSigningKeys, loadUsagePolicy } from '../infrastructur
 import { useStyleLearning } from './hooks/useStyleLearning';
 import { useUsageCounters } from './hooks/useUsageCounters';
 import { fillModel, pendingFields } from '../domain/library-search';
+import { vetLibrary } from '../domain/library-vetting';
 import type { LibraryModel } from '../config/library-schema';
 import { ModelPicker } from './components/ModelPicker';
 import { DiffView } from './components/DiffView';
@@ -106,6 +107,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
   const [baseProfile, setProfile] = useState<LanguageProfile>(DEFAULT_PROFILE);
   const [overlay, setOverlay] = useState<ProfileOverlay | null>(null);
   const [library, setLibrary] = useState<ModelLibrary | null>(null);
+  const [libraryProblem, setLibraryProblem] = useState<string | null>(null);
   const profile = useMemo(() => applyOverlay(baseProfile, overlay), [baseProfile, overlay]);
   const [profileSource, setProfileSource] = useState<'managed' | 'imported' | 'default'>('default');
   const [prefs, setPrefs] = useState<Preferences>(DEFAULT_PREFERENCES);
@@ -153,7 +155,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
     void (async () => {
       const keys = await loadKeys();
       const [p, loaded, pol, ov, usagePol, lib] = await Promise.all([
-        store.loadPreferences(), store.loadProfile(keys), loadPolicy(), store.loadOverlay(), loadUsage(), store.loadLibrary(keys),
+        store.loadPreferences(), store.loadProfile(keys), loadPolicy(), store.loadOverlay(), loadUsage(), store.loadLibraryChecked(keys),
       ]);
       if (!alive) return;
       setPrefs(p);
@@ -162,7 +164,22 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
       setPolicy(pol);
       setSigningKeys(keys);
       setOverlay(ov);
-      setLibrary(lib);
+      // A biblioteca guardada também precisa passar nas regras atuais (perfil e camada de equipe podem ter mudado desde a importação).
+      let libraryNote: string | null = null;
+      let usable = lib.library;
+      if (lib.problem === 'signature') {
+        libraryNote = 'A biblioteca guardada não está em uso: a assinatura não confere com as chaves da organização. Importe de novo o arquivo assinado.';
+      } else if (lib.problem === 'invalid') {
+        libraryNote = 'A biblioteca guardada não está em uso: o arquivo guardado ficou inválido. Importe de novo.';
+      } else if (usable) {
+        const vetting = vetLibrary(usable, applyOverlay(loaded.profile, ov));
+        if (!vetting.ok) {
+          usable = null;
+          libraryNote = `A biblioteca guardada não está em uso: ${vetting.problems.length} modelo(s) não passam mais nas regras atuais (por exemplo "${vetting.problems[0].title}"). Importe uma versão revisada.`;
+        }
+      }
+      setLibrary(usable);
+      setLibraryProblem(libraryNote);
       setUsagePolicy(usagePol);
       setLearnedStats(await store.loadLearning());
       setForm((f) => ({ ...f, techLevel: p.techLevel, formality: p.formality, length: p.length, textStyle: p.textStyle }));
@@ -375,6 +392,8 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
     // A revisão usa o tipo do próprio modelo quando ele veio de outro tipo ("Buscar em todos os tipos").
     const modelType = model.types.includes(form.type) ? form.type : model.types[0];
     const review = reviewText(body, { ...reviewCtx, type: modelType }, profile);
+    // Campos pendentes são avisados ao vivo (abaixo da prévia), então não entram nos alertas fixos da geração.
+    review.warnings = review.warnings.filter((w) => w.code !== 'unfilled_field');
     learning.setShown(undefined);
     setResult({
       text: body, warnings: review.warnings, missingInformation: [], missingFields: [], quality: review.quality,
@@ -540,6 +559,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
       setProfileSource('default');
       setOverlay(null);
       setLibrary(null);
+      setLibraryProblem(null);
     }
     setConfirmClear(false);
     setAlsoClearStored(false);
@@ -585,6 +605,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
     if (!parsed.ok) return { errors: parsed.errors, notices: [] };
     await store.saveLibrary(parsed.library, parsed.signature);
     setLibrary(parsed.library);
+    setLibraryProblem(null);
     setLive(`Biblioteca de modelos importada: ${parsed.library.models.length} modelos.`);
     return {
       errors: [],
@@ -595,6 +616,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
   const onRemoveLibrary = async (): Promise<void> => {
     await store.removeLibrary();
     setLibrary(null);
+    setLibraryProblem(null);
     setLive('Biblioteca de modelos removida.');
   };
 
@@ -783,6 +805,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
             onImportOverlay={onImportOverlay}
             onRemoveOverlay={() => void onRemoveOverlay()}
             library={library}
+            libraryProblem={libraryProblem}
             onImportLibrary={onImportLibrary}
             onRemoveLibrary={() => void onRemoveLibrary()}
             onExportLibrary={onExportLibrary}
@@ -979,7 +1002,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
                   Faltam campos entre chaves: {pending.map((p) => `{${p}}`).join(', ')}. Preencha no texto da prévia para poder copiar.
                 </p>
               )}
-              {liveReview?.blocked && (
+              {liveReview?.warnings.some((w) => w.severity === 'block' && w.code !== 'unfilled_field') && (
                 <p role="alert" className="error-text">
                   O texto atual contém algo que impede a cópia (credencial, token ou pedido de acesso). Remova-o para copiar.
                 </p>

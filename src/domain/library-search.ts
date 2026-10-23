@@ -127,3 +127,15 @@ export function pendingFields(text: string): string[] {
   for (const m of text.matchAll(FIELD)) if (!out.includes(m[1])) out.push(m[1]);
   return out;
 }
+
+const ANY_BRACES = /\{([^{}\n]{1,30})\}/g;
+
+/** Trechos entre chaves que NÃO são um dos campos da lista fechada (por exemplo {x}), sem repetir. */
+export function strayBraces(text: string): string[] {
+  const out: string[] = [];
+  for (const m of text.matchAll(ANY_BRACES)) {
+    const name = m[1].trim();
+    if (name && !(MODEL_PLACEHOLDERS as readonly string[]).includes(name) && !out.includes(m[0])) out.push(m[0]);
+  }
+  return out;
+}

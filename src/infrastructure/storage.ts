@@ -42,6 +42,12 @@ function chromeArea(name: 'local' | 'managed'): StorageArea | null {
   }
 }
 
+export type LibraryProblem = 'invalid' | 'signature';
+export interface LibraryLoad {
+  library: ModelLibrary | null;
+  problem?: LibraryProblem;
+}
+
 export class AppStorage {
   constructor(
     private readonly local: StorageArea | null = chromeArea('local'),
@@ -138,22 +144,29 @@ export class AppStorage {
   /**
    * Biblioteca de modelos de texto da instituição. Sempre revalidada na leitura. Com chaves de assinatura configuradas,
    * só vale se a assinatura guardada ainda verificar (falha fechada), como no perfil importado.
+   * Devolve o motivo quando a biblioteca guardada não pode ser usada, para a tela avisar em vez de sumir sem explicação.
    */
-  async loadLibrary(signingKeys: readonly string[] = []): Promise<ModelLibrary | null> {
+  async loadLibraryChecked(signingKeys: readonly string[] = []): Promise<LibraryLoad> {
     try {
       const data = await this.local?.get([STORAGE_KEYS.modelLibrary, STORAGE_KEYS.modelLibrarySignature]);
       const stored = data?.[STORAGE_KEYS.modelLibrary];
-      if (!stored) return null;
+      if (!stored) return { library: null };
       const result = validateLibrary(stored);
-      if (!result.ok) return null;
+      if (!result.ok) return { library: null, problem: 'invalid' };
       if (sanitizeSigningKeys([...signingKeys]).length > 0) {
         const signature = data?.[STORAGE_KEYS.modelLibrarySignature];
-        if (typeof signature !== 'string' || !(await verifyProfileSignature(result.library, signature, signingKeys))) return null;
+        if (typeof signature !== 'string' || !(await verifyProfileSignature(result.library, signature, signingKeys))) {
+          return { library: null, problem: 'signature' };
+        }
       }
-      return result.library;
+      return { library: result.library };
     } catch {
-      return null;
+      return { library: null, problem: 'invalid' };
     }
+  }
+
+  async loadLibrary(signingKeys: readonly string[] = []): Promise<ModelLibrary | null> {
+    return (await this.loadLibraryChecked(signingKeys)).library;
   }
 
   async saveLibrary(library: ModelLibrary, signature?: string): Promise<void> {

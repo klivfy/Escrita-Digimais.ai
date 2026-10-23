@@ -216,4 +216,19 @@ describe('buscar modelo na tela', () => {
     expect(preview().value).toBe(chosen);
     expect(screen.getByText(/Motor biblioteca-de-modelos/)).toBeInTheDocument();
   });
+
+  it('biblioteca guardada que não passa mais nas regras atuais não é usada, e a tela diz por quê', async () => {
+    const local = new MemoryArea({
+      modelLibrary: LIBRARY,
+      profileOverlay: { schemaVersion: 1, overlayName: 'Equipe', forbiddenTerms: ['captura'] },
+    });
+    const user = userEvent.setup();
+    render(<App storage={new AppStorage(local, new MemoryArea())} now={() => NOW} loadUsage={async () => 'optional'} />);
+    await screen.findByLabelText('Tipo de comunicação');
+    await waitFor(() => expect(screen.queryByText('Buscar um modelo pronto da instituição (opcional)')).toBeNull());
+    await user.click(await screen.findByRole('button', { name: 'Configurações' }));
+    expect(await screen.findByText(/A biblioteca guardada não está em uso: \d+ modelo\(s\) não passam mais nas regras atuais/)).toBeInTheDocument();
+    // O arquivo guardado não é apagado: o curador pode revisar e importar de novo.
+    expect(local.data.modelLibrary).toEqual(LIBRARY);
+  });
 });
