@@ -6,8 +6,8 @@ import type { LanguageProfile } from '../domain/types';
 import { sanitizeSigningKeys, verifyProfileSignature } from '../application/profile-signing';
 import { validateOverlay } from '../config/profile-overlay';
 import type { ProfileOverlay } from '../config/profile-overlay';
-import { validateLibrary } from '../config/library-schema';
-import type { ModelLibrary } from '../config/library-schema';
+import { MAX_LIBRARY_MODELS, validateLibrary } from '../config/library-schema';
+import type { LibraryModel, ModelLibrary } from '../config/library-schema';
 import { dayString, emptyCounters, sanitizeCounters } from '../application/usage-counters';
 import type { UsageCounters } from '../application/usage-counters';
 import { emptyStats, sanitizeStats } from '../application/style-learning';
@@ -30,6 +30,7 @@ export const STORAGE_KEYS = {
   learnedStyle: 'learnedStyle',
   modelLibrary: 'modelLibrary',
   modelLibrarySignature: 'modelLibrarySignature',
+  taughtModels: 'taughtModels',
 } as const;
 export const ALLOWED_KEYS: string[] = Object.values(STORAGE_KEYS);
 
@@ -177,6 +178,36 @@ export class AppStorage {
       ...(signature ? { [STORAGE_KEYS.modelLibrarySignature]: signature } : {}),
     });
     if (!signature) await this.local?.remove(STORAGE_KEYS.modelLibrarySignature);
+  }
+
+  /**
+   * Modelos que o analista ensinou à extensão (texto guardado só por ação dele, já sem dado sensível).
+   * Sempre revalidados na leitura com o mesmo esquema da biblioteca; um modelo inválido derruba só a si mesmo.
+   */
+  async loadTaught(): Promise<LibraryModel[]> {
+    try {
+      const data = await this.local?.get(STORAGE_KEYS.taughtModels);
+      const stored = data?.[STORAGE_KEYS.taughtModels];
+      if (!Array.isArray(stored)) return [];
+      const models: LibraryModel[] = [];
+      for (const raw of stored.slice(0, MAX_LIBRARY_MODELS)) {
+        const one = validateLibrary({ schemaVersion: 1, libraryName: 'Modelos ensinados', libraryVersion: 'local', models: [raw] });
+        if (one.ok && !models.some((m) => m.id === one.library.models[0].id)) models.push(one.library.models[0]);
+      }
+      return models;
+    } catch {
+      return [];
+    }
+  }
+
+  async saveTaught(models: readonly LibraryModel[]): Promise<void> {
+    if (models.length === 0) {
+      await this.local?.remove(STORAGE_KEYS.taughtModels);
+      return;
+    }
+    const check = validateLibrary({ schemaVersion: 1, libraryName: 'Modelos ensinados', libraryVersion: 'local', models });
+    if (!check.ok) throw new Error('Modelos ensinados inválidos.');
+    await this.local?.set({ [STORAGE_KEYS.taughtModels]: check.library.models });
   }
 
   async removeLibrary(): Promise<void> {

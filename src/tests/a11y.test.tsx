@@ -85,6 +85,8 @@ describe('acessibilidade (axe)', () => {
     await user.tab();
     expect(screen.getByRole('button', { name: 'Corrigir texto' })).toHaveFocus();
     await user.tab();
+    expect(screen.getByRole('button', { name: 'Ensinar' })).toHaveFocus();
+    await user.tab();
     expect(screen.getByLabelText('Tipo de comunicação')).toHaveFocus();
   });
 });

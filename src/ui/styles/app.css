@@ -170,12 +170,8 @@ body.popup { width: 17.5rem; padding: 1rem; }
 }
 
 /* Seletor de modo segmentado: botões com aria-pressed, unidos em um só controle. */
-.segmented { display: flex; }
-/* Três modos em 320 px: cada botão divide a largura e o rótulo quebra em duas linhas, sem rolagem horizontal. */
-.segmented button { flex: 1 1 0; padding-inline: 0.75rem; }
-.segmented button { border-radius: 0; margin-left: -1px; }
-.segmented button:first-child { border-radius: var(--md-sys-shape-corner-full) 0 0 var(--md-sys-shape-corner-full); margin-left: 0; }
-.segmented button:last-child { border-radius: 0 var(--md-sys-shape-corner-full) var(--md-sys-shape-corner-full) 0; }
-.segmented button[aria-pressed='true'] { position: relative; z-index: 1; }
+/* Quatro modos: grade que quebra em linhas de 2 a 320 px, com o rótulo inteiro em cada botão e sem rolagem horizontal. */
+.segmented { display: grid; grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr)); gap: 0.5rem; }
+.segmented button { padding-inline: 0.75rem; overflow-wrap: normal; word-break: normal; }
 details.more { border: 0; padding: 0; }
 details.more > summary { padding: 0.5rem 0; }

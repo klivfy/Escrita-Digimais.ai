@@ -181,6 +181,12 @@ node scripts/sign-profile.mjs sign-library biblioteca.json chave-da-org.private.
 ```
 Com a biblioteca importada, o modo "Gerar texto" ganha "Buscar um modelo pronto da instituição (opcional)": o analista digita o que precisa dizer e vê até 3 modelos (do tipo e do destinatário escolhidos, ou de todos os tipos se marcar a opção), com "Nenhum destes". A busca compara trechos de letras com o título, as palavras-chave e o texto do modelo; no experimento do estudo o modelo certo ficou entre os 3 primeiros em 98% das consultas e em 1º em 91%, por isso a extensão nunca escolhe sozinha. Escolher um modelo leva o texto para a prévia editável: o nome, o prazo e a equipe são preenchidos só com o que o analista já informou no formulário, e os demais campos ficam entre chaves e impedem a cópia até serem preenchidos no texto. A prévia passa pela revisão normal e não tem "Outra variação". Nada é copiado nem inserido sem ação do analista.
 
+### Ensinar a extensão como a organização escreve
+Na aba **Ensinar**, cole um texto que a organização realmente usa (ou, na prévia de "Gerar texto", use Mais ações > "Ensinar este texto à extensão" depois de ajustá-la). Escolha o tipo e o destinatário e clique em **Preparar modelo**: a extensão troca o nome da saudação, o número do chamado, datas, prazos e o nome da equipe de destino por campos e mostra cada troca ("Carlos Silva virou {nome}"). Confira, edite, dê um título e clique em **Salvar modelo**. Nada é guardado antes disso, e a triagem recusa texto com e-mail, telefone, documento, credencial, link, prazo concreto ou solução afirmada, dizendo o motivo. A extensão só reconhece o nome na saudação: confira se não sobrou nome de pessoa no resto do texto.
+
+Depois de ensinar, em "Gerar texto" o campo "Buscar um modelo pronto" mostra, sozinho, até 3 modelos parecidos com o que você descreveu no formulário (os ensinados aparecem como "ensinado por você"). Escolher leva o texto para a prévia editável, com nome, prazo e equipe vindos do formulário; nada é copiado sem a sua ação. Para a equipe inteira usar, **Exportar modelos ensinados** gera um arquivo no formato da biblioteca: a TI revisa, assina (`sign-library`) e distribui.
+
+
 ### Camada da equipe (opcional)
 Além do perfil da organização, cada analista pode importar uma camada da equipe em Configurações. A mesclagem é restritiva: a camada só endurece regras, nunca afrouxa. Formato:
 ```json

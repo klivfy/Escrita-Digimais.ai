@@ -27,7 +27,7 @@ function setup(prefs: Record<string, unknown> = {}, withLibrary = true) {
 
 const search = () => screen.findByLabelText('Buscar modelo');
 const openPicker = async (user: ReturnType<typeof userEvent.setup>) => {
-  await user.click(await screen.findByText('Buscar um modelo pronto da instituição (opcional)'));
+  await user.click(await screen.findByText(/Buscar um modelo pronto da instituição/));
   return search();
 };
 const live = () => document.querySelector('[aria-live="polite"]')?.textContent ?? '';
@@ -38,7 +38,7 @@ describe('buscar modelo na tela', () => {
   it('sem biblioteca, a busca não aparece', async () => {
     setup({}, false);
     await screen.findByLabelText('Tipo de comunicação');
-    expect(screen.queryByText('Buscar um modelo pronto da instituição (opcional)')).toBeNull();
+    expect(screen.queryByText(/Buscar um modelo pronto da instituição/)).toBeNull();
   });
 
   it('busca, mostra até 3 opções e escolher leva o texto à prévia editável sem copiar', async () => {
@@ -82,7 +82,7 @@ describe('buscar modelo na tela', () => {
     await waitFor(() => expect(counts(local)['library.used']).toBe(1));
     expect(counts(local)['library.used']).toBeLessThanOrEqual(counts(local)['library.shown']);
     // Nova busca depois de escolher volta a contar.
-    await user.click(screen.getByText('Buscar um modelo pronto da instituição (opcional)'));
+    await user.click(screen.getByText(/Buscar um modelo pronto da instituição/));
     await user.type(await search(), 'captura de tela');
     await waitFor(() => expect(counts(local)['library.shown']).toBe(2));
   });
@@ -225,7 +225,7 @@ describe('buscar modelo na tela', () => {
     const user = userEvent.setup();
     render(<App storage={new AppStorage(local, new MemoryArea())} now={() => NOW} loadUsage={async () => 'optional'} />);
     await screen.findByLabelText('Tipo de comunicação');
-    await waitFor(() => expect(screen.queryByText('Buscar um modelo pronto da instituição (opcional)')).toBeNull());
+    await waitFor(() => expect(screen.queryByText(/Buscar um modelo pronto da instituição/)).toBeNull());
     await user.click(await screen.findByRole('button', { name: 'Configurações' }));
     expect(await screen.findByText(/A biblioteca guardada não está em uso: \d+ modelo\(s\) não passam mais nas regras atuais/)).toBeInTheDocument();
     // O arquivo guardado não é apagado: o curador pode revisar e importar de novo.

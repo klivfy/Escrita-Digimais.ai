@@ -36,6 +36,8 @@ export const FIXED_KEYS: readonly string[] = [
   'library.shown',
   'library.used',
   'library.none',
+  'teach.saved',
+  'teach.removed',
 ];
 
 const FIXED_SET = new Set(FIXED_KEYS);

@@ -31,16 +31,17 @@ import type {
 import { copyText } from '../infrastructure/clipboard';
 import { AppStorage } from '../infrastructure/storage';
 import { exportLibraryJson, importLibraryText } from '../application/library-import';
-import type { ModelLibrary } from '../config/library-schema';
 import { downloadJson } from './download';
 import { extensionVersion } from '../infrastructure/extension';
 import { loadAiPolicy, loadSigningKeys, loadUsagePolicy } from '../infrastructure/policy';
 import { useStyleLearning } from './hooks/useStyleLearning';
 import { useUsageCounters } from './hooks/useUsageCounters';
 import { fillModel, pendingFields } from '../domain/library-search';
-import { vetLibrary } from '../domain/library-vetting';
-import type { LibraryModel } from '../config/library-schema';
+import { vetLibrary, vetModel } from '../domain/library-vetting';
+import type { LibraryModel, ModelLibrary } from '../config/library-schema';
 import { ModelPicker } from './components/ModelPicker';
+import { TeachMode } from './components/TeachMode';
+import type { TeachSeed } from './components/TeachMode';
 import { DiffView } from './components/DiffView';
 import { DraftPanel } from './components/DraftPanel';
 import type { DraftFields } from '../domain/draft';
@@ -108,6 +109,8 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
   const [overlay, setOverlay] = useState<ProfileOverlay | null>(null);
   const [library, setLibrary] = useState<ModelLibrary | null>(null);
   const [libraryProblem, setLibraryProblem] = useState<string | null>(null);
+  const [taught, setTaught] = useState<LibraryModel[]>([]);
+  const [teachSeed, setTeachSeed] = useState<TeachSeed | null>(null);
   const profile = useMemo(() => applyOverlay(baseProfile, overlay), [baseProfile, overlay]);
   const [profileSource, setProfileSource] = useState<'managed' | 'imported' | 'default'>('default');
   const [prefs, setPrefs] = useState<Preferences>(DEFAULT_PREFERENCES);
@@ -130,7 +133,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
   const [busy, setBusy] = useState(false);
   const [undo, setUndo] = useState<{ field: TextFormField; previous: string; label: string } | null>(null);
   const [activity, setActivity] = useState(0);
-  const [mode, setMode] = useState<'generate' | 'review' | 'proofread'>('generate');
+  const [mode, setMode] = useState<'generate' | 'review' | 'proofread' | 'teach'>('generate');
   const [proofText, setProofText] = useState('');
   const [reviewForm, setReviewForm] = useState<ReviewFormState>(initialReviewForm);
   const [reviewResult, setReviewResult] = useState<ReviewResult | null>(null);
@@ -179,6 +182,9 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
         }
       }
       setLibrary(usable);
+      // Modelos ensinados também passam de novo pelas regras em vigor; o que não passa fica de fora (e guardado, até o analista remover).
+      const effective = applyOverlay(loaded.profile, ov);
+      setTaught((await store.loadTaught()).filter((m) => vetModel(m, effective).reasons.length === 0));
       setLibraryProblem(libraryNote);
       setUsagePolicy(usagePol);
       setLearnedStats(await store.loadLearning());
@@ -560,6 +566,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
       setOverlay(null);
       setLibrary(null);
       setLibraryProblem(null);
+      setTaught([]);
     }
     setConfirmClear(false);
     setAlsoClearStored(false);
@@ -623,6 +630,49 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
   const onExportLibrary = (): void => {
     if (library) downloadJson('biblioteca-de-modelos.json', exportLibraryJson(library));
   };
+
+  const onSaveTaught = async (model: LibraryModel): Promise<void> => {
+    const next = [...taught, model];
+    await store.saveTaught(next);
+    setTaught(next);
+    void recorder.record('teach.saved');
+    touch();
+  };
+
+  const onRemoveTaught = async (id: string): Promise<void> => {
+    const next = taught.filter((m) => m.id !== id);
+    await store.saveTaught(next);
+    setTaught(next);
+    void recorder.record('teach.removed');
+  };
+
+  const onRemoveAllTaught = async (): Promise<void> => {
+    await store.saveTaught([]);
+    setTaught([]);
+  };
+
+  /** Exporta os modelos ensinados no formato da biblioteca da instituição: a TI revisa, assina e distribui. */
+  const onExportTaught = (): void => {
+    const day = (now?.() ?? new Date()).toISOString().slice(0, 10);
+    downloadJson(
+      'modelos-ensinados.json',
+      exportLibraryJson({ schemaVersion: 1, libraryName: 'Modelos ensinados', libraryVersion: day.replace(/-/g, '.'), models: taught }),
+    );
+  };
+
+  /** Biblioteca da instituição e modelos ensinados juntos, para a busca. O da instituição vence em caso de id repetido. */
+  const searchLibrary = useMemo((): ModelLibrary | null => {
+    const base = library?.models ?? [];
+    const extra = taught.filter((m) => !base.some((b) => b.id === m.id));
+    const models = [...base, ...extra];
+    if (models.length === 0) return null;
+    return { schemaVersion: 1, libraryName: library?.libraryName ?? 'Modelos ensinados', libraryVersion: library?.libraryVersion ?? 'local', models };
+  }, [library, taught]);
+
+  const contextQuery = useMemo(
+    () => [form.summary, form.pendingItem, form.questions, form.freeIntent, form.escalationReason].join(' ').replace(/\s+/g, ' ').trim(),
+    [form.summary, form.pendingItem, form.questions, form.freeIntent, form.escalationReason],
+  );
 
   const onRemoveOverlay = async (): Promise<void> => {
     await store.removeOverlay();
@@ -737,7 +787,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
 
       <main>
         <p className="subtle">
-          Auxilia a redação. Você revisa e copia o texto; nada é enviado, salvo ou aplicado ao chamado. Não cole senhas,
+          Auxilia a redação. Você revisa e copia o texto; nada é enviado nem aplicado ao chamado, e só é salvo o que você ensinar à extensão. Não cole senhas,
           tokens ou dados pessoais desnecessários.
         </p>
 
@@ -750,6 +800,9 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
           </button>
           <button type="button" className={mode === 'proofread' ? 'primary' : undefined} aria-pressed={mode === 'proofread'} onClick={() => setMode('proofread')}>
             Corrigir texto
+          </button>
+          <button type="button" className={mode === 'teach' ? 'primary' : undefined} aria-pressed={mode === 'teach'} onClick={() => setMode('teach')}>
+            Ensinar
           </button>
         </div>
 
@@ -819,7 +872,20 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
           />
         )}
 
-        {mode === 'proofread' ? (
+        {mode === 'teach' ? (
+          <TeachMode
+            key={teachSeed?.id ?? 0}
+            profile={profile}
+            models={taught}
+            seed={teachSeed}
+            now={() => now?.() ?? new Date()}
+            onSave={onSaveTaught}
+            onRemove={onRemoveTaught}
+            onRemoveAll={onRemoveAllTaught}
+            onExport={onExportTaught}
+            onAnnounce={setLive}
+          />
+        ) : mode === 'proofread' ? (
           <ProofreadMode
             text={proofText}
             onChange={(v) => { setProofText(v); touch(); }}
@@ -874,9 +940,10 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
             </select>
           </div>
 
-          {library && library.models.length > 0 && (
+          {searchLibrary && (
             <ModelPicker
-              library={library}
+              library={searchLibrary}
+              contextQuery={contextQuery}
               type={form.type}
               typeName={profile.categoryNames[form.type]}
               recipient={form.recipient}
@@ -1017,6 +1084,12 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
                 <div className="row">
                   <button type="button" onClick={() => { setText(initialText); setSnapshot(null); touch(); }}>Restaurar modelo</button>
                   <button type="button" onClick={() => setShowDiff((s) => !s)} aria-pressed={showDiff}>Comparar com o texto inicial</button>
+                  <button
+                    type="button"
+                    onClick={() => { setTeachSeed({ id: Date.now(), text, type: form.type, recipient: form.recipient }); setMode('teach'); setLive('Texto levado para Ensinar. Confira as trocas por campo antes de salvar.'); }}
+                  >
+                    Ensinar este texto à extensão
+                  </button>
                   <button type="button" onClick={() => manualClear('all')}>Limpar formulário e prévia</button>
                 </div>
               </details>
