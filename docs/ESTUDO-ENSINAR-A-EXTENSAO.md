@@ -135,6 +135,14 @@ A correção hoje marca palavras raras. Siglas, nomes de sistemas e termos próp
 
 Ordem sugerida: 0 em paralelo com 1; depois 2, 3, 4 e 5; piloto; só então 7 e 8. As fases 1 a 5 não exigem mudança nas regras de segurança, mas a 1 acrescenta um tipo de dado salvo (a biblioteca importada), então `CLAUDE.md`, `PRIVACY.md` e `SECURITY.md` precisam ser atualizados na mesma entrega.
 
+### Andamento (fase 1 entregue)
+
+Fase 1 (núcleo da biblioteca) implementada no branch `claude/biblioteca-modelos`: esquema e validação (`config/library-schema.ts`), triagem (`domain/library-vetting.ts`), importação com assinatura (`application/library-import.ts`, `sign-library` em `scripts/sign-profile.mjs`), armazenamento revalidado na leitura, seção em Configurações (importar, exportar, remover, avisos ao curador) e arquivo de exemplo. Decisões tomadas na implementação:
+
+- A importação é tudo ou nada: um modelo recusado impede a biblioteca inteira, para que o que fica guardado seja exatamente o que foi revisado e assinado.
+- Os alertas `low_cordiality` e `required_text_missing` não valem para trecho de texto (o motor acrescenta saudação, fecho e textos obrigatórios) e ficam fora da triagem.
+- Fora desta fase: política gerenciada para entregar a biblioteca sem importação manual, busca e inserção na prévia (fases 2 e 3), contadores `library.*` e a ferramenta de curadoria (fase 4).
+
 ## 8. Riscos e como tratá-los
 
 | Risco | Tratamento |

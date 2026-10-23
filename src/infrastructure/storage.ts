@@ -6,6 +6,8 @@ import type { LanguageProfile } from '../domain/types';
 import { sanitizeSigningKeys, verifyProfileSignature } from '../application/profile-signing';
 import { validateOverlay } from '../config/profile-overlay';
 import type { ProfileOverlay } from '../config/profile-overlay';
+import { validateLibrary } from '../config/library-schema';
+import type { ModelLibrary } from '../config/library-schema';
 import { dayString, emptyCounters, sanitizeCounters } from '../application/usage-counters';
 import type { UsageCounters } from '../application/usage-counters';
 import { emptyStats, sanitizeStats } from '../application/style-learning';
@@ -26,6 +28,8 @@ export const STORAGE_KEYS = {
   overlay: 'profileOverlay',
   usageCounters: 'usageCounters',
   learnedStyle: 'learnedStyle',
+  modelLibrary: 'modelLibrary',
+  modelLibrarySignature: 'modelLibrarySignature',
 } as const;
 export const ALLOWED_KEYS: string[] = Object.values(STORAGE_KEYS);
 
@@ -129,6 +133,41 @@ export class AppStorage {
 
   async removeOverlay(): Promise<void> {
     await this.local?.remove(STORAGE_KEYS.overlay);
+  }
+
+  /**
+   * Biblioteca de modelos de texto da instituição. Sempre revalidada na leitura. Com chaves de assinatura configuradas,
+   * só vale se a assinatura guardada ainda verificar (falha fechada), como no perfil importado.
+   */
+  async loadLibrary(signingKeys: readonly string[] = []): Promise<ModelLibrary | null> {
+    try {
+      const data = await this.local?.get([STORAGE_KEYS.modelLibrary, STORAGE_KEYS.modelLibrarySignature]);
+      const stored = data?.[STORAGE_KEYS.modelLibrary];
+      if (!stored) return null;
+      const result = validateLibrary(stored);
+      if (!result.ok) return null;
+      if (sanitizeSigningKeys([...signingKeys]).length > 0) {
+        const signature = data?.[STORAGE_KEYS.modelLibrarySignature];
+        if (typeof signature !== 'string' || !(await verifyProfileSignature(result.library, signature, signingKeys))) return null;
+      }
+      return result.library;
+    } catch {
+      return null;
+    }
+  }
+
+  async saveLibrary(library: ModelLibrary, signature?: string): Promise<void> {
+    const check = validateLibrary(library);
+    if (!check.ok) throw new Error('Biblioteca inválida.');
+    await this.local?.set({
+      [STORAGE_KEYS.modelLibrary]: check.library,
+      ...(signature ? { [STORAGE_KEYS.modelLibrarySignature]: signature } : {}),
+    });
+    if (!signature) await this.local?.remove(STORAGE_KEYS.modelLibrarySignature);
+  }
+
+  async removeLibrary(): Promise<void> {
+    await this.local?.remove([STORAGE_KEYS.modelLibrary, STORAGE_KEYS.modelLibrarySignature]);
   }
 
   /** Contadores agregados (sem conteúdo). Sempre sanitizados na leitura e na gravação. */

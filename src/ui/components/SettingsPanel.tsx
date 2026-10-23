@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { ChangeEvent } from 'react';
 import { AUTO_CLEAR_OPTIONS } from '../../application/preferences';
 import type { Preferences } from '../../application/preferences';
+import type { ModelLibrary } from '../../config/library-schema';
 import type { ProfileOverlay } from '../../config/profile-overlay';
 import type { UsagePolicy } from '../../application/usage-counters';
 import { FORMALITY_LABELS, LENGTH_LABELS, TECH_LEVEL_LABELS, TEXT_STYLE_LABELS } from '../../config/fields';
@@ -20,6 +21,10 @@ interface Props {
   overlay: ProfileOverlay | null;
   onImportOverlay: (text: string) => Promise<string[]>;
   onRemoveOverlay: () => void;
+  library: ModelLibrary | null;
+  onImportLibrary: (text: string) => Promise<{ errors: string[]; notices: string[] }>;
+  onRemoveLibrary: () => void;
+  onExportLibrary: () => void;
   usage: { enabled: boolean; locked: boolean; policy: UsagePolicy; total: number };
   learn: { enabled: boolean; locked: boolean; total: number };
   /** Versão instalada, para o analista conferir se a atualização foi aplicada. */
@@ -50,12 +55,15 @@ const SOURCE_LABEL = { managed: 'política da organização', imported: 'arquivo
 
 export function SettingsPanel({
   prefs, onPrefs, profile, profileSource, onImport, onExport, onResetProfile, signingRequired, overlay, onImportOverlay, onRemoveOverlay,
-  usage, learn, version, onResetLearning, onExportLearning, onExportUsage, onResetUsage,
+  library, onImportLibrary, onRemoveLibrary, onExportLibrary, usage, learn, version, onResetLearning, onExportLearning, onExportUsage, onResetUsage,
 }: Props) {
   const [errors, setErrors] = useState<string[]>([]);
   const [done, setDone] = useState(false);
   const [overlayErrors, setOverlayErrors] = useState<string[]>([]);
   const [overlayDone, setOverlayDone] = useState(false);
+  const [libraryErrors, setLibraryErrors] = useState<string[]>([]);
+  const [libraryNotices, setLibraryNotices] = useState<string[]>([]);
+  const [libraryDone, setLibraryDone] = useState(false);
 
   const onFile = async (e: ChangeEvent<HTMLInputElement>): Promise<void> => {
     const file = e.target.files?.[0];
@@ -66,6 +74,17 @@ export function SettingsPanel({
     const errs = await onImport(text);
     setErrors(errs);
     setDone(errs.length === 0);
+  };
+
+  const onLibraryFile = async (e: ChangeEvent<HTMLInputElement>): Promise<void> => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setLibraryDone(false);
+    const { errors: errs, notices } = await onImportLibrary(await file.text());
+    setLibraryErrors(errs);
+    setLibraryNotices(notices);
+    setLibraryDone(errs.length === 0);
   };
 
   const onOverlayFile = async (e: ChangeEvent<HTMLInputElement>): Promise<void> => {
@@ -243,6 +262,47 @@ export function SettingsPanel({
           </div>
         )}
         {overlayDone && <p role="status" className="panel ok">Camada da equipe importada e validada.</p>}
+      </fieldset>
+      <fieldset className="stack">
+        <legend className="legend">Biblioteca de modelos (opcional)</legend>
+        <p className="subtle">
+          Textos prontos da instituição, escolhidos e revisados por pessoas, para o analista reaproveitar. O arquivo é lido
+          apenas neste navegador. Cada modelo passa pelas mesmas verificações de dado sensível e de revisão do perfil;
+          se algum for recusado, nada é importado. {signingRequired ? 'A organização exige biblioteca assinada.' : ''}
+        </p>
+        {library ? (
+          <p>
+            Biblioteca <strong>{library.libraryName}</strong>, versão <strong>{library.libraryVersion}</strong>:{' '}
+            {library.models.length} {library.models.length === 1 ? 'modelo' : 'modelos'}.
+          </p>
+        ) : (
+          <p className="subtle">Nenhuma biblioteca importada.</p>
+        )}
+        <div className="row">
+          <div className="field">
+            <label htmlFor="library-file">Importar biblioteca de modelos (JSON)</label>
+            <input id="library-file" type="file" accept="application/json,.json" onChange={(e) => void onLibraryFile(e)} />
+          </div>
+        </div>
+        {library && (
+          <div className="row">
+            <button type="button" onClick={onExportLibrary}>Exportar biblioteca</button>
+            <button type="button" onClick={onRemoveLibrary}>Remover biblioteca</button>
+          </div>
+        )}
+        {libraryErrors.length > 0 && (
+          <div role="alert" className="panel block">
+            <p className="error-text">Importação da biblioteca recusada. Corrija os itens abaixo:</p>
+            <ul>{libraryErrors.map((er, i) => <li key={i}>{er}</li>)}</ul>
+          </div>
+        )}
+        {libraryDone && <p role="status" className="panel ok">Biblioteca importada e validada.</p>}
+        {libraryNotices.length > 0 && (
+          <div role="note" className="panel warn">
+            <p>Avisos para o curador (não impedem o uso):</p>
+            <ul>{libraryNotices.map((n, i) => <li key={i}>{n}</li>)}</ul>
+          </div>
+        )}
       </fieldset>
       {version && (
         <p className="subtle" data-testid="extension-version">

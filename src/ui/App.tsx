@@ -30,6 +30,9 @@ import type {
 } from '../domain/types';
 import { copyText } from '../infrastructure/clipboard';
 import { AppStorage } from '../infrastructure/storage';
+import { exportLibraryJson, importLibraryText } from '../application/library-import';
+import type { ModelLibrary } from '../config/library-schema';
+import { downloadJson } from './download';
 import { extensionVersion } from '../infrastructure/extension';
 import { loadAiPolicy, loadSigningKeys, loadUsagePolicy } from '../infrastructure/policy';
 import { useStyleLearning } from './hooks/useStyleLearning';
@@ -96,6 +99,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
   const [form, setForm] = useState<FormState>(initialForm);
   const [baseProfile, setProfile] = useState<LanguageProfile>(DEFAULT_PROFILE);
   const [overlay, setOverlay] = useState<ProfileOverlay | null>(null);
+  const [library, setLibrary] = useState<ModelLibrary | null>(null);
   const profile = useMemo(() => applyOverlay(baseProfile, overlay), [baseProfile, overlay]);
   const [profileSource, setProfileSource] = useState<'managed' | 'imported' | 'default'>('default');
   const [prefs, setPrefs] = useState<Preferences>(DEFAULT_PREFERENCES);
@@ -141,8 +145,8 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
     let alive = true;
     void (async () => {
       const keys = await loadKeys();
-      const [p, loaded, pol, ov, usagePol] = await Promise.all([
-        store.loadPreferences(), store.loadProfile(keys), loadPolicy(), store.loadOverlay(), loadUsage(),
+      const [p, loaded, pol, ov, usagePol, lib] = await Promise.all([
+        store.loadPreferences(), store.loadProfile(keys), loadPolicy(), store.loadOverlay(), loadUsage(), store.loadLibrary(keys),
       ]);
       if (!alive) return;
       setPrefs(p);
@@ -151,6 +155,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
       setPolicy(pol);
       setSigningKeys(keys);
       setOverlay(ov);
+      setLibrary(lib);
       setUsagePolicy(usagePol);
       setLearnedStats(await store.loadLearning());
       setForm((f) => ({ ...f, techLevel: p.techLevel, formality: p.formality, length: p.length, textStyle: p.textStyle }));
@@ -487,6 +492,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
       setProfile(DEFAULT_PROFILE);
       setProfileSource('default');
       setOverlay(null);
+      setLibrary(null);
     }
     setConfirmClear(false);
     setAlsoClearStored(false);
@@ -524,6 +530,29 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
     await store.saveOverlay(parsed.overlay);
     setOverlay(parsed.overlay);
     return [];
+  };
+
+  /** Importa a biblioteca de modelos: valida, examina cada modelo com as regras do perfil em vigor e só então guarda. */
+  const onImportLibrary = async (json: string): Promise<{ errors: string[]; notices: string[] }> => {
+    const parsed = await importLibraryText(json, signingKeys, profile);
+    if (!parsed.ok) return { errors: parsed.errors, notices: [] };
+    await store.saveLibrary(parsed.library, parsed.signature);
+    setLibrary(parsed.library);
+    setLive(`Biblioteca de modelos importada: ${parsed.library.models.length} modelos.`);
+    return {
+      errors: [],
+      notices: parsed.notices.slice(0, 20).flatMap((n) => n.reasons.slice(0, 2).map((r) => `Modelo "${n.id}" (${n.title}): ${r}`)),
+    };
+  };
+
+  const onRemoveLibrary = async (): Promise<void> => {
+    await store.removeLibrary();
+    setLibrary(null);
+    setLive('Biblioteca de modelos removida.');
+  };
+
+  const onExportLibrary = (): void => {
+    if (library) downloadJson('biblioteca-de-modelos.json', exportLibraryJson(library));
   };
 
   const onRemoveOverlay = async (): Promise<void> => {
@@ -707,6 +736,10 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
             overlay={overlay}
             onImportOverlay={onImportOverlay}
             onRemoveOverlay={() => void onRemoveOverlay()}
+            library={library}
+            onImportLibrary={onImportLibrary}
+            onRemoveLibrary={() => void onRemoveLibrary()}
+            onExportLibrary={onExportLibrary}
             usage={{ ...usage, policy: usagePolicy, total: usageCounters.total }}
             learn={{ enabled: learning.enabled, locked: learning.locked, total: learning.total }}
             version={extensionVersion()}

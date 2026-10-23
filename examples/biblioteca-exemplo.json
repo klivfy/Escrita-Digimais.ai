@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "libraryName": "Biblioteca de exemplo",
+  "libraryVersion": "2026.10.1",
+  "models": [
+    {
+      "id": "pedir-captura",
+      "title": "Pedir captura de tela do erro",
+      "types": ["request_information"],
+      "recipients": ["user"],
+      "text": "Para analisarmos o problema, envie uma captura de tela com a mensagem completa e informe o horário em que ocorreu.",
+      "keywords": ["print", "erro", "imagem"],
+      "reviewedAt": "2026-10-20"
+    },
+    {
+      "id": "senha-redefinida",
+      "title": "Senha redefinida e enviada ao usuário",
+      "types": ["progress_update"],
+      "recipients": ["user"],
+      "text": "Realizamos a redefinição da senha de {nome}. Use a senha temporária enviada por mensagem direta e troque no primeiro acesso.",
+      "keywords": ["senha", "reset", "redefinição"],
+      "reviewedAt": "2026-10-20"
+    },
+    {
+      "id": "reconectar-vpn",
+      "title": "Orientar a reconectar a VPN",
+      "types": ["request_information", "progress_update"],
+      "text": "Para restabelecer o acesso remoto, desconecte da VPN, reinicie o computador e conecte novamente. Se o problema continuar, informe o código do erro exibido."
+    },
+    {
+      "id": "cobrar-retorno",
+      "title": "Cobrar retorno do usuário",
+      "types": ["request_information"],
+      "recipients": ["user"],
+      "text": "Entramos em contato com {nome} e ainda não recebemos retorno. Se o problema persistir, responda este chamado com as informações solicitadas.",
+      "keywords": ["retorno", "resposta", "cobrança"]
+    },
+    {
+      "id": "pedir-de-acordo-software",
+      "title": "Pedir De acordo para instalar software",
+      "types": ["manager_approval"],
+      "recipients": ["manager"],
+      "text": "Solicitamos o De acordo para a instalação do software no equipamento informado, conforme a política de software da instituição.",
+      "keywords": ["aprovação", "instalação", "gestor"]
+    },
+    {
+      "id": "encaminhar-equipe",
+      "title": "Encaminhar o chamado a outra equipe",
+      "types": ["redirect_or_escalate"],
+      "recipients": ["technical_team"],
+      "text": "Encaminhamos {chamado} para {equipe}, pois a análise exige acesso administrativo ao servidor.",
+      "keywords": ["escalar", "infraestrutura", "redirecionar"]
+    },
+    {
+      "id": "confirmar-ajuste",
+      "title": "Pedir confirmação depois do ajuste",
+      "types": ["solution_confirmation"],
+      "recipients": ["user"],
+      "text": "Realizamos os ajustes descritos neste chamado. Confirme se o acesso voltou ao normal.",
+      "keywords": ["confirmação", "solução"]
+    }
+  ]
+}

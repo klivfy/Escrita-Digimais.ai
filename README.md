@@ -174,6 +174,13 @@ Publique a chave pública em `profileSigningPublicKeys` pela política e distrib
 ## Licença
 Domínio público (Unlicense). Veja `LICENSE`.
 
+### Biblioteca de modelos (opcional)
+Textos prontos da instituição, escolhidos e revisados por pessoas, importados em Configurações (arquivo de exemplo em `examples/biblioteca-exemplo.json`). Cada modelo tem `id`, `title`, `types` (tipos de comunicação), `recipients` (opcional), `text`, `keywords` (opcional) e `reviewedAt` (opcional, AAAA-MM-DD). O texto pode usar campos entre chaves: `{nome}`, `{chamado}`, `{data}`, `{prazo}`, `{equipe}`, `{sistema}` e `{equipamento}`; qualquer outro campo é recusado. Limites: 400 KB, 200 modelos e 1.500 caracteres por modelo. Na importação, cada modelo passa pela detecção de dado sensível e pelas regras de revisão; se algum for recusado, nada é importado e a tela lista o motivo de cada um. Avisos que não impedem o uso (por exemplo, sigla não explicada) aparecem para o curador. Com `profileSigningPublicKeys` na política, só vale arquivo assinado:
+```
+node scripts/sign-profile.mjs sign-library biblioteca.json chave-da-org.private.pem
+```
+Nesta versão a biblioteca é importada, exportada e removida; a busca e a inserção do modelo na prévia vêm na etapa seguinte do plano em `docs/ESTUDO-ENSINAR-A-EXTENSAO.md`.
+
 ### Camada da equipe (opcional)
 Além do perfil da organização, cada analista pode importar uma camada da equipe em Configurações. A mesclagem é restritiva: a camada só endurece regras, nunca afrouxa. Formato:
 ```json

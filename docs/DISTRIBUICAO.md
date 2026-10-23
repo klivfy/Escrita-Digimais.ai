@@ -34,7 +34,7 @@ O zip instalável tem ID fixo (`khilafnebmdhmlpkajikadidlgbcepdn`); o zip da loj
 - Política **ExtensionSettings**: permite, por ID, fixar a extensão na barra e controlar a instalação. Guia: [ExtensionSettings](https://learn.microsoft.com/deployedge/microsoft-edge-manage-extensions-ref-guide).
 - Configuração da própria extensão (política gerenciada), no registro, em `HKLM\Software\Policies\Microsoft\Edge\3rdparty\extensions\<ID>\policy` **(confirmar o caminho no ambiente)**. Chaves aceitas, definidas em `public/managed-schema.json`:
   - `languageProfile`: perfil de linguagem da organização (JSON). Tem precedência sobre perfis importados.
-  - `profileSigningPublicKeys`: até duas chaves públicas ECDSA P-256 para exigir perfil assinado (`scripts/sign-profile.mjs`).
+  - `profileSigningPublicKeys`: até duas chaves públicas ECDSA P-256 para exigir perfil assinado e biblioteca de modelos assinada (`scripts/sign-profile.mjs`, comandos `sign` e `sign-library`).
   - `usageCounters`: `off`, `optional` (padrão) ou `on`. Com `off`, o aprendizado de redação também fica desligado.
   - `aiProvider`: reservado, sem efeito nesta versão.
 
