@@ -60,6 +60,14 @@ describe('buscar modelo na tela', () => {
     expect(preview().value).toMatch(/Obrigado\.$/);
   });
 
+  it('com o campo vazio não lista modelo nenhum e orienta a digitar', async () => {
+    const { user } = setup();
+    await openPicker(user);
+    expect(screen.queryByRole('list', { name: 'Modelos encontrados' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Usar o modelo/ })).toBeNull();
+    expect(screen.getByText('Digite o que você precisa dizer para buscar.')).toBeInTheDocument();
+  });
+
   it('Enter no campo de busca não gera a prévia', async () => {
     const { user } = setup();
     const box = await openPicker(user);

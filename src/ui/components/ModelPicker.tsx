@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { LibraryModel, ModelLibrary } from '../../config/library-schema';
-import { buildSearchIndex, searchModels } from '../../domain/library-search';
+import { buildSearchIndex, countEligible, searchModels } from '../../domain/library-search';
 import type { CommunicationType, Recipient } from '../../domain/types';
 
 interface Props {
@@ -31,6 +31,7 @@ export function ModelPicker({ library, type, typeName, recipient, onPick, onEven
   const shownRef = useRef(false);
   const index = useMemo(() => buildSearchIndex(library.models), [library]);
   const hits = useMemo(() => searchModels(index, query, { type, recipient, anyType, limit: 3 }), [index, query, type, recipient, anyType]);
+  const available = useMemo(() => countEligible(index, { type, recipient, anyType }), [index, type, recipient, anyType]);
   const searching = query.trim().length > 0;
 
   // Conta uma vez por "busca" (do primeiro resultado exibido até escolher, dizer "nenhum" ou limpar o campo).
@@ -59,7 +60,7 @@ export function ModelPicker({ library, type, typeName, recipient, onPick, onEven
     ? hits.length === 0
       ? 'Nenhum modelo parecido encontrado.'
       : `${hits.length} ${hits.length === 1 ? 'modelo encontrado' : 'modelos encontrados'}.`
-    : hits.length === 0
+    : available === 0
       ? `Não há modelos para "${typeName}" neste destinatário.`
       : 'Digite o que você precisa dizer para buscar.';
 

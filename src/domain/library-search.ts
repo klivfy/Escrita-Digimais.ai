@@ -82,10 +82,16 @@ export interface SearchHit {
 const eligible = (m: LibraryModel, o: SearchOptions): boolean =>
   (o.anyType || !o.type || m.types.includes(o.type)) && (m.recipients.length === 0 || !o.recipient || m.recipients.includes(o.recipient));
 
+/** Quantos modelos servem ao tipo e ao destinatário escolhidos (a tela usa para dizer se vale a pena buscar). */
+export function countEligible(index: SearchIndex, options: SearchOptions = {}): number {
+  return index.models.filter((model) => eligible(model, options)).length;
+}
+
+/** Sem consulta não há resultado: o analista só vê modelo depois de dizer o que precisa, nunca uma lista arbitrária. */
 export function searchModels(index: SearchIndex, query: string, options: SearchOptions = {}): SearchHit[] {
   const limit = options.limit ?? 3;
+  if (!normalize(query)) return [];
   const pool = index.models.map((model, i) => ({ model, i })).filter(({ model }) => eligible(model, options));
-  if (!normalize(query)) return pool.slice(0, limit).map(({ model }) => ({ model, score: 0 }));
   const q = weigh(grams(query), index.idf);
   const minScore = options.minScore ?? 0.05;
   return pool

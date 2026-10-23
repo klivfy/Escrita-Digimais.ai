@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { validateLibrary } from '../config/library-schema';
 import type { LibraryModel } from '../config/library-schema';
-import { buildSearchIndex, fillModel, pendingFields, searchModels } from '../domain/library-search';
+import { buildSearchIndex, countEligible, fillModel, pendingFields, searchModels } from '../domain/library-search';
 
 interface Conjunto { modelos: Record<string, string>; consultas: Record<string, string[]>; fora: string[] }
 const set = JSON.parse(readFileSync('scripts/estudo-ensino/conjunto.json', 'utf8')) as Conjunto;
@@ -48,10 +48,10 @@ describe('busca de modelos por semelhança', () => {
     for (let i = 1; i < hits.length; i++) expect(hits[i - 1].score).toBeGreaterThanOrEqual(hits[i].score);
   });
 
-  it('consulta vazia lista os primeiros modelos elegíveis, sem pontuação', () => {
-    const hits = searchModels(index, '   ', { anyType: true });
-    expect(hits.map((h) => h.model.id)).toEqual(models.slice(0, 3).map((m) => m.id));
-    expect(hits.every((h) => h.score === 0)).toBe(true);
+  it('consulta vazia não devolve modelo nenhum, mesmo com modelos elegíveis', () => {
+    expect(searchModels(index, '   ', { anyType: true })).toEqual([]);
+    expect(searchModels(index, '', { anyType: true, minScore: 0 })).toEqual([]);
+    expect(countEligible(index, { anyType: true })).toBe(models.length);
   });
 
   it('filtra por tipo e destinatário, e "todos os tipos" ignora o tipo', () => {
