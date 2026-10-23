@@ -1,0 +1,20 @@
+letras 2-5 (char_wb): top1 91%, top3 98% (n=64)
+   limiar 0.00: sugere em 100% das consultas; entre as sugeridas 91% certas (6 erradas); sugere algo em 16/16 consultas fora da biblioteca
+   limiar 0.10: sugere em 100% das consultas; entre as sugeridas 91% certas (6 erradas); sugere algo em 16/16 consultas fora da biblioteca
+   limiar 0.15: sugere em 98% das consultas; entre as sugeridas 92% certas (5 erradas); sugere algo em 16/16 consultas fora da biblioteca
+   limiar 0.20: sugere em 97% das consultas; entre as sugeridas 94% certas (4 erradas); sugere algo em 10/16 consultas fora da biblioteca
+   limiar 0.25: sugere em 97% das consultas; entre as sugeridas 94% certas (4 erradas); sugere algo em 6/16 consultas fora da biblioteca
+palavras 1-2: top1 86%, top3 97% (n=64)
+   limiar 0.00: sugere em 100% das consultas; entre as sugeridas 86% certas (9 erradas); sugere algo em 16/16 consultas fora da biblioteca
+   limiar 0.10: sugere em 98% das consultas; entre as sugeridas 87% certas (8 erradas); sugere algo em 16/16 consultas fora da biblioteca
+   limiar 0.15: sugere em 95% das consultas; entre as sugeridas 87% certas (8 erradas); sugere algo em 12/16 consultas fora da biblioteca
+   limiar 0.20: sugere em 80% das consultas; entre as sugeridas 92% certas (4 erradas); sugere algo em 9/16 consultas fora da biblioteca
+   limiar 0.25: sugere em 64% das consultas; entre as sugeridas 95% certas (2 erradas); sugere algo em 6/16 consultas fora da biblioteca
+
+Top1 errados (letras 2-5):
+  "pedir print do erro" esperado pedir_print, veio vpn_reinstalar (0.18); esperado em 3º
+  "resetei a senha do usuario" esperado reset_senha, veio wifi_corporativo (0.40); esperado em 2º
+  "cobrar retorno do usuario sobre o chamado" esperado sem_retorno_1, veio encerrar_sem_retorno (0.34); esperado em 2º
+  "ja liguei e nao tive retorno" esperado sem_retorno_1, veio encerrar_sem_retorno (0.30); esperado em 2º
+  "instalacao de programa precisa de aprovacao do gestor" esperado aprovacao_software, veio acesso_pasta (0.31); esperado em 2º
+  "marcar atendimento presencial" esperado agendar_visita, veio encerrar_sem_retorno (0.15); esperado em 4º
