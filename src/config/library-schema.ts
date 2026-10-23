@@ -43,7 +43,9 @@ export interface ModelLibrary {
 
 export type LibraryValidation = { ok: true; library: ModelLibrary } | { ok: false; errors: string[] };
 
-const UNSAFE_TEXT = /<[^>]*>|javascript:|vbscript:|data:|file:|https?:\/\/|www\./iu;
+// Esquemas só contam como esquema quando o texto emenda logo depois dos dois-pontos (data:text/html), e não no rótulo
+// comum "Data: {data}" ou em "metadata:". javascript: e vbscript: ficam recusados sempre.
+const UNSAFE_TEXT = /<[^>]*>|javascript:|vbscript:|(?<![\p{L}\p{N}_])(?:data|file):(?=[^\s{])|https?:\/\/|www\./iu;
 // eslint-disable-next-line no-control-regex
 const CONTROL_CHARS = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/;
 const ID = /^[a-z0-9][a-z0-9_-]{0,47}$/;

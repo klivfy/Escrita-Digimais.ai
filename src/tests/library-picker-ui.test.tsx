@@ -3,6 +3,8 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import userEvent from '@testing-library/user-event';
 import axe from 'axe-core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { LocalProvider } from '../application/provider';
+import { DEFAULT_PROFILE } from '../config/language-profile';
 import { validateLibrary } from '../config/library-schema';
 import { AppStorage } from '../infrastructure/storage';
 import { App } from '../ui/App';
@@ -145,5 +147,46 @@ describe('buscar modelo na tela', () => {
     expect((await run()).violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual([]);
     await user.click(screen.getAllByRole('button', { name: /^Usar o modelo:/ })[0]);
     expect((await run()).violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual([]);
+  });
+
+  it('restaurar o perfil padrão mantém a biblioteca guardada e a busca na tela', async () => {
+    const local = new MemoryArea({ languageProfile: { ...DEFAULT_PROFILE, organizationName: 'Org' }, modelLibrary: LIBRARY });
+    const user = userEvent.setup();
+    render(<App storage={new AppStorage(local, new MemoryArea())} now={() => NOW} loadUsage={async () => 'optional'} />);
+    await user.click(await screen.findByRole('button', { name: 'Configurações' }));
+    await user.click(await screen.findByRole('button', { name: 'Restaurar perfil padrão' }));
+    expect(await screen.findByText(/padrão da extensão/)).toBeInTheDocument();
+    expect(local.data.modelLibrary).toEqual(LIBRARY);
+    expect(local.data.languageProfile).toBeUndefined();
+  });
+
+  it('escolher um modelo enquanto uma geração está em andamento mantém o modelo', async () => {
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    const local = new MemoryArea({ modelLibrary: LIBRARY });
+    const user = userEvent.setup();
+    const slow = {
+      id: new LocalProvider().id,
+      kind: new LocalProvider().kind,
+      generate: async (request: Parameters<LocalProvider['generate']>[0]) => {
+        await gate;
+        return new LocalProvider().generate(request);
+      },
+    };
+    render(
+      <App storage={new AppStorage(local, new MemoryArea())} now={() => NOW} loadUsage={async () => 'optional'} providerFactory={() => slow} />,
+    );
+    fireEvent.change(await screen.findByLabelText('Tipo de comunicação'), { target: { value: 'request_information' } });
+    fireEvent.change(screen.getByLabelText(/Por que a informação é necessária/), { target: { value: 'Erro ao abrir o sistema.' } });
+    fireEvent.change(screen.getByLabelText(/Perguntas ao destinatário/), { target: { value: 'Qual mensagem de erro aparece na tela' } });
+    await user.click(screen.getByRole('button', { name: 'Gerar prévia' }));
+    const box = await openPicker(user);
+    await user.type(box, 'captura de tela');
+    await user.click(await screen.findByRole('button', { name: /Usar o modelo: Pedir captura/ }));
+    const chosen = preview().value;
+    release();
+    await new Promise((r) => setTimeout(r, 20));
+    expect(preview().value).toBe(chosen);
+    expect(screen.getByText(/Motor biblioteca-de-modelos/)).toBeInTheDocument();
   });
 });

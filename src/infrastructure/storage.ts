@@ -209,6 +209,11 @@ export class AppStorage {
     await this.local?.remove(STORAGE_KEYS.learnedStyle);
   }
 
+  /** Volta ao perfil padrão: remove só o perfil importado e sua assinatura (biblioteca, camada, contadores e preferências ficam). */
+  async resetProfile(): Promise<void> {
+    await this.local?.remove([STORAGE_KEYS.profile, STORAGE_KEYS.profileSignature]);
+  }
+
   async clearAll(): Promise<void> {
     await this.local?.remove(ALLOWED_KEYS);
   }

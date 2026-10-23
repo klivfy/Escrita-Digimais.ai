@@ -141,6 +141,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
   const typeRef = useRef<HTMLSelectElement>(null);
   // Tipo do último texto copiado: base do atalho de próximo passo.
   const [copiedType, setCopiedType] = useState<CommunicationType | null>(null);
+  const runSeq = useRef(0);
   const generatedAt = useRef(0);
   const usageCounters = useUsageCounters(store, usagePolicy, prefs.usageCounters);
   const { recorder, mode: usage } = usageCounters;
@@ -368,8 +369,12 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
    * no formulário (nome, prazo, equipe); os demais ficam entre chaves e impedem a cópia até serem preenchidos.
    */
   const onPickModel = (model: LibraryModel): void => {
+    // Uma geração em andamento não pode mais sobrescrever o modelo escolhido.
+    runSeq.current += 1;
     const body = fillModel(model.text, { nome: form.requesterName, prazo: form.explicitDeadline, equipe: form.destinationTeam });
-    const review = reviewText(body, reviewCtx, profile);
+    // A revisão usa o tipo do próprio modelo quando ele veio de outro tipo ("Buscar em todos os tipos").
+    const modelType = model.types.includes(form.type) ? form.type : model.types[0];
+    const review = reviewText(body, { ...reviewCtx, type: modelType }, profile);
     learning.setShown(undefined);
     setResult({
       text: body, warnings: review.warnings, missingInformation: [], missingFields: [], quality: review.quality,
@@ -416,10 +421,12 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
   const run = async (next: FormState, isVariant = false): Promise<void> => {
     setBusy(true);
     setCopied('none');
+    const seq = (runSeq.current += 1);
     const provider = providerFactory(policy);
     const input = toGenerationInput(next);
     if (learning.enabled) input.settings.learned = preferredIndexes(learning.stats, next.type, next.formality);
     const outcome = await generateWithFallback(provider, { input, profile, now: now?.() });
+    if (seq !== runSeq.current) return;
     const r = outcome.result;
     const before = learning.previousShown();
     if (isVariant && before && r.choices) learning.remember(rejectedEvents(before, r.choices, next.type, next.formality));
@@ -632,13 +639,10 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
   };
 
   const onResetProfile = async (): Promise<void> => {
-    const keepOverlay = overlay;
-    await store.clearAll();
-    if (keepOverlay) await store.saveOverlay(keepOverlay);
+    await store.resetProfile();
     const loaded = await store.loadProfile(signingKeys);
     setProfile(loaded.profile);
     setProfileSource(loaded.source);
-    await store.savePreferences(prefs);
   };
 
   const focusField = (field?: ContextField): void => {

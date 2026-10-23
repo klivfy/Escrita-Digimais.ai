@@ -232,3 +232,43 @@ describe('importação, assinatura e armazenamento', () => {
     expect(again.ok && again.library).toEqual(ok.library);
   });
 });
+
+describe('rótulos comuns não são confundidos com esquemas executáveis', () => {
+  const withText = (t: string) => ({ ...EXAMPLE, models: [{ id: 'm1', title: 'Data prevista', types: ['pending'], text: t }] });
+
+  it.each(['Data: {data}. Prazo e data: combinados.', 'Atualização de metadata: concluída.', 'Perfil: ok. File: anexado.'])(
+    'aceita "%s"',
+    (t) => {
+      expect(validateLibrary(withText(t)).ok).toBe(true);
+    },
+  );
+
+  it.each(['abra data:text/html,<b>x</b>', 'veja file:///etc/passwd', 'use javascript:alert(1)', 'use VBScript:x', 'veja DATA:text/plain;base64,AAAA'])(
+    'recusa "%s"',
+    (t) => {
+      expect(validateLibrary(withText(t)).ok).toBe(false);
+    },
+  );
+});
+
+describe('restaurar o perfil padrão', () => {
+  it('remove só o perfil importado e mantém biblioteca, camada e contadores', async () => {
+    const lib = validateLibrary(EXAMPLE);
+    if (!lib.ok) throw new Error('exemplo inválido');
+    const local = new MemoryArea({
+      languageProfile: { ...DEFAULT_PROFILE, organizationName: 'Org' },
+      profileSignature: 'assinatura',
+      modelLibrary: lib.library,
+      modelLibrarySignature: 'assinatura-biblioteca',
+      profileOverlay: { schemaVersion: 1, overlayName: 'Equipe' },
+      usageCounters: { since: '2026-10-01', counts: { generated: 3 } },
+    });
+    await new AppStorage(local, new MemoryArea()).resetProfile();
+    expect(local.data.languageProfile).toBeUndefined();
+    expect(local.data.profileSignature).toBeUndefined();
+    expect(local.data.modelLibrary).toEqual(lib.library);
+    expect(local.data.modelLibrarySignature).toBe('assinatura-biblioteca');
+    expect(local.data.profileOverlay).toBeDefined();
+    expect(local.data.usageCounters).toBeDefined();
+  });
+});
