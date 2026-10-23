@@ -68,6 +68,25 @@ describe('buscar modelo na tela', () => {
     expect(screen.getByText('Digite o que você precisa dizer para buscar.')).toBeInTheDocument();
   });
 
+  it('library.shown conta uma vez por busca: mexer no formulário ou na consulta não recontam, e usar nunca passa de exibir', async () => {
+    const { user, local } = setup({ usageCounters: true });
+    const box = await openPicker(user);
+    await user.type(box, 'captura de tela');
+    await waitFor(() => expect(counts(local)['library.shown']).toBe(1));
+    // Renderiza o pai de novo e muda a consulta mantendo resultados.
+    fireEvent.change(screen.getByLabelText(/Por que a informação é necessária/), { target: { value: 'Erro ao abrir o sistema.' } });
+    await user.type(box, ' do erro');
+    await new Promise((r) => setTimeout(r, 30));
+    expect(counts(local)['library.shown']).toBe(1);
+    await user.click(await screen.findByRole('button', { name: /Usar o modelo: Pedir captura/ }));
+    await waitFor(() => expect(counts(local)['library.used']).toBe(1));
+    expect(counts(local)['library.used']).toBeLessThanOrEqual(counts(local)['library.shown']);
+    // Nova busca depois de escolher volta a contar.
+    await user.click(screen.getByText('Buscar um modelo pronto da instituição (opcional)'));
+    await user.type(await search(), 'captura de tela');
+    await waitFor(() => expect(counts(local)['library.shown']).toBe(2));
+  });
+
   it('Enter no campo de busca não gera a prévia', async () => {
     const { user } = setup();
     const box = await openPicker(user);

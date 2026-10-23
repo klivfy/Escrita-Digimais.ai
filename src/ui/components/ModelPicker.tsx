@@ -29,22 +29,29 @@ export function ModelPicker({ library, type, typeName, recipient, onPick, onEven
   const [query, setQuery] = useState('');
   const [anyType, setAnyType] = useState(false);
   const shownRef = useRef(false);
+  // O pai passa uma função nova a cada render; guardar a mais recente evita que o efeito rode de novo por causa dela.
+  const onEventRef = useRef(onEvent);
+  useEffect(() => {
+    onEventRef.current = onEvent;
+  });
   const index = useMemo(() => buildSearchIndex(library.models), [library]);
   const hits = useMemo(() => searchModels(index, query, { type, recipient, anyType, limit: 3 }), [index, query, type, recipient, anyType]);
   const available = useMemo(() => countEligible(index, { type, recipient, anyType }), [index, type, recipient, anyType]);
   const searching = query.trim().length > 0;
+  const hasHits = hits.length > 0;
 
   // Conta uma vez por "busca" (do primeiro resultado exibido até escolher, dizer "nenhum" ou limpar o campo).
+  // Só depende de haver resultado, e não da lista nem do pai: mudar o formulário ou a consulta sem mudar isso não recontam.
   useEffect(() => {
-    if (searching && hits.length > 0 && !shownRef.current) {
+    if (searching && hasHits && !shownRef.current) {
       shownRef.current = true;
-      onEvent('library.shown');
+      onEventRef.current('library.shown');
     }
     if (!searching) shownRef.current = false;
-  }, [hits, searching, onEvent]);
+  }, [searching, hasHits]);
 
   const none = (): void => {
-    onEvent('library.none');
+    onEventRef.current('library.none');
     shownRef.current = false;
     setQuery('');
     onAnnounce('Nenhum modelo escolhido. Preencha o formulário normalmente.');
