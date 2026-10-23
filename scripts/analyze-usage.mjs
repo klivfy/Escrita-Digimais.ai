@@ -9,7 +9,7 @@ const RULES = 'acento|grafia|concordancia|crase|uso';
 const KEY = new RegExp(
   '^(?:(?:generate|blocked|alert)\\.[a-z][a-z0-9_]{1,47}|time_to_copy\\.(?:lt1m|1to3m|3to10m|gt10m)|copy|variant|review_again|draft_split|draft_apply'
   + '|recipient\\.(?:user|manager|technical_team|vendor|other)|proofread\\.run|proofread\\.(?:' + RULES + ')\\.(?:acc|ign)'
-  + '|next_step\\.(?:shown|used)|shortcut\\.type)$',
+  + '|next_step\\.(?:shown|used)|shortcut\\.type|library\\.(?:shown|used|none))$',
 );
 // Chaves de aprendizado exatamente como a extensão aceita (src/application/style-learning.ts): ponto, escopo e índice
 // combinam entre si, e uma correção nunca vai de um campo para ele mesmo.
@@ -121,6 +121,12 @@ export function analyze(allPeople, opts = { minGenerations: 30, minDays: 14 }) {
   }
   const shown = total['next_step.shown'] ?? 0;
   if (shown > 0) lines.push(`- Próximo passo: sugerido ${shown} vezes, usado ${total['next_step.used'] ?? 0} (${pct(total['next_step.used'] ?? 0, shown)}; meta de 30%).`);
+  const libShown = total['library.shown'] ?? 0;
+  if (libShown > 0) {
+    const used = total['library.used'] ?? 0;
+    const none = total['library.none'] ?? 0;
+    lines.push(`- Biblioteca de modelos: lista exibida ${libShown} vezes; modelo usado ${used} (${pct(used, libShown)}); "nenhum destes" ${none} (${pct(none, libShown)}; meta: abaixo de 30%).`);
+  }
   if (total['shortcut.type']) lines.push(`- Atalho "Mais usados": ${total['shortcut.type']} usos.`);
   const sections = [
     ['Textos gerados por tipo', 'generate.', 20],

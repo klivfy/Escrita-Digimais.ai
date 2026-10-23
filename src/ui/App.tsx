@@ -30,10 +30,17 @@ import type {
 } from '../domain/types';
 import { copyText } from '../infrastructure/clipboard';
 import { AppStorage } from '../infrastructure/storage';
+import { exportLibraryJson, importLibraryText } from '../application/library-import';
+import type { ModelLibrary } from '../config/library-schema';
+import { downloadJson } from './download';
 import { extensionVersion } from '../infrastructure/extension';
 import { loadAiPolicy, loadSigningKeys, loadUsagePolicy } from '../infrastructure/policy';
 import { useStyleLearning } from './hooks/useStyleLearning';
 import { useUsageCounters } from './hooks/useUsageCounters';
+import { fillModel, pendingFields } from '../domain/library-search';
+import { vetLibrary } from '../domain/library-vetting';
+import type { LibraryModel } from '../config/library-schema';
+import { ModelPicker } from './components/ModelPicker';
 import { DiffView } from './components/DiffView';
 import { DraftPanel } from './components/DraftPanel';
 import type { DraftFields } from '../domain/draft';
@@ -78,6 +85,9 @@ function missingFieldLabel(field: ContextField | undefined, type: CommunicationT
   return field ? `Ir para o campo ${fieldLabel(field, type)}` : 'Ir para o campo';
 }
 
+/** Identifica a prévia que veio da biblioteca de modelos (não do motor): não tem "outra variação". */
+const LIBRARY_ENGINE = 'biblioteca-de-modelos';
+
 /** Tempo em que "Desfazer" fica disponível após uma limpeza manual. O conteúdo só vive em memória. */
 export const UNDO_CLEAR_MS = 30_000;
 
@@ -96,6 +106,8 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
   const [form, setForm] = useState<FormState>(initialForm);
   const [baseProfile, setProfile] = useState<LanguageProfile>(DEFAULT_PROFILE);
   const [overlay, setOverlay] = useState<ProfileOverlay | null>(null);
+  const [library, setLibrary] = useState<ModelLibrary | null>(null);
+  const [libraryProblem, setLibraryProblem] = useState<string | null>(null);
   const profile = useMemo(() => applyOverlay(baseProfile, overlay), [baseProfile, overlay]);
   const [profileSource, setProfileSource] = useState<'managed' | 'imported' | 'default'>('default');
   const [prefs, setPrefs] = useState<Preferences>(DEFAULT_PREFERENCES);
@@ -131,6 +143,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
   const typeRef = useRef<HTMLSelectElement>(null);
   // Tipo do último texto copiado: base do atalho de próximo passo.
   const [copiedType, setCopiedType] = useState<CommunicationType | null>(null);
+  const runSeq = useRef(0);
   const generatedAt = useRef(0);
   const usageCounters = useUsageCounters(store, usagePolicy, prefs.usageCounters);
   const { recorder, mode: usage } = usageCounters;
@@ -141,8 +154,8 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
     let alive = true;
     void (async () => {
       const keys = await loadKeys();
-      const [p, loaded, pol, ov, usagePol] = await Promise.all([
-        store.loadPreferences(), store.loadProfile(keys), loadPolicy(), store.loadOverlay(), loadUsage(),
+      const [p, loaded, pol, ov, usagePol, lib] = await Promise.all([
+        store.loadPreferences(), store.loadProfile(keys), loadPolicy(), store.loadOverlay(), loadUsage(), store.loadLibraryChecked(keys),
       ]);
       if (!alive) return;
       setPrefs(p);
@@ -151,6 +164,22 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
       setPolicy(pol);
       setSigningKeys(keys);
       setOverlay(ov);
+      // A biblioteca guardada também precisa passar nas regras atuais (perfil e camada de equipe podem ter mudado desde a importação).
+      let libraryNote: string | null = null;
+      let usable = lib.library;
+      if (lib.problem === 'signature') {
+        libraryNote = 'A biblioteca guardada não está em uso: a assinatura não confere com as chaves da organização. Importe de novo o arquivo assinado.';
+      } else if (lib.problem === 'invalid') {
+        libraryNote = 'A biblioteca guardada não está em uso: o arquivo guardado ficou inválido. Importe de novo.';
+      } else if (usable) {
+        const vetting = vetLibrary(usable, applyOverlay(loaded.profile, ov));
+        if (!vetting.ok) {
+          usable = null;
+          libraryNote = `A biblioteca guardada não está em uso: ${vetting.problems.length} modelo(s) não passam mais nas regras atuais (por exemplo "${vetting.problems[0].title}"). Importe uma versão revisada.`;
+        }
+      }
+      setLibrary(usable);
+      setLibraryProblem(libraryNote);
       setUsagePolicy(usagePol);
       setLearnedStats(await store.loadLearning());
       setForm((f) => ({ ...f, techLevel: p.techLevel, formality: p.formality, length: p.length, textStyle: p.textStyle }));
@@ -352,6 +381,42 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
     switchType(to, `Tipo alterado para ${profile.categoryNames[to]}.`);
   };
 
+  /**
+   * Leva o texto do modelo escolhido para a prévia editável. Só preenche os campos com o que o analista já informou
+   * no formulário (nome, prazo, equipe); os demais ficam entre chaves e impedem a cópia até serem preenchidos.
+   */
+  const onPickModel = (model: LibraryModel): void => {
+    // Uma geração em andamento não pode mais sobrescrever o modelo escolhido.
+    runSeq.current += 1;
+    const body = fillModel(model.text, { nome: form.requesterName, prazo: form.explicitDeadline, equipe: form.destinationTeam });
+    // A revisão usa o tipo do próprio modelo quando ele veio de outro tipo ("Buscar em todos os tipos").
+    const modelType = model.types.includes(form.type) ? form.type : model.types[0];
+    const review = reviewText(body, { ...reviewCtx, type: modelType }, profile);
+    // Campos pendentes são avisados ao vivo (abaixo da prévia), então não entram nos alertas fixos da geração.
+    review.warnings = review.warnings.filter((w) => w.code !== 'unfilled_field');
+    learning.setShown(undefined);
+    setResult({
+      text: body, warnings: review.warnings, missingInformation: [], missingFields: [], quality: review.quality,
+      blocked: false, sensitiveFindings: [], meta: { engine: LIBRARY_ENGINE, profileVersion: profile.profileVersion, templatesVersion: 'n/a' },
+    });
+    setText(body);
+    setInitialText(body);
+    setSnapshot(null);
+    setShowDiff(false);
+    setCopied('none');
+    setBusy(false);
+    generatedAt.current = Date.now();
+    void recorder.record('library.used');
+    const missing = pendingFields(body);
+    setLive(
+      missing.length > 0
+        ? `Modelo "${model.title}" na prévia. Preencha os campos ${missing.map((m) => `{${m}}`).join(', ')} antes de copiar.`
+        : `Modelo "${model.title}" na prévia. Revise e edite antes de copiar.`,
+    );
+    touch();
+    window.setTimeout(() => previewRef.current?.focus(), 0);
+  };
+
   const setType = (type: CommunicationType): void => {
     setForm((f) => ({ ...f, type, variant: 0 }));
     setResult(null);
@@ -375,10 +440,12 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
   const run = async (next: FormState, isVariant = false): Promise<void> => {
     setBusy(true);
     setCopied('none');
+    const seq = (runSeq.current += 1);
     const provider = providerFactory(policy);
     const input = toGenerationInput(next);
     if (learning.enabled) input.settings.learned = preferredIndexes(learning.stats, next.type, next.formality);
     const outcome = await generateWithFallback(provider, { input, profile, now: now?.() });
+    if (seq !== runSeq.current) return;
     const r = outcome.result;
     const before = learning.previousShown();
     if (isVariant && before && r.choices) learning.remember(rejectedEvents(before, r.choices, next.type, next.formality));
@@ -417,6 +484,10 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
   };
 
   const onCopy = async (): Promise<void> => {
+    if (pendingFields(text).length > 0) {
+      setLive('Há campos entre chaves sem preencher. Preencha no texto antes de copiar.');
+      return;
+    }
     const ok = await copy(text);
     setCopied(ok ? 'ok' : 'fail');
     if (ok) void recorder.record(['copy', `time_to_copy.${timeBucket(Date.now() - generatedAt.current)}`]);
@@ -487,6 +558,8 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
       setProfile(DEFAULT_PROFILE);
       setProfileSource('default');
       setOverlay(null);
+      setLibrary(null);
+      setLibraryProblem(null);
     }
     setConfirmClear(false);
     setAlsoClearStored(false);
@@ -526,6 +599,31 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
     return [];
   };
 
+  /** Importa a biblioteca de modelos: valida, examina cada modelo com as regras do perfil em vigor e só então guarda. */
+  const onImportLibrary = async (json: string): Promise<{ errors: string[]; notices: string[] }> => {
+    const parsed = await importLibraryText(json, signingKeys, profile);
+    if (!parsed.ok) return { errors: parsed.errors, notices: [] };
+    await store.saveLibrary(parsed.library, parsed.signature);
+    setLibrary(parsed.library);
+    setLibraryProblem(null);
+    setLive(`Biblioteca de modelos importada: ${parsed.library.models.length} modelos.`);
+    return {
+      errors: [],
+      notices: parsed.notices.slice(0, 20).flatMap((n) => n.reasons.slice(0, 2).map((r) => `Modelo "${n.id}" (${n.title}): ${r}`)),
+    };
+  };
+
+  const onRemoveLibrary = async (): Promise<void> => {
+    await store.removeLibrary();
+    setLibrary(null);
+    setLibraryProblem(null);
+    setLive('Biblioteca de modelos removida.');
+  };
+
+  const onExportLibrary = (): void => {
+    if (library) downloadJson('biblioteca-de-modelos.json', exportLibraryJson(library));
+  };
+
   const onRemoveOverlay = async (): Promise<void> => {
     await store.removeOverlay();
     setOverlay(null);
@@ -563,13 +661,10 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
   };
 
   const onResetProfile = async (): Promise<void> => {
-    const keepOverlay = overlay;
-    await store.clearAll();
-    if (keepOverlay) await store.saveOverlay(keepOverlay);
+    await store.resetProfile();
     const loaded = await store.loadProfile(signingKeys);
     setProfile(loaded.profile);
     setProfileSource(loaded.source);
-    await store.savePreferences(prefs);
   };
 
   const focusField = (field?: ContextField): void => {
@@ -579,7 +674,9 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
   const noResponseOff = form.type === 'closure_no_response' && !profile.closureRules.noResponseEnabled;
   const shownWarnings = snapshot?.warnings ?? result?.warnings ?? [];
   const shownQuality = snapshot?.quality ?? result?.quality;
-  const copyBlocked = !text || Boolean(liveReview?.blocked);
+  const pending = useMemo(() => pendingFields(text), [text]);
+  const fromLibrary = result?.meta.engine === LIBRARY_ENGINE;
+  const copyBlocked = !text || Boolean(liveReview?.blocked) || pending.length > 0;
   const over = text.length > profile.maxLength;
 
   const renderField = (name: ContextField) => {
@@ -707,6 +804,11 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
             overlay={overlay}
             onImportOverlay={onImportOverlay}
             onRemoveOverlay={() => void onRemoveOverlay()}
+            library={library}
+            libraryProblem={libraryProblem}
+            onImportLibrary={onImportLibrary}
+            onRemoveLibrary={() => void onRemoveLibrary()}
+            onExportLibrary={onExportLibrary}
             usage={{ ...usage, policy: usagePolicy, total: usageCounters.total }}
             learn={{ enabled: learning.enabled, locked: learning.locked, total: learning.total }}
             version={extensionVersion()}
@@ -772,6 +874,17 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
             </select>
           </div>
 
+          {library && library.models.length > 0 && (
+            <ModelPicker
+              library={library}
+              type={form.type}
+              typeName={profile.categoryNames[form.type]}
+              recipient={form.recipient}
+              onPick={onPickModel}
+              onEvent={(key) => void recorder.record(key)}
+              onAnnounce={setLive}
+            />
+          )}
           <h2>2. Contexto</h2>
           <DraftPanel
             key={draftKey}
@@ -884,7 +997,12 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
                   {text.length} / {profile.maxLength} caracteres{over ? ' (acima do limite da organização)' : ''}
                 </span>
               </div>
-              {liveReview?.blocked && (
+              {pending.length > 0 && (
+                <p role="status" className="panel warn">
+                  Faltam campos entre chaves: {pending.map((p) => `{${p}}`).join(', ')}. Preencha no texto da prévia para poder copiar.
+                </p>
+              )}
+              {liveReview?.warnings.some((w) => w.severity === 'block' && w.code !== 'unfilled_field') && (
                 <p role="alert" className="error-text">
                   O texto atual contém algo que impede a cópia (credencial, token ou pedido de acesso). Remova-o para copiar.
                 </p>
@@ -892,7 +1010,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
               <div className="row">
                 <button type="button" className="primary" onClick={() => void onCopy()} disabled={copyBlocked}>Copiar texto</button>
                 <button type="button" onClick={onReview}>Revisar novamente</button>
-                <button type="button" onClick={onVariant} disabled={busy}>Outra variação</button>
+                {!fromLibrary && <button type="button" onClick={onVariant} disabled={busy}>Outra variação</button>}
               </div>
               <details className="more">
                 <summary>Mais ações</summary>

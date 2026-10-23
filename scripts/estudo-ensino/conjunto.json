@@ -1,0 +1,136 @@
+{
+ "modelos": {
+  "pedir_print": "Para analisarmos o erro, envie uma captura de tela com a mensagem completa e informe o horário em que ocorreu.",
+  "reset_senha": "Realizamos a redefinição da sua senha. Use a senha temporária enviada por mensagem direta e troque no primeiro acesso.",
+  "vpn_reinstalar": "Para restabelecer o acesso remoto, desconecte da VPN, reinicie o computador e conecte novamente. Se persistir, informe o código do erro.",
+  "sem_retorno_1": "Entramos em contato e ainda não recebemos retorno. Se o problema persistir, responda este chamado com as informações solicitadas.",
+  "encerrar_sem_retorno": "Como não houve retorno após as tentativas de contato, o chamado será encerrado. Se precisar, reabra respondendo este chamado.",
+  "encerrar_resolvido": "Confirmamos a solução com você e estamos encerrando este chamado. Se precisar de apoio novamente, entre em contato conosco.",
+  "impressora_driver": "Reinstalamos o driver da impressora e imprimimos uma página de teste com sucesso. Confirme se a impressão está normal.",
+  "acesso_pasta": "Para liberar o acesso à pasta de rede, precisamos do De acordo do gestor da área e do caminho completo da pasta.",
+  "aprovacao_software": "Solicitamos o De acordo para a instalação do software no equipamento informado, conforme a política de software da instituição.",
+  "lentidao_notebook": "Para investigar a lentidão, informe desde quando ocorre, quais programas estavam abertos e se o problema aparece em outro computador.",
+  "email_caixa_cheia": "A caixa de e-mail atingiu o limite. Arquive ou exclua mensagens antigas e esvazie a pasta de itens excluídos para liberar espaço.",
+  "wifi_corporativo": "Para conectar ao Wi-Fi corporativo, esqueça a rede, selecione novamente e entre com seu usuário e senha de rede.",
+  "escalar_infra": "Encaminhamos o chamado para a equipe de infraestrutura, pois a análise exige acesso administrativo ao servidor.",
+  "agendar_visita": "Para a visita técnica, confirme o melhor horário e informe a localização do equipamento, com andar e sala.",
+  "perfil_outlook": "Reparamos o perfil do Outlook e limpamos o cache. Reinicie o aplicativo e confirme se os anexos abrem normalmente.",
+  "monitor_sem_imagem": "Verifique se o cabo de vídeo está bem conectado nas duas pontas e teste outra entrada do monitor. Se não houver imagem, informe o modelo."
+ },
+ "consultas": {
+  "pedir_print": [
+   "pedir print do erro",
+   "preciso da captura de tela com a mensagem e o horario",
+   "manda um print da tela com o erro pra gente analisar",
+   "solicitar imagem do erro e a hora que aconteceu"
+  ],
+  "reset_senha": [
+   "resetei a senha do usuario",
+   "senha redefinida, mandei a temporaria",
+   "reset de senha concluido, trocar no primeiro acesso",
+   "liberei nova senha provisoria"
+  ],
+  "vpn_reinstalar": [
+   "vpn nao conecta, reiniciar e tentar de novo",
+   "orientar a desconectar da vpn e reiniciar o pc",
+   "acesso remoto caiu, pedir pra reconectar a vpn",
+   "problema de vpn pedir codigo do erro"
+  ],
+  "sem_retorno_1": [
+   "usuario nao respondeu ainda",
+   "cobrar retorno do usuario sobre o chamado",
+   "sem resposta, pedir que responda com as informacoes",
+   "ja liguei e nao tive retorno"
+  ],
+  "encerrar_sem_retorno": [
+   "encerrar chamado por falta de retorno",
+   "sem retorno apos varias tentativas, vou fechar",
+   "chamado fechado porque o usuario nao respondeu",
+   "encerramento por ausencia de resposta, pode reabrir"
+  ],
+  "encerrar_resolvido": [
+   "chamado resolvido, encerrando",
+   "solucao confirmada com o usuario, fechar",
+   "problema resolvido e confirmado, encerrar o atendimento",
+   "finalizar chamado solucionado"
+  ],
+  "impressora_driver": [
+   "reinstalei o driver da impressora",
+   "impressora voltou a imprimir apos driver novo",
+   "driver reinstalado, pagina de teste ok",
+   "impressao normalizada depois de reinstalar o driver"
+  ],
+  "acesso_pasta": [
+   "liberar acesso a pasta de rede",
+   "precisa do de acordo do gestor para a pasta",
+   "pasta compartilhada sem acesso, pedir caminho e aprovacao",
+   "solicitar autorizacao do gestor para acesso a pasta"
+  ],
+  "aprovacao_software": [
+   "pedir de acordo para instalar software",
+   "instalacao de programa precisa de aprovacao do gestor",
+   "solicito autorizacao para instalar o software na maquina",
+   "aprovacao de software conforme politica"
+  ],
+  "lentidao_notebook": [
+   "notebook lento, perguntar desde quando",
+   "computador devagar, quais programas abertos",
+   "lentidao: pedir se acontece em outra maquina tambem",
+   "investigar lentidao do computador"
+  ],
+  "email_caixa_cheia": [
+   "caixa de email cheia",
+   "limite do e-mail atingido, orientar a arquivar",
+   "orientar esvaziar itens excluidos para liberar espaco no email",
+   "email sem espaco"
+  ],
+  "wifi_corporativo": [
+   "wifi corporativo nao conecta",
+   "orientar esquecer a rede wi-fi e conectar de novo",
+   "problema no wifi da empresa, usar usuario e senha de rede",
+   "reconectar na rede sem fio corporativa"
+  ],
+  "escalar_infra": [
+   "encaminhar para a infraestrutura",
+   "escalar chamado para infra, precisa de acesso no servidor",
+   "redirecionar para equipe de infra",
+   "passar o caso a infraestrutura"
+  ],
+  "agendar_visita": [
+   "agendar visita tecnica",
+   "combinar horario da visita e local do equipamento",
+   "visita no local, pedir andar e sala",
+   "marcar atendimento presencial"
+  ],
+  "perfil_outlook": [
+   "reparei o perfil do outlook",
+   "outlook travando anexo, limpei o cache",
+   "perfil do outlook refeito, pedir pra reabrir",
+   "anexos do outlook nao abrem, reparo concluido"
+  ],
+  "monitor_sem_imagem": [
+   "monitor sem imagem",
+   "verificar cabo de video e testar outra entrada",
+   "tela preta, conferir conexao do cabo do monitor",
+   "sem video no monitor"
+  ]
+ },
+ "fora": [
+  "pedir desculpas pela demora no atendimento",
+  "convite para treinamento de segurança da informação",
+  "atualizar o cadastro do usuário no sistema de rh",
+  "solicitar compra de teclado novo",
+  "informar manutenção programada do servidor no sábado",
+  "trocar o ramal do setor financeiro",
+  "renovar certificado digital do portal",
+  "abrir chamado para o fornecedor da internet",
+  "pedir nota fiscal do toner",
+  "liberar acesso ao prédio para o técnico",
+  "configurar assinatura de email com novo logotipo",
+  "backup do notebook antes da formatação",
+  "agradecer o retorno do usuário",
+  "solicitar troca de bateria do nobreak",
+  "orientar sobre mudança de política de senhas",
+  "cadastrar novo colaborador no domínio"
+ ]
+}

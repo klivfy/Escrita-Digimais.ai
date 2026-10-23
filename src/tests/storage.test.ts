@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_PROFILE } from '../config/language-profile';
 import { exportProfileJson } from '../config/profile-schema';
 import { DEFAULT_PREFERENCES, sanitizePreferences } from '../application/preferences';
+import { validateLibrary } from '../config/library-schema';
 import { validateOverlay } from '../config/profile-overlay';
 import { emptyCounters, increment } from '../application/usage-counters';
 import { AppStorage, ALLOWED_KEYS } from '../infrastructure/storage';
@@ -60,6 +61,8 @@ describe('persistência', () => {
     if (ov.ok) await s.saveOverlay(ov.overlay);
     await s.saveCounters(increment(emptyCounters('2026-10-15'), 'copy'));
     await s.saveLearning({ version: 1, counts: { 'acc.lead.any.1': 1 } });
+    const lib = validateLibrary({ schemaVersion: 1, libraryName: 'Org', libraryVersion: '1', models: [{ id: 'm', title: 'Modelo', types: ['pending'], text: 'Registramos a pendência neste atendimento.' }] });
+    if (lib.ok) await s.saveLibrary(lib.library, 'assinatura-da-biblioteca');
     expect(Object.keys(local.data).sort()).toEqual([...ALLOWED_KEYS].sort());
     await s.clearAll();
     expect(local.data).toEqual({});

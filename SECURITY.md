@@ -22,6 +22,12 @@ Limitações conhecidas: a detecção é heurística e pode ter falsos negativos
 - `sidePanel`: exibir a interface principal no painel lateral.
 - `storage`: salvar preferências não sensíveis e o perfil de linguagem; ler política gerenciada (`storage.managed`).
 
+## Biblioteca de modelos
+- Arquivo importado com limite de 400 KB, no máximo 200 modelos de 1.500 caracteres, só texto simples (sem HTML, links, esquemas executáveis ou caracteres de controle), chaves desconhecidas recusadas e campos entre chaves limitados a uma lista fechada (`config/library-schema.ts`). O objeto guardado é montado campo a campo, nunca por mesclagem do JSON.
+- Triagem na importação (`domain/library-vetting.ts`): qualquer dado sensível, pedido de credencial ou de dado pessoal, prazo concreto, solução afirmada fora do encerramento, ameaça de encerramento, urgência sem motivo, termo proibido pelo perfil, emoji, pontuação exagerada e caixa alta de ênfase recusam a biblioteca inteira, com o motivo de cada modelo.
+- Com `profileSigningPublicKeys` na política, só vale biblioteca assinada (`signed-library-v1`, a mesma chave ECDSA P-256 do perfil, `node scripts/sign-profile.mjs sign-library`). A assinatura guardada é reverificada a cada abertura (falha fechada). Assinatura de perfil não vale como biblioteca, porque o formato e o conteúdo assinado são outros.
+- A biblioteca só oferece texto: nada é inserido, copiado ou enviado sem ação do analista.
+
 ## Correção de texto e lista de palavras
 - A lista de frequência (`src/config/proofread/freq-pt.json`, cerca de 1 MB) entra por `import()` dinâmico, resolvido no build: não há `fetch`, host novo nem permissão nova. Ela vem do pacote `wordfreq` 3.1.1 (licença dos dados: CC BY-SA 4.0; veja `THIRD-PARTY-NOTICES.md`) e é regenerada por `scripts/gerar-lista-frequencia.py`.
 - A correção só sugere. Nenhuma troca acontece sem ação do analista, e o texto não é persistido.

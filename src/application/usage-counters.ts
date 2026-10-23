@@ -33,6 +33,9 @@ export const FIXED_KEYS: readonly string[] = [
   'next_step.shown',
   'next_step.used',
   'shortcut.type',
+  'library.shown',
+  'library.used',
+  'library.none',
 ];
 
 const FIXED_SET = new Set(FIXED_KEYS);

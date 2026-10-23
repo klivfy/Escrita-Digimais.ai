@@ -6,6 +6,8 @@ import type { LanguageProfile } from '../domain/types';
 import { sanitizeSigningKeys, verifyProfileSignature } from '../application/profile-signing';
 import { validateOverlay } from '../config/profile-overlay';
 import type { ProfileOverlay } from '../config/profile-overlay';
+import { validateLibrary } from '../config/library-schema';
+import type { ModelLibrary } from '../config/library-schema';
 import { dayString, emptyCounters, sanitizeCounters } from '../application/usage-counters';
 import type { UsageCounters } from '../application/usage-counters';
 import { emptyStats, sanitizeStats } from '../application/style-learning';
@@ -26,6 +28,8 @@ export const STORAGE_KEYS = {
   overlay: 'profileOverlay',
   usageCounters: 'usageCounters',
   learnedStyle: 'learnedStyle',
+  modelLibrary: 'modelLibrary',
+  modelLibrarySignature: 'modelLibrarySignature',
 } as const;
 export const ALLOWED_KEYS: string[] = Object.values(STORAGE_KEYS);
 
@@ -36,6 +40,12 @@ function chromeArea(name: 'local' | 'managed'): StorageArea | null {
   } catch {
     return null;
   }
+}
+
+export type LibraryProblem = 'invalid' | 'signature';
+export interface LibraryLoad {
+  library: ModelLibrary | null;
+  problem?: LibraryProblem;
 }
 
 export class AppStorage {
@@ -131,6 +141,48 @@ export class AppStorage {
     await this.local?.remove(STORAGE_KEYS.overlay);
   }
 
+  /**
+   * Biblioteca de modelos de texto da instituição. Sempre revalidada na leitura. Com chaves de assinatura configuradas,
+   * só vale se a assinatura guardada ainda verificar (falha fechada), como no perfil importado.
+   * Devolve o motivo quando a biblioteca guardada não pode ser usada, para a tela avisar em vez de sumir sem explicação.
+   */
+  async loadLibraryChecked(signingKeys: readonly string[] = []): Promise<LibraryLoad> {
+    try {
+      const data = await this.local?.get([STORAGE_KEYS.modelLibrary, STORAGE_KEYS.modelLibrarySignature]);
+      const stored = data?.[STORAGE_KEYS.modelLibrary];
+      if (!stored) return { library: null };
+      const result = validateLibrary(stored);
+      if (!result.ok) return { library: null, problem: 'invalid' };
+      if (sanitizeSigningKeys([...signingKeys]).length > 0) {
+        const signature = data?.[STORAGE_KEYS.modelLibrarySignature];
+        if (typeof signature !== 'string' || !(await verifyProfileSignature(result.library, signature, signingKeys))) {
+          return { library: null, problem: 'signature' };
+        }
+      }
+      return { library: result.library };
+    } catch {
+      return { library: null, problem: 'invalid' };
+    }
+  }
+
+  async loadLibrary(signingKeys: readonly string[] = []): Promise<ModelLibrary | null> {
+    return (await this.loadLibraryChecked(signingKeys)).library;
+  }
+
+  async saveLibrary(library: ModelLibrary, signature?: string): Promise<void> {
+    const check = validateLibrary(library);
+    if (!check.ok) throw new Error('Biblioteca inválida.');
+    await this.local?.set({
+      [STORAGE_KEYS.modelLibrary]: check.library,
+      ...(signature ? { [STORAGE_KEYS.modelLibrarySignature]: signature } : {}),
+    });
+    if (!signature) await this.local?.remove(STORAGE_KEYS.modelLibrarySignature);
+  }
+
+  async removeLibrary(): Promise<void> {
+    await this.local?.remove([STORAGE_KEYS.modelLibrary, STORAGE_KEYS.modelLibrarySignature]);
+  }
+
   /** Contadores agregados (sem conteúdo). Sempre sanitizados na leitura e na gravação. */
   async loadCounters(now: Date = new Date()): Promise<UsageCounters> {
     const today = dayString(now);
@@ -168,6 +220,11 @@ export class AppStorage {
 
   async resetLearning(): Promise<void> {
     await this.local?.remove(STORAGE_KEYS.learnedStyle);
+  }
+
+  /** Volta ao perfil padrão: remove só o perfil importado e sua assinatura (biblioteca, camada, contadores e preferências ficam). */
+  async resetProfile(): Promise<void> {
+    await this.local?.remove([STORAGE_KEYS.profile, STORAGE_KEYS.profileSignature]);
   }
 
   async clearAll(): Promise<void> {
