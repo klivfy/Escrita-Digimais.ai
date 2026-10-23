@@ -1,0 +1,149 @@
+import { readFileSync } from 'node:fs';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import axe from 'axe-core';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { validateLibrary } from '../config/library-schema';
+import { AppStorage } from '../infrastructure/storage';
+import { App } from '../ui/App';
+import { MemoryArea } from './memory-storage';
+import { NOW } from './helpers';
+
+afterEach(() => cleanup());
+
+const parsed = validateLibrary(JSON.parse(readFileSync('examples/biblioteca-exemplo.json', 'utf8')));
+if (!parsed.ok) throw new Error('exemplo inválido');
+const LIBRARY = parsed.library;
+
+function setup(prefs: Record<string, unknown> = {}, withLibrary = true) {
+  const local = new MemoryArea({ preferences: prefs, ...(withLibrary ? { modelLibrary: LIBRARY } : {}) });
+  const copy = vi.fn(async () => true);
+  const user = userEvent.setup();
+  render(<App storage={new AppStorage(local, new MemoryArea())} copy={copy} now={() => NOW} loadUsage={async () => 'optional'} />);
+  return { local, user, copy };
+}
+
+const search = () => screen.findByLabelText('Buscar modelo');
+const openPicker = async (user: ReturnType<typeof userEvent.setup>) => {
+  await user.click(await screen.findByText('Buscar um modelo pronto da instituição (opcional)'));
+  return search();
+};
+const live = () => document.querySelector('[aria-live="polite"]')?.textContent ?? '';
+const preview = () => screen.getByLabelText('Prévia editável') as HTMLTextAreaElement;
+const counts = (local: MemoryArea) => (local.data.usageCounters as { counts: Record<string, number> } | undefined)?.counts ?? {};
+
+describe('buscar modelo na tela', () => {
+  it('sem biblioteca, a busca não aparece', async () => {
+    setup({}, false);
+    await screen.findByLabelText('Tipo de comunicação');
+    expect(screen.queryByText('Buscar um modelo pronto da instituição (opcional)')).toBeNull();
+  });
+
+  it('busca, mostra até 3 opções e escolher leva o texto à prévia editável sem copiar', async () => {
+    const { user, copy } = setup();
+    const box = await openPicker(user);
+    await user.type(box, 'captura da tela do erro');
+    const list = await screen.findByRole('list', { name: 'Modelos encontrados' });
+    const items = within(list).getAllByRole('listitem');
+    expect(items.length).toBeGreaterThan(0);
+    expect(items.length).toBeLessThanOrEqual(3);
+    expect(items[0].textContent).toMatch(/Pedir captura de tela do erro/);
+    await user.click(screen.getByRole('button', { name: 'Usar o modelo: Pedir captura de tela do erro' }));
+    expect(preview().value).toContain('envie uma captura de tela com a mensagem completa');
+    expect(copy).not.toHaveBeenCalled();
+    expect(live()).toMatch(/Modelo "Pedir captura de tela do erro" na prévia\. Revise e edite antes de copiar/);
+    expect(preview()).toHaveFocus();
+    // O texto é editável como qualquer prévia.
+    fireEvent.change(preview(), { target: { value: `${preview().value} Obrigado.` } });
+    expect(preview().value).toMatch(/Obrigado\.$/);
+  });
+
+  it('Enter no campo de busca não gera a prévia', async () => {
+    const { user } = setup();
+    const box = await openPicker(user);
+    await user.type(box, 'senha{Enter}');
+    expect(screen.queryByLabelText('Prévia editável')).toBeNull();
+  });
+
+  it('preenche nome, prazo e equipe com o que foi informado; o resto fica pendente e impede a cópia', async () => {
+    const { user, copy } = setup();
+    fireEvent.change(await screen.findByLabelText('Tipo de comunicação'), { target: { value: 'redirect_or_escalate' } });
+    fireEvent.change(screen.getByLabelText('Destinatário'), { target: { value: 'technical_team' } });
+    fireEvent.change(screen.getByLabelText(/Equipe de destino/), { target: { value: 'Infraestrutura' } });
+    const box = await openPicker(user);
+    await user.type(box, 'encaminhar para outra equipe');
+    await user.click(await screen.findByRole('button', { name: /Usar o modelo: Encaminhar o chamado a outra equipe/ }));
+    expect(preview().value).toBe('Encaminhamos {chamado} para Infraestrutura, pois a análise exige acesso administrativo ao servidor.');
+    expect(screen.getByText(/Faltam campos entre chaves: \{chamado\}/)).toBeInTheDocument();
+    const copyButton = screen.getByRole('button', { name: 'Copiar texto' });
+    expect(copyButton).toBeDisabled();
+    expect(live()).toMatch(/Preencha os campos \{chamado\} antes de copiar/);
+    fireEvent.change(preview(), { target: { value: preview().value.replace('{chamado}', 'este chamado') } });
+    expect(screen.queryByText(/Faltam campos entre chaves/)).toBeNull();
+    expect(copyButton).toBeEnabled();
+    await user.click(copyButton);
+    expect(copy).toHaveBeenCalledWith('Encaminhamos este chamado para Infraestrutura, pois a análise exige acesso administrativo ao servidor.');
+  });
+
+  it('a prévia do modelo passa pela revisão e não oferece "outra variação"', async () => {
+    const { user } = setup();
+    const box = await openPicker(user);
+    await user.type(box, 'captura de tela');
+    await user.click(await screen.findByRole('button', { name: /Usar o modelo: Pedir captura/ }));
+    expect(screen.queryByRole('button', { name: 'Outra variação' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Revisar novamente' })).toBeInTheDocument();
+    expect(screen.getByText(/Motor biblioteca-de-modelos/)).toBeInTheDocument();
+    // Se o analista colar algo que bloqueia a cópia, a revisão normal vale.
+    fireEvent.change(preview(), { target: { value: 'Envie sua senha: Teste@12345 para validarmos.' } });
+    expect(screen.getByRole('button', { name: 'Copiar texto' })).toBeDisabled();
+  });
+
+  it('"Nenhum destes" registra a busca sem modelo e limpa o campo', async () => {
+    const { local, user } = setup({ usageCounters: true });
+    const box = await openPicker(user);
+    await user.type(box, 'assunto que nao existe na biblioteca');
+    await user.click(await screen.findByRole('button', { name: 'Nenhum destes' }));
+    expect((box as HTMLInputElement).value).toBe('');
+    expect(live()).toMatch(/Nenhum modelo escolhido/);
+    await waitFor(() => expect(counts(local)['library.none']).toBe(1));
+  });
+
+  it('contadores: lista exibida uma vez por busca e modelo usado; nunca o texto', async () => {
+    const { local, user } = setup({ usageCounters: true });
+    const box = await openPicker(user);
+    await user.type(box, 'captura de tela do erro');
+    await user.click(await screen.findByRole('button', { name: /Usar o modelo: Pedir captura/ }));
+    await waitFor(() => expect(counts(local)['library.used']).toBe(1));
+    expect(counts(local)['library.shown']).toBe(1);
+    expect(JSON.stringify(local.data.usageCounters)).not.toMatch(/captura|erro|modelo/i);
+  });
+
+  it('sem os contadores ligados, nada é gravado', async () => {
+    const { local, user } = setup();
+    const box = await openPicker(user);
+    await user.type(box, 'captura de tela');
+    await user.click(await screen.findByRole('button', { name: /Usar o modelo: Pedir captura/ }));
+    expect(local.data.usageCounters).toBeUndefined();
+  });
+
+  it('o texto do modelo some com "Limpar tudo" como qualquer prévia', async () => {
+    const { user } = setup();
+    const box = await openPicker(user);
+    await user.type(box, 'captura de tela');
+    await user.click(await screen.findByRole('button', { name: /Usar o modelo: Pedir captura/ }));
+    await user.click(screen.getByRole('button', { name: 'Limpar tudo' }));
+    await user.click(screen.getByRole('button', { name: 'Apagar agora' }));
+    expect(screen.queryByLabelText('Prévia editável')).toBeNull();
+  });
+
+  it('sem violações de acessibilidade (axe) com resultados e com a prévia do modelo', async () => {
+    const { user } = setup();
+    const box = await openPicker(user);
+    await user.type(box, 'captura de tela');
+    await screen.findByRole('list', { name: 'Modelos encontrados' });
+    const run = () => axe.run(document.body, { rules: { 'color-contrast': { enabled: false } } });
+    expect((await run()).violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual([]);
+    await user.click(screen.getAllByRole('button', { name: /^Usar o modelo:/ })[0]);
+    expect((await run()).violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual([]);
+  });
+});

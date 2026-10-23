@@ -179,7 +179,7 @@ Textos prontos da instituição, escolhidos e revisados por pessoas, importados 
 ```
 node scripts/sign-profile.mjs sign-library biblioteca.json chave-da-org.private.pem
 ```
-Nesta versão a biblioteca é importada, exportada e removida; a busca e a inserção do modelo na prévia vêm na etapa seguinte do plano em `docs/ESTUDO-ENSINAR-A-EXTENSAO.md`.
+Com a biblioteca importada, o modo "Gerar texto" ganha "Buscar um modelo pronto da instituição (opcional)": o analista digita o que precisa dizer e vê até 3 modelos (do tipo e do destinatário escolhidos, ou de todos os tipos se marcar a opção), com "Nenhum destes". A busca compara trechos de letras com o título, as palavras-chave e o texto do modelo; no experimento do estudo o modelo certo ficou entre os 3 primeiros em 98% das consultas e em 1º em 91%, por isso a extensão nunca escolhe sozinha. Escolher um modelo leva o texto para a prévia editável: o nome, o prazo e a equipe são preenchidos só com o que o analista já informou no formulário, e os demais campos ficam entre chaves e impedem a cópia até serem preenchidos no texto. A prévia passa pela revisão normal e não tem "Outra variação". Nada é copiado nem inserido sem ação do analista.
 
 ### Camada da equipe (opcional)
 Além do perfil da organização, cada analista pode importar uma camada da equipe em Configurações. A mesclagem é restritiva: a camada só endurece regras, nunca afrouxa. Formato:

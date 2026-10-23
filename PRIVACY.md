@@ -30,7 +30,7 @@ O texto colado no modo “Revisar texto pronto” segue as mesmas regras do rest
 
 ### Contadores de uso
 - Desligados por padrão. O analista liga em Configurações, ou a organização força o estado pela política `usageCounters` (`off`, `optional` ou `on`).
-- Contam apenas: quantos textos de cada tipo e para cada destinatário foram gerados, quantas gerações foram bloqueadas por motivo, quais códigos de alerta apareceram, cópias, outras variações, revisões, a faixa de tempo até copiar (menos de 1 min, 1 a 3 min, 3 a 10 min, mais de 10 min), verificações do modo “Corrigir texto” e sugestões aceitas ou ignoradas por regra (`proofread.<regra>.acc|ign`), e quantas vezes o atalho de próximo passo apareceu, foi usado e o atalho de tipo foi usado.
+- Contam apenas: quantos textos de cada tipo e para cada destinatário foram gerados, quantas gerações foram bloqueadas por motivo, quais códigos de alerta apareceram, cópias, outras variações, revisões, a faixa de tempo até copiar (menos de 1 min, 1 a 3 min, 3 a 10 min, mais de 10 min), verificações do modo “Corrigir texto” e sugestões aceitas ou ignoradas por regra (`proofread.<regra>.acc|ign`), e quantas vezes o atalho de próximo passo apareceu, foi usado e o atalho de tipo foi usado, além de `library.shown` (lista de modelos exibida em uma busca), `library.used` (modelo levado à prévia) e `library.none` ("nenhum destes"). Nunca o texto buscado nem o identificador ou o conteúdo do modelo.
 - Nunca registram texto digitado ou gerado, campos do chamado, número de chamado, identificação de pessoa, marca de tempo por evento ou dado sensível detectado.
 - Ficam somente neste navegador. Nada é enviado: o analista pode exportar o arquivo e entregá-lo se quiser. “Zerar contadores” e “Limpar tudo” apagam o registro.
 

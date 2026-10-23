@@ -141,7 +141,8 @@ Fase 1 (núcleo da biblioteca) implementada no branch `claude/biblioteca-modelos
 
 - A importação é tudo ou nada: um modelo recusado impede a biblioteca inteira, para que o que fica guardado seja exatamente o que foi revisado e assinado.
 - Os alertas `low_cordiality` e `required_text_missing` não valem para trecho de texto (o motor acrescenta saudação, fecho e textos obrigatórios) e ficam fora da triagem.
-- Fora desta fase: política gerenciada para entregar a biblioteca sem importação manual, busca e inserção na prévia (fases 2 e 3), contadores `library.*` e a ferramenta de curadoria (fase 4).
+- Fase 2 entregue no mesmo branch: busca por semelhança em TypeScript (`domain/library-search.ts`, mesmo método do experimento; a repetição da medida roda em `src/tests/library-search.test.ts`), seletor na tela com até 3 opções e "Nenhum destes" (`ui/components/ModelPicker.tsx`), inserção na prévia editável, preenchimento de nome, prazo e equipe a partir do formulário, bloqueio da cópia com campo pendente e contadores `library.shown`, `library.used` e `library.none` (também no `analyze-usage.mjs`). Decisões: o título e as palavras-chave entram na comparação (não foram medidos separadamente, só no teste curto do repositório); Enter no campo não gera a prévia; a prévia do modelo não tem "Outra variação"; "lista exibida" conta uma vez por busca.
+- Fora da fase 1: política gerenciada para entregar a biblioteca sem importação manual, busca e inserção na prévia (fases 2 e 3), contadores `library.*` e a ferramenta de curadoria (fase 4).
 
 ## 8. Riscos e como tratá-los
 

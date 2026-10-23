@@ -37,6 +37,9 @@ import { extensionVersion } from '../infrastructure/extension';
 import { loadAiPolicy, loadSigningKeys, loadUsagePolicy } from '../infrastructure/policy';
 import { useStyleLearning } from './hooks/useStyleLearning';
 import { useUsageCounters } from './hooks/useUsageCounters';
+import { fillModel, pendingFields } from '../domain/library-search';
+import type { LibraryModel } from '../config/library-schema';
+import { ModelPicker } from './components/ModelPicker';
 import { DiffView } from './components/DiffView';
 import { DraftPanel } from './components/DraftPanel';
 import type { DraftFields } from '../domain/draft';
@@ -80,6 +83,9 @@ const BLOCK_TITLES: Record<NonNullable<GenerationResult['blockReason']>, string>
 function missingFieldLabel(field: ContextField | undefined, type: CommunicationType): string {
   return field ? `Ir para o campo ${fieldLabel(field, type)}` : 'Ir para o campo';
 }
+
+/** Identifica a prévia que veio da biblioteca de modelos (não do motor): não tem "outra variação". */
+const LIBRARY_ENGINE = 'biblioteca-de-modelos';
 
 /** Tempo em que "Desfazer" fica disponível após uma limpeza manual. O conteúdo só vive em memória. */
 export const UNDO_CLEAR_MS = 30_000;
@@ -357,6 +363,36 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
     switchType(to, `Tipo alterado para ${profile.categoryNames[to]}.`);
   };
 
+  /**
+   * Leva o texto do modelo escolhido para a prévia editável. Só preenche os campos com o que o analista já informou
+   * no formulário (nome, prazo, equipe); os demais ficam entre chaves e impedem a cópia até serem preenchidos.
+   */
+  const onPickModel = (model: LibraryModel): void => {
+    const body = fillModel(model.text, { nome: form.requesterName, prazo: form.explicitDeadline, equipe: form.destinationTeam });
+    const review = reviewText(body, reviewCtx, profile);
+    learning.setShown(undefined);
+    setResult({
+      text: body, warnings: review.warnings, missingInformation: [], missingFields: [], quality: review.quality,
+      blocked: false, sensitiveFindings: [], meta: { engine: LIBRARY_ENGINE, profileVersion: profile.profileVersion, templatesVersion: 'n/a' },
+    });
+    setText(body);
+    setInitialText(body);
+    setSnapshot(null);
+    setShowDiff(false);
+    setCopied('none');
+    setBusy(false);
+    generatedAt.current = Date.now();
+    void recorder.record('library.used');
+    const missing = pendingFields(body);
+    setLive(
+      missing.length > 0
+        ? `Modelo "${model.title}" na prévia. Preencha os campos ${missing.map((m) => `{${m}}`).join(', ')} antes de copiar.`
+        : `Modelo "${model.title}" na prévia. Revise e edite antes de copiar.`,
+    );
+    touch();
+    window.setTimeout(() => previewRef.current?.focus(), 0);
+  };
+
   const setType = (type: CommunicationType): void => {
     setForm((f) => ({ ...f, type, variant: 0 }));
     setResult(null);
@@ -422,6 +458,10 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
   };
 
   const onCopy = async (): Promise<void> => {
+    if (pendingFields(text).length > 0) {
+      setLive('Há campos entre chaves sem preencher. Preencha no texto antes de copiar.');
+      return;
+    }
     const ok = await copy(text);
     setCopied(ok ? 'ok' : 'fail');
     if (ok) void recorder.record(['copy', `time_to_copy.${timeBucket(Date.now() - generatedAt.current)}`]);
@@ -608,7 +648,9 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
   const noResponseOff = form.type === 'closure_no_response' && !profile.closureRules.noResponseEnabled;
   const shownWarnings = snapshot?.warnings ?? result?.warnings ?? [];
   const shownQuality = snapshot?.quality ?? result?.quality;
-  const copyBlocked = !text || Boolean(liveReview?.blocked);
+  const pending = useMemo(() => pendingFields(text), [text]);
+  const fromLibrary = result?.meta.engine === LIBRARY_ENGINE;
+  const copyBlocked = !text || Boolean(liveReview?.blocked) || pending.length > 0;
   const over = text.length > profile.maxLength;
 
   const renderField = (name: ContextField) => {
@@ -805,6 +847,17 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
             </select>
           </div>
 
+          {library && library.models.length > 0 && (
+            <ModelPicker
+              library={library}
+              type={form.type}
+              typeName={profile.categoryNames[form.type]}
+              recipient={form.recipient}
+              onPick={onPickModel}
+              onEvent={(key) => void recorder.record(key)}
+              onAnnounce={setLive}
+            />
+          )}
           <h2>2. Contexto</h2>
           <DraftPanel
             key={draftKey}
@@ -917,6 +970,11 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
                   {text.length} / {profile.maxLength} caracteres{over ? ' (acima do limite da organização)' : ''}
                 </span>
               </div>
+              {pending.length > 0 && (
+                <p role="status" className="panel warn">
+                  Faltam campos entre chaves: {pending.map((p) => `{${p}}`).join(', ')}. Preencha no texto da prévia para poder copiar.
+                </p>
+              )}
               {liveReview?.blocked && (
                 <p role="alert" className="error-text">
                   O texto atual contém algo que impede a cópia (credencial, token ou pedido de acesso). Remova-o para copiar.
@@ -925,7 +983,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
               <div className="row">
                 <button type="button" className="primary" onClick={() => void onCopy()} disabled={copyBlocked}>Copiar texto</button>
                 <button type="button" onClick={onReview}>Revisar novamente</button>
-                <button type="button" onClick={onVariant} disabled={busy}>Outra variação</button>
+                {!fromLibrary && <button type="button" onClick={onVariant} disabled={busy}>Outra variação</button>}
               </div>
               <details className="more">
                 <summary>Mais ações</summary>

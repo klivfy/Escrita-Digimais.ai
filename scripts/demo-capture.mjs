@@ -98,6 +98,19 @@ check((await page.getByLabel('Texto a corrigir').inputValue()) === 'o usuário n
 await page.getByRole('button', { name: 'Limpar texto' }).click();
 await page.getByRole('button', { name: 'Gerar texto' }).click();
 
+// 4d. Biblioteca de modelos: importa o exemplo, busca, usa e confere que campo pendente impede a cópia
+await page.getByRole('button', { name: 'Configurações' }).click();
+await page.getByLabel('Importar biblioteca de modelos (JSON)').setInputFiles(resolve('examples/biblioteca-exemplo.json'));
+await page.getByText('Biblioteca importada e validada.').waitFor();
+await page.getByRole('button', { name: 'Configurações' }).click();
+await page.getByText('Buscar um modelo pronto da instituição (opcional)').click();
+await page.getByLabel('Buscar modelo').fill('captura de tela do erro');
+await page.getByRole('button', { name: /Usar o modelo: Pedir captura/ }).click();
+check((await page.getByLabel('Prévia editável').inputValue()).includes('captura de tela'), 'modelo da biblioteca vai para a prévia editável');
+await shot('05d-modelo.png');
+await page.getByRole('button', { name: 'Limpar tudo' }).click();
+await page.getByRole('button', { name: 'Apagar agora' }).click();
+
 // 5. Configurações (contadores, perfil, camada da equipe)
 await page.getByRole('button', { name: 'Configurações' }).click();
 check(await page.getByLabel(/Registrar contadores de uso/).isVisible(), 'contadores aparecem desligados e opcionais nas configurações');
