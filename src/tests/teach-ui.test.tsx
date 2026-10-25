@@ -130,4 +130,86 @@ describe('Ensinar a extensão', () => {
     const model = (await screen.findByLabelText('Modelo (editável)')) as HTMLTextAreaElement;
     expect(model.value).toBe('Olá, {nome},\n\nEnvie a captura de tela do erro, por favor.');
   });
+
+  describe('estilo da organização', () => {
+    const post = (greet: string, who: string, body: string) =>
+      [`${greet}, ${who},`, '', body, '', 'Ficamos no aguardo.', 'Time de Suporte ao Colaborador'].join('\n');
+    const BATCH = [
+      post('Bom dia', 'Carlos', 'Precisamos da captura de tela do erro.'),
+      post('Bom dia', 'Maria', 'O acesso foi liberado após a aprovação.'),
+      post('Bom dia', 'João', 'Seguimos com a análise da lentidão.'),
+      post('Boa tarde', 'Ana', 'Aguardamos o retorno com o modelo do equipamento.'),
+    ].join('\n---\n');
+
+    const learn = async (user: ReturnType<typeof userEvent.setup>) => {
+      await openTeach(user);
+      fireEvent.change(await screen.findByLabelText('Textos da organização para aprender o estilo'), { target: { value: BATCH } });
+      await user.click(screen.getByRole('button', { name: 'Analisar estilo' }));
+    };
+
+    it('propõe saudação, fecho e assinatura com a evidência, salva só com clique e passa a usar nas prévias', async () => {
+      const { local, user } = setup();
+      await learn(user);
+      expect(await screen.findByText(/Usar saudação \(aparece em 3 de 4 textos\)/)).toBeInTheDocument();
+      expect(screen.getByText(/Usar assinatura \(aparece em 4 de 4 textos\)/)).toBeInTheDocument();
+      expect(local.data.taughtStyle).toBeUndefined();
+      await user.click(screen.getByRole('button', { name: 'Salvar estilo' }));
+      await waitFor(() => expect(local.data.taughtStyle).toMatchObject({ greeting: 'Bom dia, {nome},', closing: 'Ficamos no aguardo.', signature: 'Time de Suporte ao Colaborador' }));
+      expect(JSON.stringify(local.data.taughtStyle)).not.toMatch(/Carlos|Maria|captura/);
+      // A tela esquece os textos colados.
+      expect((screen.getByLabelText('Textos da organização para aprender o estilo') as HTMLTextAreaElement).value).toBe('');
+      // Próxima prévia usa o estilo ensinado.
+      await user.click(screen.getByRole('button', { name: 'Gerar texto' }));
+      fireEvent.change(await screen.findByLabelText(/Por que a informação é necessária/), { target: { value: 'Erro ao abrir o sistema.' } });
+      fireEvent.change(screen.getByLabelText(/Perguntas ao destinatário/), { target: { value: 'Qual mensagem de erro aparece na tela' } });
+      fireEvent.change(screen.getByLabelText(/Nome de quem recebe/), { target: { value: 'Paula' } });
+      await user.click(screen.getByRole('button', { name: 'Gerar prévia' }));
+      const preview = (await screen.findByLabelText('Prévia editável')) as HTMLTextAreaElement;
+      expect(preview.value.startsWith('Bom dia, Paula,')).toBe(true);
+      expect(preview.value).toContain('Time de Suporte ao Colaborador');
+      expect(preview.value).not.toContain('Equipe de Service Desk');
+    });
+
+    it('poucos textos ou padrão que não se repete: avisa e não propõe nada', async () => {
+      const { user } = setup();
+      await openTeach(user);
+      fireEvent.change(await screen.findByLabelText('Textos da organização para aprender o estilo'), { target: { value: post('Olá', 'A', 'Um.') } });
+      await user.click(screen.getByRole('button', { name: 'Analisar estilo' }));
+      expect((await screen.findAllByText(/São necessários pelo menos 3/)).length).toBeGreaterThan(0);
+      expect(screen.queryByRole('button', { name: 'Salvar estilo' })).toBeNull();
+    });
+
+    it('recusa salvar item com dado sensível, com o motivo', async () => {
+      const { local, user } = setup();
+      await learn(user);
+      fireEvent.change(await screen.findByLabelText('Assinatura'), { target: { value: 'Fale com suporte@empresa.com.br' } });
+      await user.click(screen.getByRole('button', { name: 'Salvar estilo' }));
+      expect(await screen.findByRole('alert')).toHaveTextContent(/dado sensível/i);
+      expect(local.data.taughtStyle).toBeUndefined();
+    });
+
+    it('remover o estilo ensinado volta ao padrão do perfil', async () => {
+      const { local, user } = setup({ taughtStyle: { version: 1, signature: 'Time de Suporte ao Colaborador' } });
+      await openTeach(user);
+      expect(await screen.findByText(/Assinatura:/)).toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: 'Remover estilo ensinado' }));
+      await waitFor(() => expect(local.data.taughtStyle).toBeUndefined());
+    });
+
+    it('com perfil assinado exigido pela organização, o estilo pessoal fica desligado e não se aplica', async () => {
+      const local = new MemoryArea({ taughtStyle: { version: 1, signature: 'Time de Suporte ao Colaborador' } });
+      const user = userEvent.setup();
+      render(
+        <App
+          storage={new AppStorage(local, new MemoryArea())}
+          now={() => NOW}
+          loadUsage={async () => 'optional'}
+          loadKeys={async () => ['MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEexample']}
+        />,
+      );
+      await openTeach(user);
+      expect(await screen.findByText(/A organização controla saudação, fecho e assinatura/)).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Analisar estilo' })).toBeNull();
+    });
+  });
 });

@@ -1,6 +1,9 @@
 import { useId, useRef, useState } from 'react';
 import { RECIPIENT_LABELS } from '../../config/fields';
 import type { LibraryModel } from '../../config/library-schema';
+import type { TaughtStyle } from '../../config/taught-style';
+import { learnStyle, MIN_STYLE_TEXTS, splitTexts, vetStyle } from '../../domain/style-learn';
+import type { StyleProposal } from '../../domain/style-learn';
 import { buildTaughtModel, prepareTaught, TEACH_NAME_NOTICE } from '../../domain/teach';
 import type { TeachDraft } from '../../domain/teach';
 import { COMMUNICATION_TYPES, RECIPIENTS } from '../../domain/types';
@@ -24,6 +27,11 @@ interface Props {
   onRemove: (id: string) => Promise<void>;
   onRemoveAll: () => Promise<void>;
   onExport: () => void;
+  style: TaughtStyle | null;
+  /** Perfil assinado exigido pela organização: saudação, fecho e assinatura são dela. */
+  styleLocked: boolean;
+  onSaveStyle: (style: TaughtStyle) => Promise<void>;
+  onRemoveStyle: () => Promise<void>;
   onAnnounce: (message: string) => void;
   onEvent?: (key: 'teach.saved' | 'teach.removed') => void;
 }
@@ -37,7 +45,9 @@ const FIELD_LABEL: Record<string, string> = {
  * (mostrando cada troca), o analista confere, edita e só então salva. Nada é guardado sem o clique em "Salvar modelo",
  * e o texto colado some da memória ao sair da tela. Os modelos salvos passam pela triagem de dado sensível.
  */
-export function TeachMode({ profile, models, seed, now, onSave, onRemove, onRemoveAll, onExport, onAnnounce, onEvent = () => {} }: Props) {
+export function TeachMode({
+  profile, models, seed, now, onSave, onRemove, onRemoveAll, onExport, style, styleLocked, onSaveStyle, onRemoveStyle, onAnnounce, onEvent = () => {},
+}: Props) {
   const id = useId();
   const prepared = seed ? prepareTaught(seed.text) : null;
   const [pasted, setPasted] = useState(seed?.text ?? '');
@@ -49,6 +59,14 @@ export function TeachMode({ profile, models, seed, now, onSave, onRemove, onRemo
   const [errors, setErrors] = useState<string[]>([]);
   const [confirmAll, setConfirmAll] = useState(false);
   const modelRef = useRef<HTMLTextAreaElement>(null);
+
+  // Estilo (saudação, fecho, assinatura) aprendido de vários textos.
+  const [styleText, setStyleText] = useState('');
+  const [styleScope, setStyleScope] = useState<Recipient | 'any'>('any');
+  const [proposal, setProposal] = useState<StyleProposal | null>(null);
+  const [values, setValues] = useState({ greeting: '', closing: '', signature: '' });
+  const [use, setUse] = useState({ greeting: false, closing: false, signature: false });
+  const [styleErrors, setStyleErrors] = useState<string[]>([]);
 
   const prepare = (): void => {
     const prepared = prepareTaught(pasted);
@@ -78,6 +96,54 @@ export function TeachMode({ profile, models, seed, now, onSave, onRemove, onRemo
     setModel('');
     setErrors([]);
     onAnnounce(`Modelo "${result.model.title}" salvo neste navegador.`);
+  };
+
+  const analyzeStyle = (): void => {
+    const found = learnStyle(splitTexts(styleText));
+    setProposal(found);
+    setValues({ greeting: found.greeting?.value ?? '', closing: found.closing?.value ?? '', signature: found.signature?.value ?? '' });
+    setUse({ greeting: Boolean(found.greeting), closing: Boolean(found.closing), signature: Boolean(found.signature) });
+    setStyleErrors([]);
+    onAnnounce(
+      found.texts < MIN_STYLE_TEXTS
+        ? `São necessários pelo menos ${MIN_STYLE_TEXTS} textos.`
+        : found.greeting || found.closing || found.signature
+          ? 'Estilo analisado. Confira o que será guardado.'
+          : 'Nenhum padrão se repetiu nos textos.',
+    );
+  };
+
+  const saveStyle = async (): Promise<void> => {
+    const next = {
+      ...(use.greeting && values.greeting.trim() ? { greeting: values.greeting.trim() } : {}),
+      ...(use.closing && values.closing.trim() ? { closing: values.closing.trim() } : {}),
+      ...(use.signature && values.signature.trim() ? { signature: values.signature.trim() } : {}),
+    };
+    if (!next.greeting && !next.closing && !next.signature) {
+      setStyleErrors(['Marque pelo menos um item para guardar.']);
+      return;
+    }
+    const vetting = vetStyle(next, profile);
+    if (!vetting.ok) {
+      setStyleErrors(vetting.reasons.slice(0, 6));
+      onAnnounce('O estilo não foi salvo. Corrija os itens indicados.');
+      return;
+    }
+    // Itens não marcados continuam como estavam; a saudação nova vale para o destinatário escolhido.
+    const merged: TaughtStyle = {
+      version: 1,
+      ...(style?.greeting ? { greeting: style.greeting } : {}),
+      ...(style?.recipients ? { recipients: style.recipients } : {}),
+      ...(style?.closing ? { closing: style.closing } : {}),
+      ...(style?.signature ? { signature: style.signature } : {}),
+      ...next,
+      ...(next.greeting ? { recipients: styleScope === 'any' ? undefined : [styleScope] } : {}),
+    };
+    await onSaveStyle(merged);
+    setStyleText('');
+    setProposal(null);
+    setStyleErrors([]);
+    onAnnounce('Estilo salvo neste navegador. As próximas prévias já usam.');
   };
 
   const discard = (): void => {
@@ -157,6 +223,97 @@ export function TeachMode({ profile, models, seed, now, onSave, onRemove, onRemo
           <div className="row">
             <button type="button" className="primary" onClick={() => void save()}>Salvar modelo</button>
           </div>
+        </div>
+      )}
+
+      <h3>Ensinar o estilo da organização</h3>
+      {styleLocked ? (
+        <p role="note" className="panel info">
+          A organização controla saudação, fecho e assinatura pelo perfil assinado. O estilo pessoal fica desligado enquanto essa exigência valer.
+        </p>
+      ) : (
+        <div className="stack">
+          <p className="subtle">
+            Cole de {MIN_STYLE_TEXTS} a 20 textos reais, separados por uma linha com três hifens (---). A extensão procura a saudação, o fecho e a
+            assinatura que se repetem em pelo menos metade deles e propõe usar nas próximas prévias. Você confere e edita antes de salvar.
+          </p>
+          <div className="field">
+            <label htmlFor={`${id}-style`}>Textos da organização para aprender o estilo</label>
+            <textarea id={`${id}-style`} rows={8} value={styleText} autoComplete="off" spellCheck onChange={(e) => setStyleText(e.target.value)} />
+          </div>
+          <div className="field">
+            <label htmlFor={`${id}-scope`}>A saudação vale para</label>
+            <select id={`${id}-scope`} value={styleScope} onChange={(e) => setStyleScope(e.target.value as Recipient | 'any')}>
+              <option value="any">Todos os destinatários</option>
+              {RECIPIENTS.map((r) => <option key={r} value={r}>{RECIPIENT_LABELS[r]}</option>)}
+            </select>
+          </div>
+          <div className="row">
+            <button type="button" className="primary" onClick={analyzeStyle} disabled={!styleText.trim()}>Analisar estilo</button>
+          </div>
+          {proposal && proposal.texts < MIN_STYLE_TEXTS && (
+            <p role="status" className="panel warn">Foram lidos {proposal.texts} texto(s). São necessários pelo menos {MIN_STYLE_TEXTS}.</p>
+          )}
+          {proposal && proposal.texts >= MIN_STYLE_TEXTS && !proposal.greeting && !proposal.closing && !proposal.signature && (
+            <p role="status" className="panel warn">
+              Nenhuma saudação, fecho ou assinatura se repetiu em pelo menos metade dos {proposal.texts} textos. Cole mais textos do mesmo padrão.
+            </p>
+          )}
+          {proposal && (proposal.greeting || proposal.closing || proposal.signature) && (
+            <div className="stack">
+              {([
+                ['greeting', 'Saudação', proposal.greeting],
+                ['closing', 'Fecho', proposal.closing],
+                ['signature', 'Assinatura', proposal.signature],
+              ] as const).map(([key, label, item]) =>
+                item ? (
+                  <div className="field" key={key}>
+                    <div className="row">
+                      <input
+                        id={`${id}-use-${key}`}
+                        type="checkbox"
+                        checked={use[key]}
+                        onChange={(e) => setUse((u) => ({ ...u, [key]: e.target.checked }))}
+                      />
+                      <label htmlFor={`${id}-use-${key}`}>Usar {label.toLowerCase()} (aparece em {item.count} de {proposal.texts} textos)</label>
+                    </div>
+                    <label htmlFor={`${id}-val-${key}`}>{label}</label>
+                    <input
+                      id={`${id}-val-${key}`}
+                      type="text"
+                      value={values[key]}
+                      autoComplete="off"
+                      onChange={(e) => setValues((v) => ({ ...v, [key]: e.target.value }))}
+                    />
+                  </div>
+                ) : null,
+              )}
+              {styleErrors.length > 0 && (
+                <div role="alert" className="panel block">
+                  <p className="error-text">O estilo não foi salvo. Corrija os itens abaixo:</p>
+                  <ul>{styleErrors.map((er, i) => <li key={i}>{er}</li>)}</ul>
+                </div>
+              )}
+              <div className="row">
+                <button type="button" className="primary" onClick={() => void saveStyle()}>Salvar estilo</button>
+              </div>
+            </div>
+          )}
+          {style && (
+            <div className="panel info">
+              <p>Estilo em uso nas prévias:</p>
+              <ul>
+                {style.greeting && <li>Saudação: <strong>{style.greeting}</strong>{style.recipients ? ` (${style.recipients.map((r) => RECIPIENT_LABELS[r]).join(', ')})` : ''}</li>}
+                {style.closing && <li>Fecho: <strong>{style.closing}</strong></li>}
+                {style.signature && <li>Assinatura: <strong>{style.signature}</strong></li>}
+              </ul>
+              <div className="row">
+                <button type="button" onClick={() => void onRemoveStyle().then(() => onAnnounce('Estilo ensinado removido. Voltou o padrão do perfil.'))}>
+                  Remover estilo ensinado
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

@@ -7,6 +7,8 @@ import { sanitizeSigningKeys, verifyProfileSignature } from '../application/prof
 import { validateOverlay } from '../config/profile-overlay';
 import type { ProfileOverlay } from '../config/profile-overlay';
 import { MAX_LIBRARY_MODELS, validateLibrary } from '../config/library-schema';
+import { sanitizeTaughtStyle } from '../config/taught-style';
+import type { TaughtStyle } from '../config/taught-style';
 import type { LibraryModel, ModelLibrary } from '../config/library-schema';
 import { dayString, emptyCounters, sanitizeCounters } from '../application/usage-counters';
 import type { UsageCounters } from '../application/usage-counters';
@@ -31,6 +33,7 @@ export const STORAGE_KEYS = {
   modelLibrary: 'modelLibrary',
   modelLibrarySignature: 'modelLibrarySignature',
   taughtModels: 'taughtModels',
+  taughtStyle: 'taughtStyle',
 } as const;
 export const ALLOWED_KEYS: string[] = Object.values(STORAGE_KEYS);
 
@@ -208,6 +211,25 @@ export class AppStorage {
     const check = validateLibrary({ schemaVersion: 1, libraryName: 'Modelos ensinados', libraryVersion: 'local', models });
     if (!check.ok) throw new Error('Modelos ensinados inválidos.');
     await this.local?.set({ [STORAGE_KEYS.taughtModels]: check.library.models });
+  }
+
+  /** Saudação, fecho e assinatura que o analista ensinou. Sempre sanitizados na leitura e na gravação. */
+  async loadTaughtStyle(): Promise<TaughtStyle | null> {
+    try {
+      const data = await this.local?.get(STORAGE_KEYS.taughtStyle);
+      return sanitizeTaughtStyle(data?.[STORAGE_KEYS.taughtStyle]);
+    } catch {
+      return null;
+    }
+  }
+
+  async saveTaughtStyle(style: TaughtStyle | null): Promise<void> {
+    const clean = sanitizeTaughtStyle(style);
+    if (!clean) {
+      await this.local?.remove(STORAGE_KEYS.taughtStyle);
+      return;
+    }
+    await this.local?.set({ [STORAGE_KEYS.taughtStyle]: clean });
   }
 
   async removeLibrary(): Promise<void> {

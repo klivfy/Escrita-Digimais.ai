@@ -186,6 +186,9 @@ Na aba **Ensinar**, cole um texto que a organização realmente usa (ou, na pré
 
 Depois de ensinar, em "Gerar texto" o campo "Buscar um modelo pronto" mostra, sozinho, até 3 modelos parecidos com o que você descreveu no formulário (os ensinados aparecem como "ensinado por você"). Escolher leva o texto para a prévia editável, com nome, prazo e equipe vindos do formulário; nada é copiado sem a sua ação. Para a equipe inteira usar, **Exportar modelos ensinados** gera um arquivo no formato da biblioteca: a TI revisa, assina (`sign-library`) e distribui.
 
+**Ensinar o estilo.** Na mesma aba, cole de 3 a 20 textos reais separados por uma linha com `---` e clique em **Analisar estilo**. A extensão mostra a saudação, o fecho e a assinatura que se repetem em pelo menos metade dos textos ("aparece em 3 de 4 textos"); você marca o que quer usar, edita se precisar e salva. A partir daí as prévias saem com a sua saudação (com o nome informado, quando houver), o seu fecho e a sua assinatura. Só essas três linhas são guardadas, nunca os textos colados. Se a organização exige perfil assinado, o estilo pessoal fica desligado.
+
+
 
 ### Camada da equipe (opcional)
 Além do perfil da organização, cada analista pode importar uma camada da equipe em Configurações. A mesclagem é restritiva: a camada só endurece regras, nunca afrouxa. Formato:

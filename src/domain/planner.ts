@@ -97,7 +97,17 @@ export function greetingName(raw: string | undefined): string | undefined {
   return first && NAME_PATTERN.test(first) ? capitalizeFirst(first) : undefined;
 }
 
+/** Marcador do nome numa saudação ensinada pelo analista ("Bom dia, {nome},"). Fora dele, a saudação do perfil não muda. */
+const NAME_SLOT = '{nome}';
+const NAME_SLOT_WITH_SEPARATOR = /,?\s*\{nome\}/;
+
+/** Saudação sem o marcador do nome (estilo estruturado ou nome não informado): "Bom dia, {nome}," vira "Bom dia,". */
+function withoutNameSlot(base: string): string {
+  return base.includes(NAME_SLOT) ? base.replace(NAME_SLOT_WITH_SEPARATOR, '').replace(/\s{2,}/g, ' ').trim() : base;
+}
+
 function greetWithName(base: string, name: string | undefined): string {
+  if (base.includes(NAME_SLOT)) return name ? base.replace(NAME_SLOT, name) : withoutNameSlot(base);
   const m = name ? GREETING_WITH_NAME.exec(base) : null;
   if (!m || !name) return base;
   return m[1] === 'Olá' ? `Olá, ${name},` : `${m[1]} ${name},`;
@@ -171,7 +181,7 @@ export function buildPlan(
   const content = (kind: SectionKind): (Pick<PlannedSection, 'text' | 'items'> & { flowing?: boolean }) | undefined => {
     switch (kind) {
       case 'greeting':
-        return { text: natural ? greetWithName(profile.greetings[formality][recipient], greetingName(c.requesterName)) : profile.greetings[formality][recipient] };
+        return { text: natural ? greetWithName(profile.greetings[formality][recipient], greetingName(c.requesterName)) : withoutNameSlot(profile.greetings[formality][recipient]) };
       case 'opening': {
         const t = pick(openingPool, openingIdx);
         return t ? { text: fillPlaceholders(t, vars) } : undefined;

@@ -64,6 +64,7 @@ describe('persistência', () => {
     const lib = validateLibrary({ schemaVersion: 1, libraryName: 'Org', libraryVersion: '1', models: [{ id: 'm', title: 'Modelo', types: ['pending'], text: 'Registramos a pendência neste atendimento.' }] });
     if (lib.ok) await s.saveLibrary(lib.library, 'assinatura-da-biblioteca');
     if (lib.ok) await s.saveTaught(lib.library.models);
+    await s.saveTaughtStyle({ version: 1, greeting: 'Bom dia,' });
     expect(Object.keys(local.data).sort()).toEqual([...ALLOWED_KEYS].sort());
     await s.clearAll();
     expect(local.data).toEqual({});
