@@ -212,4 +212,66 @@ describe('Ensinar a extensão', () => {
       expect(screen.queryByRole('button', { name: 'Analisar estilo' })).toBeNull();
     });
   });
+
+  describe('conteúdo que deixou de passar nas regras em vigor', () => {
+    const OVERLAY = { schemaVersion: 1, overlayName: 'Equipe', forbiddenTerms: ['macete'] };
+    const OK = {
+      id: 'ensinado-pedir-captura', title: 'Pedir captura', types: ['request_information'], recipients: [],
+      text: 'Para seguirmos com a análise, envie uma captura de tela do erro.', keywords: [], reviewedAt: '2026-10-23',
+    };
+    const BAD = { ...OK, id: 'ensinado-com-macete', title: 'Com macete', text: 'Use este macete para resolver o erro.' };
+
+    it('modelo ensinado fora de uso aparece com o motivo, continua guardado e pode ser removido', async () => {
+      const { local, user } = setup({ taughtModels: [OK, BAD], profileOverlay: OVERLAY });
+      await openTeach(user);
+      expect(await screen.findByRole('heading', { name: 'Modelos fora de uso (1)' })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Modelos ensinados (1)' })).toBeInTheDocument();
+      expect(screen.getByText(/Fora de uso:.*macete.*Remova ou ensine de novo\./i)).toBeInTheDocument();
+      expect(taughtInStorage(local)).toHaveLength(2);
+      await user.click(screen.getByRole('button', { name: 'Remover o modelo fora de uso: Com macete' }));
+      await waitFor(() => expect(taughtInStorage(local).map((m) => m.id)).toEqual(['ensinado-pedir-captura']));
+      await waitFor(() => expect(screen.queryByRole('heading', { name: /Modelos fora de uso/ })).toBeNull());
+    });
+
+    it('o id de um modelo fora de uso não é reaproveitado ao ensinar um título igual', async () => {
+      const { local, user } = setup({ taughtModels: [BAD], profileOverlay: OVERLAY });
+      await openTeach(user);
+      await pasteAndPrepare(user, 'Para seguirmos, envie a captura de tela do erro.');
+      fireEvent.change(await screen.findByLabelText('Título do modelo'), { target: { value: 'Com macete' } });
+      await user.click(screen.getByRole('button', { name: 'Salvar modelo' }));
+      await waitFor(() => expect(taughtInStorage(local).map((m) => m.id)).toEqual(['ensinado-com-macete', 'ensinado-com-macete-2']));
+    });
+
+    it('estilo que passou a violar a camada de equipe fica desligado com o motivo, guardado, e a prévia usa o padrão', async () => {
+      const { local, user } = setup({
+        taughtStyle: { version: 1, closing: 'Aplique o macete.', signature: 'Time de Suporte' },
+        profileOverlay: OVERLAY,
+      });
+      await openTeach(user);
+      expect(await screen.findByText(/Estilo desligado:.*macete.*Ele continua guardado\./i)).toBeInTheDocument();
+      expect(local.data.taughtStyle).toBeDefined();
+      await user.click(screen.getByRole('button', { name: 'Gerar texto' }));
+      fireEvent.change(await screen.findByLabelText(/Por que a informação é necessária/), { target: { value: 'Erro ao abrir o sistema.' } });
+      fireEvent.change(screen.getByLabelText(/Perguntas ao destinatário/), { target: { value: 'Qual mensagem de erro aparece na tela' } });
+      await user.click(screen.getByRole('button', { name: 'Gerar prévia' }));
+      const preview = (await screen.findByLabelText('Prévia editável')) as HTMLTextAreaElement;
+      expect(preview.value).toContain('Equipe de Service Desk');
+      expect(preview.value).not.toContain('Time de Suporte');
+    });
+
+    it('importar uma camada de equipe refaz a triagem na hora, sem reabrir a extensão', async () => {
+      const { local, user } = setup({ taughtModels: [BAD] });
+      await openTeach(user);
+      expect(await screen.findByRole('heading', { name: 'Modelos ensinados (1)' })).toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: 'Configurações' }));
+      await user.upload(
+        await screen.findByLabelText('Importar camada da equipe (JSON)'),
+        new File([JSON.stringify(OVERLAY)], 'camada.json', { type: 'application/json' }),
+      );
+      await waitFor(() => expect(local.data.profileOverlay).toBeDefined());
+      await user.click(screen.getByRole('button', { name: 'Ensinar' }));
+      expect(await screen.findByRole('heading', { name: 'Modelos fora de uso (1)' })).toBeInTheDocument();
+      expect(taughtInStorage(local)).toHaveLength(1);
+    });
+  });
 });

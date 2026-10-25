@@ -1,6 +1,7 @@
 import { useId, useRef, useState } from 'react';
 import { RECIPIENT_LABELS } from '../../config/fields';
 import type { LibraryModel } from '../../config/library-schema';
+import type { OutOfUseModel } from '../../application/analyst-content';
 import type { TaughtStyle } from '../../config/taught-style';
 import { learnStyle, MIN_STYLE_TEXTS, splitTexts, vetStyle } from '../../domain/style-learn';
 import type { StyleProposal } from '../../domain/style-learn';
@@ -20,6 +21,8 @@ export interface TeachSeed {
 interface Props {
   profile: LanguageProfile;
   models: readonly LibraryModel[];
+  /** Modelos guardados que deixaram de passar nas regras em vigor: continuam guardados, fora da busca. */
+  outOfUse: readonly OutOfUseModel[];
   /** Texto de partida (por exemplo, a prévia que o analista acabou de ajustar). A tela é recriada quando o id muda. */
   seed: TeachSeed | null;
   now: () => Date;
@@ -28,6 +31,8 @@ interface Props {
   onRemoveAll: () => Promise<void>;
   onExport: () => void;
   style: TaughtStyle | null;
+  /** Motivo de o estilo guardado estar desligado pelas regras em vigor, ou null. */
+  styleOff: string | null;
   /** Perfil assinado exigido pela organização: saudação, fecho e assinatura são dela. */
   styleLocked: boolean;
   onSaveStyle: (style: TaughtStyle) => Promise<void>;
@@ -46,7 +51,7 @@ const FIELD_LABEL: Record<string, string> = {
  * e o texto colado some da memória ao sair da tela. Os modelos salvos passam pela triagem de dado sensível.
  */
 export function TeachMode({
-  profile, models, seed, now, onSave, onRemove, onRemoveAll, onExport, style, styleLocked, onSaveStyle, onRemoveStyle, onAnnounce, onEvent = () => {},
+  profile, models, outOfUse, seed, now, onSave, onRemove, onRemoveAll, onExport, style, styleOff, styleLocked, onSaveStyle, onRemoveStyle, onAnnounce, onEvent = () => {},
 }: Props) {
   const id = useId();
   const prepared = seed ? prepareTaught(seed.text) : null;
@@ -82,7 +87,7 @@ export function TeachMode({
   };
 
   const save = async (): Promise<void> => {
-    const result = buildTaughtModel({ title, text: model, type, recipient }, models.map((m) => m.id), profile, now());
+    const result = buildTaughtModel({ title, text: model, type, recipient }, [...models, ...outOfUse.map((o) => o.model)].map((m) => m.id), profile, now());
     if (!result.ok) {
       setErrors(result.errors.slice(0, 8));
       onAnnounce('O modelo não foi salvo. Corrija os itens indicados.');
@@ -301,7 +306,11 @@ export function TeachMode({
           )}
           {style && (
             <div className="panel info">
-              <p>Estilo em uso nas prévias:</p>
+              {styleOff ? (
+                <p role="status">Estilo desligado: {styleOff} Ele continua guardado.</p>
+              ) : (
+                <p>Estilo em uso nas prévias:</p>
+              )}
               <ul>
                 {style.greeting && <li>Saudação: <strong>{style.greeting}</strong>{style.recipients ? ` (${style.recipients.map((r) => RECIPIENT_LABELS[r]).join(', ')})` : ''}</li>}
                 {style.closing && <li>Fecho: <strong>{style.closing}</strong></li>}
@@ -314,6 +323,29 @@ export function TeachMode({
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {outOfUse.length > 0 && (
+        <div className="stack">
+          <h3>Modelos fora de uso ({outOfUse.length})</h3>
+          <ul className="list" aria-label="Modelos fora de uso">
+            {outOfUse.map(({ model: m, reasons }) => (
+              <li key={m.id}>
+                <p><strong>{m.title}</strong></p>
+                <p role="status" className="panel warn">Fora de uso: {reasons.join(' ')} Remova ou ensine de novo.</p>
+                <div className="row">
+                  <button
+                    type="button"
+                    onClick={() => void onRemove(m.id).then(() => { onEvent('teach.removed'); onAnnounce(`Modelo "${m.title}" removido.`); })}
+                    aria-label={`Remover o modelo fora de uso: ${m.title}`}
+                  >
+                    Remover
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 

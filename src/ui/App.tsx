@@ -18,7 +18,7 @@ import {
 import { DEFAULT_PROFILE } from '../config/language-profile';
 import { exportProfileJson } from '../config/profile-schema';
 import { importProfileText } from '../application/profile-signing';
-import { applyOverlay, parseOverlayJson } from '../config/profile-overlay';
+import { parseOverlayJson } from '../config/profile-overlay';
 import type { ProfileOverlay } from '../config/profile-overlay';
 import { reviewText } from '../domain/review';
 import type { ReviewResult } from '../domain/review';
@@ -37,10 +37,10 @@ import { loadAiPolicy, loadSigningKeys, loadUsagePolicy } from '../infrastructur
 import { useStyleLearning } from './hooks/useStyleLearning';
 import { useUsageCounters } from './hooks/useUsageCounters';
 import { fillModel, pendingFields } from '../domain/library-search';
-import { vetLibrary, vetModel } from '../domain/library-vetting';
 import type { LibraryModel, ModelLibrary } from '../config/library-schema';
 import { ModelPicker } from './components/ModelPicker';
-import { applyTaughtStyle } from '../config/taught-style';
+import { effectiveProfile, isStyleLocked, loadAnalystContent } from '../application/analyst-content';
+import type { AnalystContent, OutOfUseModel } from '../application/analyst-content';
 import type { TaughtStyle } from '../config/taught-style';
 import { TeachMode } from './components/TeachMode';
 import type { TeachSeed } from './components/TeachMode';
@@ -112,15 +112,32 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
   const [library, setLibrary] = useState<ModelLibrary | null>(null);
   const [libraryProblem, setLibraryProblem] = useState<string | null>(null);
   const [taught, setTaught] = useState<LibraryModel[]>([]);
+  const [taughtOut, setTaughtOut] = useState<OutOfUseModel[]>([]);
+  const [styleOff, setStyleOff] = useState<string | null>(null);
   const [teachSeed, setTeachSeed] = useState<TeachSeed | null>(null);
   const [taughtStyle, setTaughtStyle] = useState<TaughtStyle | null>(null);
   const [signingKeys, setSigningKeys] = useState<string[]>([]);
   // Com perfil assinado exigido pela organização, saudação, fecho e assinatura são dela: o estilo pessoal não se aplica.
-  const styleLocked = signingKeys.length > 0;
+  const styleLocked = isStyleLocked(signingKeys);
   const profile = useMemo(
-    () => applyOverlay(applyTaughtStyle(baseProfile, styleLocked ? null : taughtStyle), overlay),
-    [baseProfile, taughtStyle, styleLocked, overlay],
+    () => effectiveProfile({ base: baseProfile, overlay, style: styleOff ? null : taughtStyle, signingKeys }),
+    [baseProfile, overlay, taughtStyle, styleOff, signingKeys],
   );
+
+  /** Mostra o que a triagem decidiu estar em uso (e o que saiu de uso, com o motivo). */
+  const applyContent = useCallback((c: AnalystContent): void => {
+    setLibrary(c.library);
+    setLibraryProblem(c.libraryNote);
+    setTaught(c.taught);
+    setTaughtOut(c.taughtOut);
+    setTaughtStyle(c.style);
+    setStyleOff(c.styleOff);
+  }, []);
+
+  /** Refaz a triagem do conteúdo guardado com as fontes do perfil informadas (depois de importar perfil ou camada). */
+  const refreshContent = async (base: LanguageProfile, ov: ProfileOverlay | null): Promise<void> => {
+    applyContent(await loadAnalystContent(store, { base, overlay: ov, signingKeys }));
+  };
   const [profileSource, setProfileSource] = useState<'managed' | 'imported' | 'default'>('default');
   const [prefs, setPrefs] = useState<Preferences>(DEFAULT_PREFERENCES);
   const [policy, setPolicy] = useState<AiPolicy>(DISABLED_AI_POLICY);
@@ -165,9 +182,10 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
     let alive = true;
     void (async () => {
       const keys = await loadKeys();
-      const [p, loaded, pol, ov, usagePol, lib] = await Promise.all([
-        store.loadPreferences(), store.loadProfile(keys), loadPolicy(), store.loadOverlay(), loadUsage(), store.loadLibraryChecked(keys),
+      const [p, loaded, pol, ov, usagePol] = await Promise.all([
+        store.loadPreferences(), store.loadProfile(keys), loadPolicy(), store.loadOverlay(), loadUsage(),
       ]);
+      const content = await loadAnalystContent(store, { base: loaded.profile, overlay: ov, signingKeys: keys });
       if (!alive) return;
       setPrefs(p);
       setProfile(loaded.profile);
@@ -175,26 +193,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
       setPolicy(pol);
       setSigningKeys(keys);
       setOverlay(ov);
-      // A biblioteca guardada também precisa passar nas regras atuais (perfil e camada de equipe podem ter mudado desde a importação).
-      let libraryNote: string | null = null;
-      let usable = lib.library;
-      if (lib.problem === 'signature') {
-        libraryNote = 'A biblioteca guardada não está em uso: a assinatura não confere com as chaves da organização. Importe de novo o arquivo assinado.';
-      } else if (lib.problem === 'invalid') {
-        libraryNote = 'A biblioteca guardada não está em uso: o arquivo guardado ficou inválido. Importe de novo.';
-      } else if (usable) {
-        const vetting = vetLibrary(usable, applyOverlay(loaded.profile, ov));
-        if (!vetting.ok) {
-          usable = null;
-          libraryNote = `A biblioteca guardada não está em uso: ${vetting.problems.length} modelo(s) não passam mais nas regras atuais (por exemplo "${vetting.problems[0].title}"). Importe uma versão revisada.`;
-        }
-      }
-      setLibrary(usable);
-      // Modelos ensinados também passam de novo pelas regras em vigor; o que não passa fica de fora (e guardado, até o analista remover).
-      const effective = applyOverlay(loaded.profile, ov);
-      setTaughtStyle(await store.loadTaughtStyle());
-      setTaught((await store.loadTaught()).filter((m) => vetModel(m, effective).reasons.length === 0));
-      setLibraryProblem(libraryNote);
+      applyContent(content);
       setUsagePolicy(usagePol);
       setLearnedStats(await store.loadLearning());
       setForm((f) => ({ ...f, techLevel: p.techLevel, formality: p.formality, length: p.length, textStyle: p.textStyle }));
@@ -202,7 +201,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
     return () => {
       alive = false;
     };
-  }, [store, loadPolicy, loadKeys, loadUsage, setLearnedStats]);
+  }, [store, loadPolicy, loadKeys, loadUsage, setLearnedStats, applyContent]);
 
   // Ao abrir a confirmação, o foco vai para ela; ao fechar, volta ao botão que a abriu.
   useEffect(() => {
@@ -576,7 +575,9 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
       setLibrary(null);
       setLibraryProblem(null);
       setTaught([]);
+      setTaughtOut([]);
       setTaughtStyle(null);
+      setStyleOff(null);
     }
     setConfirmClear(false);
     setAlsoClearStored(false);
@@ -595,6 +596,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
     await store.saveProfile(parsed.profile, parsed.signature);
     setProfile(parsed.profile);
     setProfileSource('imported');
+    await refreshContent(parsed.profile, overlay);
     return [];
   };
 
@@ -613,6 +615,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
     if (!parsed.ok) return parsed.errors;
     await store.saveOverlay(parsed.overlay);
     setOverlay(parsed.overlay);
+    await refreshContent(baseProfile, parsed.overlay);
     return [];
   };
 
@@ -642,23 +645,21 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
   };
 
   const onSaveTaught = async (model: LibraryModel): Promise<void> => {
-    const next = [...taught, model];
-    await store.saveTaught(next);
-    setTaught(next);
+    await store.saveTaught([...(await store.loadTaught()), model]);
+    await refreshContent(baseProfile, overlay);
     void recorder.record('teach.saved');
     touch();
   };
 
   const onRemoveTaught = async (id: string): Promise<void> => {
-    const next = taught.filter((m) => m.id !== id);
-    await store.saveTaught(next);
-    setTaught(next);
+    await store.saveTaught((await store.loadTaught()).filter((m) => m.id !== id));
+    await refreshContent(baseProfile, overlay);
     void recorder.record('teach.removed');
   };
 
   const onSaveStyle = async (style: TaughtStyle): Promise<void> => {
     await store.saveTaughtStyle(style);
-    setTaughtStyle(style);
+    await refreshContent(baseProfile, overlay);
     void recorder.record('teach.saved');
     touch();
   };
@@ -666,12 +667,14 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
   const onRemoveStyle = async (): Promise<void> => {
     await store.saveTaughtStyle(null);
     setTaughtStyle(null);
+    setStyleOff(null);
     void recorder.record('teach.removed');
   };
 
   const onRemoveAllTaught = async (): Promise<void> => {
     await store.saveTaught([]);
     setTaught([]);
+    setTaughtOut([]);
   };
 
   /** Exporta os modelos ensinados no formato da biblioteca da instituição: a TI revisa, assina e distribui. */
@@ -700,6 +703,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
   const onRemoveOverlay = async (): Promise<void> => {
     await store.removeOverlay();
     setOverlay(null);
+    await refreshContent(baseProfile, null);
     setLive('Camada da equipe removida.');
   };
 
@@ -738,6 +742,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
     const loaded = await store.loadProfile(signingKeys);
     setProfile(loaded.profile);
     setProfileSource(loaded.source);
+    await refreshContent(loaded.profile, overlay);
   };
 
   const focusField = (field?: ContextField): void => {
@@ -900,12 +905,14 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
             key={teachSeed?.id ?? 0}
             profile={profile}
             models={taught}
+            outOfUse={taughtOut}
             seed={teachSeed}
             now={() => now?.() ?? new Date()}
             onSave={onSaveTaught}
             onRemove={onRemoveTaught}
             onRemoveAll={onRemoveAllTaught}
             style={taughtStyle}
+            styleOff={styleOff}
             styleLocked={styleLocked}
             onSaveStyle={onSaveStyle}
             onRemoveStyle={onRemoveStyle}
