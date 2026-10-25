@@ -169,10 +169,6 @@ export class AppStorage {
     }
   }
 
-  async loadLibrary(signingKeys: readonly string[] = []): Promise<ModelLibrary | null> {
-    return (await this.loadLibraryChecked(signingKeys)).library;
-  }
-
   async saveLibrary(library: ModelLibrary, signature?: string): Promise<void> {
     const check = validateLibrary(library);
     if (!check.ok) throw new Error('Biblioteca inválida.');

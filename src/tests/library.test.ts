@@ -201,18 +201,18 @@ describe('importação, assinatura e armazenamento', () => {
     const imported = await importLibraryText(text(env), [keys.publicKey], DEFAULT_PROFILE);
     if (!imported.ok) throw new Error('importação falhou');
     await store.saveLibrary(imported.library, imported.signature);
-    expect((await store.loadLibrary([keys.publicKey]))?.models).toHaveLength(7);
+    expect((await store.loadLibraryChecked([keys.publicKey])).library?.models).toHaveLength(7);
     // Chave diferente na política: a assinatura guardada não verifica, a biblioteca some (falha fechada).
-    expect(await store.loadLibrary([other.publicKey])).toBeNull();
+    expect((await store.loadLibraryChecked([other.publicKey])).library).toBeNull();
     expect(await store.loadLibraryChecked([other.publicKey])).toEqual({ library: null, problem: 'signature' });
     expect((await store.loadLibraryChecked([keys.publicKey])).problem).toBeUndefined();
     // Sem assinatura guardada e com chaves exigidas, também não vale.
     await store.saveLibrary(imported.library);
-    expect(await store.loadLibrary([keys.publicKey])).toBeNull();
-    expect(await store.loadLibrary([])).not.toBeNull();
+    expect((await store.loadLibraryChecked([keys.publicKey])).library).toBeNull();
+    expect((await store.loadLibraryChecked([])).library).not.toBeNull();
     // Dado adulterado direto no armazenamento é descartado na leitura.
     local.data.modelLibrary = { ...imported.library, models: [{ ...imported.library.models[0], text: '<b>x</b>' }] };
-    expect(await store.loadLibrary([])).toBeNull();
+    expect((await store.loadLibraryChecked([])).library).toBeNull();
     await expect(store.saveLibrary({ ...imported.library, models: [] })).rejects.toThrow();
     await store.removeLibrary();
     expect(local.data.modelLibrary).toBeUndefined();
@@ -226,7 +226,7 @@ describe('importação, assinatura e armazenamento', () => {
     if (!ok.ok) throw new Error('falhou');
     await store.saveLibrary(ok.library);
     await store.clearAll();
-    expect(await store.loadLibrary([])).toBeNull();
+    expect((await store.loadLibraryChecked([])).library).toBeNull();
   });
 
   it('a exportação devolve a biblioteca guardada e pode ser importada de novo', async () => {
