@@ -4,7 +4,7 @@ import { FIXED_PHRASES, FIXED_PHRASES_TO_USER, FLOW_LEADS, LABEL_OVERRIDES, LEAD
 import type { ResolvedTemplates } from '../config/templates';
 import type { ClassifiedContext } from './classify';
 import { capitalizeFirst, ensureQuestion, ensureTerminalPunctuation, lowerFirst, stripTerminalPunctuation } from './text-utils';
-import type { GenerationSettings, LabelKey, LanguageProfile, PhraseChoices } from './types';
+import type { Formality, GenerationSettings, LabelKey, LanguageProfile, PhraseChoices, Recipient } from './types';
 import { isoToBr } from './validators';
 import { startsWithTeamVerb } from './voice';
 
@@ -106,6 +106,11 @@ function withoutNameSlot(base: string): string {
   return base.includes(NAME_SLOT) ? base.replace(NAME_SLOT_WITH_SEPARATOR, '').replace(/\s{2,}/g, ' ').trim() : base;
 }
 
+/** Saudação do perfil para o tipo de destinatário, com o primeiro nome quando a saudação aceita e o nome é válido. */
+export function greetingFor(profile: LanguageProfile, formality: Formality, recipient: Recipient, rawName: string | undefined): string {
+  return greetWithName(profile.greetings[formality][recipient], greetingName(rawName));
+}
+
 function greetWithName(base: string, name: string | undefined): string {
   if (base.includes(NAME_SLOT)) return name ? base.replace(NAME_SLOT, name) : withoutNameSlot(base);
   const m = name ? GREETING_WITH_NAME.exec(base) : null;
@@ -181,7 +186,12 @@ export function buildPlan(
   const content = (kind: SectionKind): (Pick<PlannedSection, 'text' | 'items'> & { flowing?: boolean }) | undefined => {
     switch (kind) {
       case 'greeting':
-        return { text: natural ? greetWithName(profile.greetings[formality][recipient], greetingName(c.requesterName)) : withoutNameSlot(profile.greetings[formality][recipient]) };
+        return {
+          text:
+            natural || (profile.greetings[formality][recipient].includes(NAME_SLOT) && (settings.style ?? 'natural') !== 'structured')
+              ? greetWithName(profile.greetings[formality][recipient], greetingName(c.requesterName))
+              : withoutNameSlot(profile.greetings[formality][recipient]),
+        };
       case 'opening': {
         const t = pick(openingPool, openingIdx);
         return t ? { text: fillPlaceholders(t, vars) } : undefined;

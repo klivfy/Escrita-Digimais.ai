@@ -2,6 +2,10 @@ import { applyOverlay } from '../config/profile-overlay';
 import type { ProfileOverlay } from '../config/profile-overlay';
 import type { LibraryModel, ModelLibrary } from '../config/library-schema';
 import { applyTaughtStyle } from '../config/taught-style';
+import type { Ledger } from '../config/learning-ledger';
+import { applyTrainedStyle } from '../config/trained-style';
+import type { TrainedStyle } from '../config/trained-style';
+import { toEngineText, vetLine } from '../domain/style-train';
 import type { TaughtStyle } from '../config/taught-style';
 import { vetLibrary, vetModel } from '../domain/library-vetting';
 import { vetStyle } from '../domain/style-learn';
@@ -19,6 +23,8 @@ export interface ProfileSources {
   overlay: ProfileOverlay | null;
   /** Estilo em uso (null se não houver ou se foi desligado pela triagem). */
   style: TaughtStyle | null;
+  /** Estilo treinado em uso (abertura, fecho e rótulos aprovados). */
+  trained: TrainedStyle | null;
   signingKeys: readonly string[];
 }
 
@@ -26,8 +32,9 @@ export interface ProfileSources {
 export const isStyleLocked = (signingKeys: readonly string[]): boolean => signingKeys.length > 0;
 
 /** O perfil que a geração e a triagem usam: base, depois estilo ensinado (se livre), depois camada de equipe (sempre por último). */
-export function effectiveProfile({ base, overlay, style, signingKeys }: ProfileSources): LanguageProfile {
-  return applyOverlay(applyTaughtStyle(base, isStyleLocked(signingKeys) ? null : style), overlay);
+export function effectiveProfile({ base, overlay, style, trained, signingKeys }: ProfileSources): LanguageProfile {
+  const locked = isStyleLocked(signingKeys);
+  return applyOverlay(applyTaughtStyle(applyTrainedStyle(base, locked ? null : trained), locked ? null : style), overlay);
 }
 
 export interface OutOfUseModel {
@@ -48,20 +55,30 @@ export interface AnalystContent {
   style: TaughtStyle | null;
   /** Por que o estilo guardado está desligado pela triagem (a trava de assinatura não entra aqui), ou null. */
   styleOff: string | null;
+  /** Estilo treinado em uso: o que passou nas regras em vigor. */
+  trained: TrainedStyle | null;
+  /** Itens do estilo treinado que deixaram de passar, com o motivo. Continuam guardados. */
+  trainedOut: string[];
+  /** Registro do que foi aprendido (null se nunca houve). */
+  ledger: Ledger | null;
 }
 
 export interface StoredContent {
   library: LibraryLoad;
   taught: readonly LibraryModel[];
   style: TaughtStyle | null;
+  trained?: TrainedStyle | null;
+  ledger?: Ledger | null;
 }
 
-export const EMPTY_CONTENT: AnalystContent = { library: null, libraryNote: null, taught: [], taughtOut: [], style: null, styleOff: null };
+export const EMPTY_CONTENT: AnalystContent = {
+  library: null, libraryNote: null, taught: [], taughtOut: [], style: null, styleOff: null, trained: null, trainedOut: [], ledger: null,
+};
 
 const sentence = (text: string): string => (/[.!?]$/u.test(text.trim()) ? text.trim() : `${text.trim()}.`);
 
 /** Decide, com as regras em vigor, o que do conteúdo guardado está em uso. Pura: não lê nem grava nada. */
-export function triageContent(stored: StoredContent, sources: Omit<ProfileSources, 'style'>): AnalystContent {
+export function triageContent(stored: StoredContent, sources: Omit<ProfileSources, 'style' | 'trained'>): AnalystContent {
   // 1. O estilo vem primeiro, contra as regras (base e camada): ele só muda saudação, fecho e assinatura.
   let styleOff: string | null = null;
   if (stored.style) {
@@ -70,8 +87,32 @@ export function triageContent(stored: StoredContent, sources: Omit<ProfileSource
     if (!vetting.ok) styleOff = vetting.reasons.slice(0, 2).map(sentence).join(' ');
   }
 
+  // 1b. O estilo treinado é triado item a item contra as mesmas regras.
+  const rules = applyOverlay(sources.base, sources.overlay);
+  const trainedOut: string[] = [];
+  let trained: TrainedStyle | null = null;
+  if (stored.trained) {
+    const keep: TrainedStyle = { version: 1 };
+    const check = (label: string, text: string, engine: boolean): boolean => {
+      const reasons = vetLine(text, rules);
+      if (engine && !toEngineText(text)) reasons.push('usa um campo que a geração não conhece');
+      if (reasons.length === 0) return true;
+      trainedOut.push(`${label} "${text}": ${reasons[0]}.`);
+      return false;
+    };
+    for (const kind of ['openings', 'closings'] as const) {
+      for (const [type, text] of Object.entries(stored.trained[kind] ?? {})) {
+        if (check(`${kind === 'openings' ? 'Abertura' : 'Fecho'} de ${type}`, text, false)) keep[kind] = { ...keep[kind], [type]: text };
+      }
+    }
+    for (const [key, text] of Object.entries(stored.trained.labels ?? {})) {
+      if (check('Rótulo', text, false)) keep.labels = { ...keep.labels, [key]: text };
+    }
+    trained = keep.openings || keep.closings || keep.labels ? keep : null;
+  }
+
   // 2. O perfil efetivo é o da geração, com o estilo só se estiver em uso.
-  const effective = effectiveProfile({ ...sources, style: styleOff ? null : stored.style });
+  const effective = effectiveProfile({ ...sources, style: styleOff ? null : stored.style, trained });
 
   // 3. Biblioteca da instituição: tudo ou nada, como na importação.
   let library = stored.library.library;
@@ -97,11 +138,13 @@ export function triageContent(stored: StoredContent, sources: Omit<ProfileSource
     else taughtOut.push({ model, reasons: reasons.slice(0, 2).map(sentence) });
   }
 
-  return { library, libraryNote, taught, taughtOut, style: stored.style, styleOff };
+  return { library, libraryNote, taught, taughtOut, style: stored.style, styleOff, trained, trainedOut, ledger: stored.ledger ?? null };
 }
 
 /** Lê o que está guardado e aplica a triagem. */
-export async function loadAnalystContent(store: AppStorage, sources: Omit<ProfileSources, 'style'>): Promise<AnalystContent> {
-  const [library, taught, style] = await Promise.all([store.loadLibraryChecked(sources.signingKeys), store.loadTaught(), store.loadTaughtStyle()]);
-  return triageContent({ library, taught, style }, sources);
+export async function loadAnalystContent(store: AppStorage, sources: Omit<ProfileSources, 'style' | 'trained'>): Promise<AnalystContent> {
+  const [library, taught, style, trained, ledger] = await Promise.all([
+    store.loadLibraryChecked(sources.signingKeys), store.loadTaught(), store.loadTaughtStyle(), store.loadTrained(), store.loadLedger(),
+  ]);
+  return triageContent({ library, taught, style, trained, ledger }, sources);
 }

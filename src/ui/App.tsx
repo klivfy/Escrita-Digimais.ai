@@ -40,9 +40,20 @@ import { fillModel, pendingFields } from '../domain/library-search';
 import type { LibraryModel, ModelLibrary } from '../config/library-schema';
 import { ModelPicker } from './components/ModelPicker';
 import { effectiveProfile, isStyleLocked, loadAnalystContent } from '../application/analyst-content';
+import { LearningService } from '../application/learning-service';
+import type { ImportPreview, ImportReport } from '../application/learning-service';
+import type { BlockRole } from '../config/learning-ledger';
+import type { IngestEntry, IngestReport } from '../domain/style-corpus';
+import type { TrainingProposal } from '../domain/style-train';
+import type { Ledger } from '../config/learning-ledger';
+import type { TrainedStyle } from '../config/trained-style';
+import { composeFromBlocks } from '../domain/style-compose';
+import type { Composition } from '../domain/style-compose';
+import { vetModel } from '../domain/library-vetting';
 import type { AnalystContent, OutOfUseModel } from '../application/analyst-content';
 import type { TaughtStyle } from '../config/taught-style';
 import { TeachMode } from './components/TeachMode';
+import { TeamLearning } from './components/TeamLearning';
 import type { TeachSeed } from './components/TeachMode';
 import { DiffView } from './components/DiffView';
 import { DraftPanel } from './components/DraftPanel';
@@ -90,6 +101,7 @@ function missingFieldLabel(field: ContextField | undefined, type: CommunicationT
 
 /** Identifica a prévia que veio da biblioteca de modelos (não do motor): não tem "outra variação". */
 const LIBRARY_ENGINE = 'biblioteca-de-modelos';
+const TEAM_ENGINE = 'estilo-da-equipe';
 
 /** Tempo em que "Desfazer" fica disponível após uma limpeza manual. O conteúdo só vive em memória. */
 export const UNDO_CLEAR_MS = 30_000;
@@ -114,14 +126,19 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
   const [taught, setTaught] = useState<LibraryModel[]>([]);
   const [taughtOut, setTaughtOut] = useState<OutOfUseModel[]>([]);
   const [styleOff, setStyleOff] = useState<string | null>(null);
+  const [trained, setTrained] = useState<TrainedStyle | null>(null);
+  const [trainedOut, setTrainedOut] = useState<string[]>([]);
+  const [ledger, setLedger] = useState<Ledger | null>(null);
+  const [composeVariant, setComposeVariant] = useState(0);
+  const [composeNote, setComposeNote] = useState('');
   const [teachSeed, setTeachSeed] = useState<TeachSeed | null>(null);
   const [taughtStyle, setTaughtStyle] = useState<TaughtStyle | null>(null);
   const [signingKeys, setSigningKeys] = useState<string[]>([]);
   // Com perfil assinado exigido pela organização, saudação, fecho e assinatura são dela: o estilo pessoal não se aplica.
   const styleLocked = isStyleLocked(signingKeys);
   const profile = useMemo(
-    () => effectiveProfile({ base: baseProfile, overlay, style: styleOff ? null : taughtStyle, signingKeys }),
-    [baseProfile, overlay, taughtStyle, styleOff, signingKeys],
+    () => effectiveProfile({ base: baseProfile, overlay, style: styleOff ? null : taughtStyle, trained, signingKeys }),
+    [baseProfile, overlay, taughtStyle, styleOff, trained, signingKeys],
   );
 
   /** Mostra o que a triagem decidiu estar em uso (e o que saiu de uso, com o motivo). */
@@ -132,6 +149,9 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
     setTaughtOut(c.taughtOut);
     setTaughtStyle(c.style);
     setStyleOff(c.styleOff);
+    setTrained(c.trained);
+    setTrainedOut(c.trainedOut);
+    setLedger(c.ledger);
   }, []);
 
   /** Refaz a triagem do conteúdo guardado com as fontes do perfil informadas (depois de importar perfil ou camada). */
@@ -399,7 +419,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
    * Leva o texto do modelo escolhido para a prévia editável. Só preenche os campos com o que o analista já informou
    * no formulário (nome, prazo, equipe); os demais ficam entre chaves e impedem a cópia até serem preenchidos.
    */
-  const onPickModel = (model: LibraryModel): void => {
+  const presentText = (model: LibraryModel, engine: string, counter: 'library.used' | 'compose.used'): void => {
     // Uma geração em andamento não pode mais sobrescrever o modelo escolhido.
     runSeq.current += 1;
     const body = fillModel(model.text, { nome: form.requesterName, prazo: form.explicitDeadline, equipe: form.destinationTeam });
@@ -411,7 +431,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
     learning.setShown(undefined);
     setResult({
       text: body, warnings: review.warnings, missingInformation: [], missingFields: [], quality: review.quality,
-      blocked: false, sensitiveFindings: [], meta: { engine: LIBRARY_ENGINE, profileVersion: profile.profileVersion, templatesVersion: 'n/a' },
+      blocked: false, sensitiveFindings: [], meta: { engine, profileVersion: profile.profileVersion, templatesVersion: 'n/a' },
     });
     setText(body);
     setInitialText(body);
@@ -420,7 +440,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
     setCopied('none');
     setBusy(false);
     generatedAt.current = Date.now();
-    void recorder.record('library.used');
+    void recorder.record(counter);
     const missing = pendingFields(body);
     setLive(
       missing.length > 0
@@ -429,6 +449,91 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
     );
     touch();
     window.setTimeout(() => previewRef.current?.focus(), 0);
+  };
+
+  const onPickModel = (model: LibraryModel): void => presentText(model, LIBRARY_ENGINE, 'library.used');
+
+  const contextQuery = useMemo(
+    () => [form.summary, form.pendingItem, form.questions, form.freeIntent, form.escalationReason].join(' ').replace(/\s+/g, ' ').trim(),
+    [form.summary, form.pendingItem, form.questions, form.freeIntent, form.escalationReason],
+  );
+
+  const learningService = useMemo(
+    () => new LearningService(store, () => ({ profile, version: extensionVersion(), now: now?.() ?? new Date() })),
+    [store, profile, now],
+  );
+  // Só entram na montagem os trechos que ainda passam nas regras em vigor; calculado uma vez por mudança, não a cada tecla.
+  const usableBlocks = useMemo(() => {
+    const ok = new Set<string>();
+    for (const b of ledger?.byType[form.type]?.blocks ?? []) {
+      const pseudo = { id: 'bloco', title: 'Bloco', types: [form.type], recipients: [], text: b.text, keywords: [], reviewedAt: '' };
+      if (vetModel(pseudo, profile).reasons.length === 0) ok.add(`${b.role}|${b.text}`);
+    }
+    return ok;
+  }, [ledger, form.type, profile]);
+
+  /** Combinação de trechos ensinados do tipo mais parecidos com o que foi descrito. Só monta; o analista edita e copia. */
+  const compose = (variant: number): Composition | null =>
+    ledger
+      ? composeFromBlocks({
+          ledger, type: form.type, recipient: form.recipient, formality: form.formality, profile, query: contextQuery,
+          values: { nome: form.requesterName, prazo: form.explicitDeadline, equipe: form.destinationTeam },
+          usable: (b) => usableBlocks.has(`${b.role}|${b.text}`), variant,
+        })
+      : null;
+  const composeAvailable = compose(0);
+
+  const onCompose = (variant: number): void => {
+    const c = compose(variant);
+    if (!c) return;
+    setComposeVariant(variant);
+    const names = { opening: 'Abertura', request: 'Pedido', closing: 'Fecho', greeting: 'Saudação', signature: 'Assinatura' } as const;
+    setComposeNote(c.parts.map((p) => `${names[p.role]}: ${p.origin === 'ensinado' ? `ensinado, visto em ${p.count} texto(s)` : 'do perfil'}`).join('. ') + '.');
+    presentText(
+      { id: 'montagem', title: 'Montado com o jeito da equipe', types: [form.type], recipients: [], text: c.text, keywords: [], reviewedAt: '' },
+      TEAM_ENGINE, 'compose.used',
+    );
+  };
+
+  const teamIngest = async (entries: IngestEntry[]): Promise<IngestReport> => {
+    const report = await learningService.ingest(entries);
+    if (report.accepted > 0) void recorder.record('learn.ingested');
+    await refreshContent(baseProfile, overlay);
+    return report;
+  };
+  const teamTrain = async (): Promise<TrainingProposal> => {
+    const proposal = await learningService.train();
+    void recorder.record('learn.trained');
+    await refreshContent(baseProfile, overlay);
+    return proposal;
+  };
+  const teamApprove = async (proposal: TrainingProposal, ids: string[]): Promise<void> => {
+    await learningService.approve(proposal, ids);
+    await refreshContent(baseProfile, overlay);
+    touch();
+  };
+  const teamClearTrained = async (): Promise<void> => {
+    await store.saveTrained(null);
+    await refreshContent(baseProfile, overlay);
+  };
+  const teamForget = async (type: CommunicationType, role: BlockRole | 'label', text: string): Promise<void> => {
+    await learningService.forget(type, role, text);
+    await refreshContent(baseProfile, overlay);
+  };
+  const teamReset = async (): Promise<void> => {
+    await learningService.reset();
+    await refreshContent(baseProfile, overlay);
+  };
+  const teamExport = async (password: string): Promise<void> => {
+    const { filename, text } = await learningService.exportFile(password);
+    downloadJson(filename, text);
+    void recorder.record('learn.exported');
+  };
+  const teamAssimilate = async (preview: ImportPreview): Promise<ImportReport> => {
+    const report = await learningService.assimilate(preview);
+    void recorder.record('learn.imported');
+    await refreshContent(baseProfile, overlay);
+    return report;
   };
 
   const setType = (type: CommunicationType): void => {
@@ -578,6 +683,9 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
       setTaughtOut([]);
       setTaughtStyle(null);
       setStyleOff(null);
+      setTrained(null);
+      setTrainedOut([]);
+      setLedger(null);
     }
     setConfirmClear(false);
     setAlsoClearStored(false);
@@ -695,11 +803,6 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
     return { schemaVersion: 1, libraryName: library?.libraryName ?? 'Modelos ensinados', libraryVersion: library?.libraryVersion ?? 'local', models };
   }, [library, taught]);
 
-  const contextQuery = useMemo(
-    () => [form.summary, form.pendingItem, form.questions, form.freeIntent, form.escalationReason].join(' ').replace(/\s+/g, ' ').trim(),
-    [form.summary, form.pendingItem, form.questions, form.freeIntent, form.escalationReason],
-  );
-
   const onRemoveOverlay = async (): Promise<void> => {
     await store.removeOverlay();
     setOverlay(null);
@@ -753,7 +856,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
   const shownWarnings = snapshot?.warnings ?? result?.warnings ?? [];
   const shownQuality = snapshot?.quality ?? result?.quality;
   const pending = useMemo(() => pendingFields(text), [text]);
-  const fromLibrary = result?.meta.engine === LIBRARY_ENGINE;
+  const fromLibrary = result?.meta.engine === LIBRARY_ENGINE || result?.meta.engine === TEAM_ENGINE;
   const copyBlocked = !text || Boolean(liveReview?.blocked) || pending.length > 0;
   const over = text.length > profile.maxLength;
 
@@ -901,6 +1004,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
         )}
 
         {mode === 'teach' ? (
+          <>
           <TeachMode
             key={teachSeed?.id ?? 0}
             profile={profile}
@@ -919,6 +1023,25 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
             onExport={onExportTaught}
             onAnnounce={setLive}
           />
+          <TeamLearning
+            profile={profile}
+            ledger={ledger}
+            trained={trained}
+            trainedOut={trainedOut}
+            styleLocked={styleLocked}
+            onIngest={teamIngest}
+            onTrain={teamTrain}
+            onApprove={teamApprove}
+            onClearTrained={teamClearTrained}
+            onForget={teamForget}
+            onResetAll={teamReset}
+            onExport={teamExport}
+            onInspect={(t) => void learningService.inspect(t)}
+            onPreview={(t, p) => learningService.previewImport(t, p)}
+            onAssimilate={teamAssimilate}
+            onAnnounce={setLive}
+          />
+          </>
         ) : mode === 'proofread' ? (
           <ProofreadMode
             text={proofText}
@@ -985,6 +1108,17 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
               onEvent={(key) => void recorder.record(key)}
               onAnnounce={setLive}
             />
+          )}
+          {composeAvailable && (
+            <div className="stack">
+              <div className="row">
+                <button type="button" onClick={() => onCompose(0)}>Montar com o jeito da equipe</button>
+                {composeAvailable.options > 1 && (
+                  <button type="button" onClick={() => onCompose(composeVariant + 1)}>Outra combinação</button>
+                )}
+              </div>
+              {composeNote && <p className="subtle">{composeNote}</p>}
+            </div>
           )}
           <h2>2. Contexto</h2>
           <DraftPanel

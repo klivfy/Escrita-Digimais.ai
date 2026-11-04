@@ -133,3 +133,13 @@ Enquanto isso não chega, o analista já pode usar a aba Ensinar com 3 a 5 texto
 - A viabilidade da opção B (cortar textos em blocos) não foi testada com textos reais e é a parte mais incerta do desenho.
 - Não medi o esforço de edição: ele só existe no piloto.
 - As metas são hipóteses para serem confirmadas na fase 1.
+
+## 11. Implementação das recomendações A e B (04/11/2026)
+
+As opções A e B foram implementadas em `claude/aprendizado-local`, junto com um módulo de aprendizado contínuo local.
+
+- **A (extração determinística).** `domain/style-corpus.ts` decompõe cada texto em saudação, abertura, pedido, fecho, assinatura e rótulos; `domain/style-train.ts` propõe abertura e fecho por tipo e rótulos de seção, com a evidência. Limiares: 3 textos no tipo, repetição em pelo menos 2 e em metade deles; rótulo com 3 usos e vencedor claro. Rótulos só entram se casarem, por lista fechada de sinônimos, com um rótulo da extensão.
+- **B (montagem por trechos).** `domain/style-compose.ts` escolhe a abertura, o pedido e o fecho ensinados mais parecidos com o formulário e junta com a saudação e a assinatura do perfil. O botão "Montar com o jeito da equipe" mostra de onde veio cada parte.
+- **Contínuo e local.** O registro soma o que se ensina ao longo do tempo (`learningLedger`), o treino roda sob demanda e na hora, e o analista aprova o que vira estilo (`trainedStyle`). Exportação e importação cifradas (AES-256-GCM, PBKDF2) com bloqueio por versão.
+- **Decisão de privacidade.** O aprendizado só acumula o que o analista ensina de propósito; não captura os textos que ele copia no dia a dia. Capturar automaticamente guardaria redação de chamados reais, o que a regra do projeto proíbe. Se quiserem aprendizado automático dos textos copiados, é uma decisão à parte, com política da TI.
+- **Continua valendo o limite da seção 10.** Nenhuma medida com textos reais foi feita: a cobertura de 35% e as metas seguem como hipóteses até a fase 0.

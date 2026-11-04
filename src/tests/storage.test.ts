@@ -65,6 +65,8 @@ describe('persistência', () => {
     if (lib.ok) await s.saveLibrary(lib.library, 'assinatura-da-biblioteca');
     if (lib.ok) await s.saveTaught(lib.library.models);
     await s.saveTaughtStyle({ version: 1, greeting: 'Bom dia,' });
+    await s.saveLedger({ version: 1, since: '2026-11-01', updatedAt: '2026-11-04', textsAtTraining: 0, byType: { pending: { texts: 1, blocks: [], labels: [] } } });
+    await s.saveTrained({ version: 1, labels: { pending: 'Em aberto' } });
     expect(Object.keys(local.data).sort()).toEqual([...ALLOWED_KEYS].sort());
     await s.clearAll();
     expect(local.data).toEqual({});
