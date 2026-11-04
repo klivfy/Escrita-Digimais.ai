@@ -28,7 +28,7 @@ const STYLE = { version: 1 as const, greeting: 'Bom dia, {nome},', closing: 'Fic
 
 describe('effectiveProfile: uma fórmula só', () => {
   it('base, depois estilo, depois camada de equipe', () => {
-    const p = effectiveProfile({ base: DEFAULT_PROFILE, overlay: overlay(['macete']), style: STYLE, signingKeys: [] });
+    const p = effectiveProfile({ base: DEFAULT_PROFILE, overlay: overlay(['macete']), style: STYLE, trained: null, signingKeys: [] });
     expect(p.signature).toBe('Time de Suporte');
     expect(p.greetings.cordial.user).toBe('Bom dia, {nome},');
     expect(p.forbiddenTerms).toContain('macete');
@@ -36,13 +36,13 @@ describe('effectiveProfile: uma fórmula só', () => {
 
   it('com assinatura exigida o estilo não se aplica, mas a camada continua valendo', () => {
     expect(isStyleLocked(['chave'])).toBe(true);
-    const p = effectiveProfile({ base: DEFAULT_PROFILE, overlay: overlay(['macete']), style: STYLE, signingKeys: ['chave'] });
+    const p = effectiveProfile({ base: DEFAULT_PROFILE, overlay: overlay(['macete']), style: STYLE, trained: null, signingKeys: ['chave'] });
     expect(p.signature).toBe(DEFAULT_PROFILE.signature);
     expect(p.forbiddenTerms).toContain('macete');
   });
 
   it('não altera o perfil recebido', () => {
-    effectiveProfile({ base: DEFAULT_PROFILE, overlay: overlay(['macete']), style: STYLE, signingKeys: [] });
+    effectiveProfile({ base: DEFAULT_PROFILE, overlay: overlay(['macete']), style: STYLE, trained: null, signingKeys: [] });
     expect(DEFAULT_PROFILE.signature).toBe('Equipe de Service Desk');
     expect(DEFAULT_PROFILE.forbiddenTerms).not.toContain('macete');
   });
@@ -100,7 +100,7 @@ describe('triageContent', () => {
     const { vetModel } = await import('../domain/library-vetting');
     const model = taughtModel({ text: 'Use o macete para resolver.' });
     const src = sources({ overlay: overlay(['macete']) });
-    const effective = effectiveProfile({ ...src, style: STYLE });
+    const effective = effectiveProfile({ ...src, style: STYLE, trained: null });
     const viaTriage = triageContent({ library: { library: null }, taught: [model], style: STYLE }, src);
     expect(viaTriage.taughtOut.length === 1).toBe(vetModel(model, effective).reasons.length > 0);
   });

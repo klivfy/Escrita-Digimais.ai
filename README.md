@@ -188,6 +188,17 @@ Depois de ensinar, em "Gerar texto" o campo "Buscar um modelo pronto" mostra, so
 
 **Ensinar o estilo.** Na mesma aba, cole de 3 a 20 textos reais separados por uma linha com `---` e clique em **Analisar estilo**. A extensão mostra a saudação, o fecho e a assinatura que se repetem em pelo menos metade dos textos ("aparece em 3 de 4 textos"); você marca o que quer usar, edita se precisar e salva. A partir daí as prévias saem com a sua saudação (com o nome informado, quando houver), o seu fecho e a sua assinatura. Só essas três linhas são guardadas, nunca os textos colados. Se a organização exige perfil assinado, o estilo pessoal fica desligado.
 
+### Aprendizado da equipe (local, contínuo)
+Na aba **Ensinar**, seção "Aprendizado da equipe":
+
+1. **Acumular.** Cole de 1 a 20 textos reais da equipe, separados por uma linha com `---`, escolha o tipo e clique em **Acumular textos**. A extensão guarda só aberturas, pedidos, fechos e rótulos que se repetem, já com nome, chamado, data, prazo e equipe trocados por campos, e as contagens. Texto com dado sensível é recusado inteiro, com o motivo. "Ver o que foi guardado" lista tudo e deixa esquecer cada trecho.
+2. **Treinar.** **Treinar agora** consolida o acúmulo em propostas, cada uma com a evidência ("aparece em 4 de 5 textos"): abertura e fecho por tipo (exigem 3 textos do tipo, repetição em pelo menos 2 e em metade deles) e rótulos de seção (3 usos e um vencedor claro). Você marca o que quer e clica em **Aplicar selecionados**; as redações padrão seguem como "outra variação". Rótulos começam desmarcados porque trocam o estilo natural pelo formato com rótulos. O treino é determinístico e leve: roda na hora, sem processo em segundo plano; a tela avisa quando há textos novos desde o último treino.
+3. **Montar com o jeito da equipe.** Em "Gerar texto", quando há trechos do tipo, aparece **Montar com o jeito da equipe**: escolhe a abertura, o pedido e o fecho ensinados mais parecidos com o que você descreveu, junta com a saudação e a assinatura do perfil e leva à prévia editável, dizendo de onde veio cada parte. **Outra combinação** passa para o próximo conjunto. Nada é copiado sem a sua ação, e campo pendente entre chaves impede a cópia.
+4. **Exportar e importar, cifrados.** Defina uma senha (pelo menos 12 caracteres, digitada duas vezes) e clique em **Exportar aprendizado cifrado**: sai um JSON com o conteúdo cifrado (AES-256-GCM, chave por PBKDF2) e a versão exata da extensão. Quem recebe escolhe o arquivo: se a versão da extensão for outra, a importação é interrompida na hora com um aviso que cita as duas versões. Com a mesma versão, informe a senha, veja o resumo e clique em **Assimilar**; as contagens são somadas e o que você já aprovou não é sobrescrito. Mande a senha por outro canal que não o do arquivo.
+
+Tudo isso roda no navegador, sem rede e sem telemetria. Com perfil assinado exigido pela organização, o estilo treinado fica guardado mas não é aplicado.
+
+
 
 
 ### Camada da equipe (opcional)

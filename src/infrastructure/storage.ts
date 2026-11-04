@@ -7,7 +7,11 @@ import { sanitizeSigningKeys, verifyProfileSignature } from '../application/prof
 import { validateOverlay } from '../config/profile-overlay';
 import type { ProfileOverlay } from '../config/profile-overlay';
 import { MAX_LIBRARY_MODELS, validateLibrary } from '../config/library-schema';
+import { sanitizeLedger } from '../config/learning-ledger';
+import type { Ledger } from '../config/learning-ledger';
 import { sanitizeTaughtStyle } from '../config/taught-style';
+import { sanitizeTrainedStyle } from '../config/trained-style';
+import type { TrainedStyle } from '../config/trained-style';
 import type { TaughtStyle } from '../config/taught-style';
 import type { LibraryModel, ModelLibrary } from '../config/library-schema';
 import { dayString, emptyCounters, sanitizeCounters } from '../application/usage-counters';
@@ -34,6 +38,8 @@ export const STORAGE_KEYS = {
   modelLibrarySignature: 'modelLibrarySignature',
   taughtModels: 'taughtModels',
   taughtStyle: 'taughtStyle',
+  learningLedger: 'learningLedger',
+  trainedStyle: 'trainedStyle',
 } as const;
 export const ALLOWED_KEYS: string[] = Object.values(STORAGE_KEYS);
 
@@ -226,6 +232,49 @@ export class AppStorage {
       return;
     }
     await this.local?.set({ [STORAGE_KEYS.taughtStyle]: clean });
+  }
+
+  /** Registro do que a extensão aprendeu dos textos ensinados (só redação sem dado variável). Sempre sanitizado. */
+  async loadLedger(): Promise<Ledger | null> {
+    try {
+      const data = await this.local?.get(STORAGE_KEYS.learningLedger);
+      return sanitizeLedger(data?.[STORAGE_KEYS.learningLedger]);
+    } catch {
+      return null;
+    }
+  }
+
+  async saveLedger(ledger: Ledger | null): Promise<void> {
+    const clean = ledger ? sanitizeLedger(ledger) : null;
+    if (!clean) {
+      await this.local?.remove(STORAGE_KEYS.learningLedger);
+      return;
+    }
+    await this.local?.set({ [STORAGE_KEYS.learningLedger]: clean });
+  }
+
+  /** Estilo treinado e aprovado pelo analista (abertura, fecho e rótulos). Sempre sanitizado. */
+  async loadTrained(): Promise<TrainedStyle | null> {
+    try {
+      const data = await this.local?.get(STORAGE_KEYS.trainedStyle);
+      return sanitizeTrainedStyle(data?.[STORAGE_KEYS.trainedStyle]);
+    } catch {
+      return null;
+    }
+  }
+
+  async saveTrained(style: TrainedStyle | null): Promise<void> {
+    const clean = style ? sanitizeTrainedStyle(style) : null;
+    if (!clean) {
+      await this.local?.remove(STORAGE_KEYS.trainedStyle);
+      return;
+    }
+    await this.local?.set({ [STORAGE_KEYS.trainedStyle]: clean });
+  }
+
+  /** Apaga todo o aprendizado acumulado (registro e estilo treinado). Modelos e estilo ensinados à mão ficam. */
+  async resetTeamLearning(): Promise<void> {
+    await this.local?.remove([STORAGE_KEYS.learningLedger, STORAGE_KEYS.trainedStyle]);
   }
 
   async removeLibrary(): Promise<void> {
