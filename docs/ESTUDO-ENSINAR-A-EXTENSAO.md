@@ -186,3 +186,5 @@ Fase 1 (núcleo da biblioteca) implementada no branch `claude/biblioteca-modelos
 - Não há medida do ganho de tempo: ele só aparece no piloto.
 - Não avaliei o formato de exportação do seu sistema de chamados.
 - Embeddings e IA não foram necessários neste experimento; o estudo anterior já mostrou que aumentar o modelo traz pouco ganho para esta tarefa, e a recuperação por letras roda em milissegundos no navegador.
+
+Ver também: `docs/ESTUDO-ESTILO-DIGIMAIS.md` (04/11/2026), que mede o quanto o texto gerado é roteiro fixo e propõe aprender o estilo da equipe a partir de textos de referência.
