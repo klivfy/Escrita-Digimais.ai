@@ -36,7 +36,7 @@ A extensão não usa IA. A "alucinação" aqui é o motor afirmar algo que o ana
 | 3. Fatos na geração | Crítica | G1, G2 | Sonnet 5.5, alto | Feita |
 | 4. Coerência do texto | Alta | G3, G4 | Sonnet 5.5, médio | Feita |
 | 5. Acabamento | Média | G5, G6 | Sonnet 5.5, baixo | Feita |
-| 6. Medida com textos reais | Validação | Confirma tudo com 20 a 40 textos anonimizados do Digimais | Sonnet 5.5, médio | Depende dos textos |
+| 6. Medida com textos reais | Validação | Confirma tudo com 20 a 40 textos anonimizados do Digimais | Sonnet 5.5, médio | Ferramenta pronta; falta rodar com os textos |
 
 Escalada para Opus 5.5 (esforço alto) só se a fase 1 ou a 3 não chegar a zero falso positivo em duas rodadas, ou se a fase 2 exigir mudar o formato do arquivo cifrado.
 
@@ -83,8 +83,20 @@ A regra prefere perder aprendizado a vazar fato de chamado. Uma abertura que cit
 - Nenhum snapshot mudou: os textos padrão não tinham fecho empilhado nem campo vazio.
 - Limites: `COURTESY_FAMILY` é lista fechada de três radicais (`disposi`, `agradec`, `obrigad`); fecho de cortesia com outra redação ainda empilha. Quando só resta redação com campo vazio, a seção some em silêncio, sem aviso ao analista.
 
+## Fase 6: como medir com textos reais
+
+Estado: a ferramenta está pronta (`scripts/estudo-fidelidade/medir.test.ts`) e foi validada só com texto fictício. A medida real não foi feita porque o repositório não tem texto do Digimais e nenhum foi fornecido.
+
+1. Reúna de 20 a 40 textos já enviados, sem dado pessoal que você não queira expor, num JSON **fora do repositório**: `[{ "tipo": "request_information", "texto": "..." }]` (tipos em `src/domain/types.ts`). Anonimize nome de pessoa, e-mail e telefone; a extensão recusa o que detectar como sensível e a medida conta essas recusas.
+2. Rode: `FIDELIDADE_TEXTOS=/caminho/fora/do/repo/textos.json FIDELIDADE_REVISAO=/caminho/fora/do/repo/revisao.txt npx vitest run --config scripts/estudo-fidelidade/vitest.config.ts --disable-console-intercept`.
+3. A saída é só agregada (aceitos, recusas por motivo, trechos guardados, taxa de descarte, propostas de treino) e a auditoria de vazamento, que deve ser 0. O script recusa ler ou gravar dentro do repositório, para o texto real nunca ser commitado.
+4. `revisao.txt` lista os trechos guardados (tipo, papel, usos, trecho). Marque à mão: **falso positivo** (trecho com fato de chamado que ficou) e **falso negativo** (redação boa que foi descartada).
+5. Critério para aceitar: 0 falso positivo e menos de 20% de falso negativo entre os trechos com 2+ usos. Acima disso, ajuste `redactionProblems` com teste positivo e negativo, rode de novo (duas rodadas sem melhorar é o gatilho de escalada para Opus 5.5, tabela acima).
+6. Ainda sem medida real: limiar `COMPOSE_MIN_SCORE`, listas de resultado negativo, detecção de terceiro e família de cortesia. A ferramenta atual cobre a ingestão e a triagem; esses quatro exigem também notas de chamado reais (formulário), que o analista precisaria fornecer à parte.
+
 ## Como validar
 
 - `npm run check` verde.
-- `src/tests/fidelity.test.ts`: os testes das fases 1 a 5 passam e não resta `it.fails`. Falta a fase 6 (medida com textos reais).
+- `src/tests/fidelity.test.ts`: os testes das fases 1 a 5 passam e não resta `it.fails`.
+- Fase 6: só concluída depois de rodar o procedimento acima com textos reais e registrar o resultado aqui.
 - Na tela: ensinar os textos do estudo e conferir que nome de terceiro, sistema e dia da semana aparecem em "Trechos fora de uso" ou nem entram, e que a montagem só usa trechos vistos em pelo menos 2 textos.
