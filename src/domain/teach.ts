@@ -25,7 +25,7 @@ export interface TeachDraft {
 export const TEACH_NAME_NOTICE =
   'A extensão só troca o nome na saudação. Confira se não sobrou nome de pessoa, e-mail, telefone ou número de documento no texto.';
 
-const NOT_A_NAME = '(?:[Ss]enhor|[Ss]enhora|[Ss]r|[Ss]ra|[Ee]quipe|[Tt]ime|[Tt]odos|[Pp]essoal|[Uu]suário|[Uu]suária)';
+const NOT_A_NAME = '(?:[Ss]enhor|[Ss]enhora|[Ss]r|[Ss]ra|[Ee]quipe|[Tt]ime|[Tt]odos|[Pp]essoal|[Uu]suário|[Uu]suária|[Bb]om|[Bb]oa)';
 // Só a primeira linha. Maiúsculas conferidas pelo \p{Lu}, por isso sem a opção i.
 const GREETING = new RegExp(
   `^(\\s*(?:Olá|Oi|Prezad[oa]s?|Caro|Cara|Bom dia|Boa tarde|Boa noite)[,!]?\\s+)(?!${NOT_A_NAME}\\b)(\\p{Lu}[\\p{L}'’-]+(?:\\s+\\p{Lu}[\\p{L}'’-]+){0,3})(?=\\s*[,!:.]|\\s*$)`,
@@ -33,7 +33,14 @@ const GREETING = new RegExp(
 );
 const TICKET_ID = /\b(?:INC|CHG|REQ|RITM|SD|TASK|PRB)[-\s]?\d{4,10}\b/g;
 const TICKET_WORD = /\bchamado\s+(?:n[ºo°.]{0,2}\s*)?#?\d{3,10}\b/gi;
-const DATE = /\b\d{1,2}\/\d{1,2}(?:\/\d{2,4})?(?:\s*(?:às|as)\s*\d{1,2}(?::\d{2}|h\d{0,2})?)?/gu;
+// Data com ano é sempre data. Sem ano ("10/03"), só depois de uma palavra de data: "versão 2/3" e "24/7" não são datas.
+const TIME_SUFFIX = '(?:\\s*(?:às|as)\\s*\\d{1,2}(?::\\d{2}|h\\d{0,2})?)?';
+const DATE = new RegExp(
+  `(?<![\\d/])(\\d{1,2})\\/(\\d{1,2})\\/(\\d{2}|\\d{4})(?![\\d/])${TIME_SUFFIX}|(?<=(?<![\\p{L}])(?:dia|em|até|para|desde|data|prazo|partir de)\\s)(\\d{1,2})\\/(\\d{1,2})(?![\\d/])${TIME_SUFFIX}`,
+  'gu',
+);
+const validDayMonth = (day: string, month: string): boolean => Number(day) >= 1 && Number(day) <= 31 && Number(month) >= 1 && Number(month) <= 12;
+// "time" também é time de futebol: só vale com "de" ou "da" (equipe, setor e área aceitam as demais preposições).
 const TEAM = /\b(equipe|time|setor|área)\s+(de|da|do|das|dos)\s+(\p{Lu}[\p{L}]+(?:\s+\p{Lu}[\p{L}]+){0,2})/gu;
 const DEADLINE_CUE = /(?:até|prazo)[^.\n]{0,14}$/i;
 
@@ -54,12 +61,17 @@ export function prepareTaught(raw: string): TeachDraft {
 
   text = text.replace(TICKET_WORD, (m) => (note('chamado', m), '{chamado}'));
   text = text.replace(TICKET_ID, (m) => (note('chamado', m), '{chamado}'));
-  text = text.replace(DATE, (m, offset: number) => {
+  text = text.replace(DATE, (m: string, d1: string | undefined, m1: string | undefined, _y: string | undefined, d2: string | undefined, m2: string | undefined, offset: number) => {
+    if (!validDayMonth(d1 ?? d2 ?? '0', m1 ?? m2 ?? '0')) return m;
     const field: ModelPlaceholder = DEADLINE_CUE.test(text.slice(Math.max(0, offset - 20), offset)) ? 'prazo' : 'data';
     note(field, m);
     return `{${field}}`;
   });
-  text = text.replace(TEAM, (_m, noun: string, prep: string, name: string) => (note('equipe', name), `${noun} ${prep} {equipe}`));
+  text = text.replace(TEAM, (m: string, noun: string, prep: string, name: string) => {
+    if (noun === 'time' && prep !== 'de' && prep !== 'da') return m;
+    note('equipe', name);
+    return `${noun} ${prep} {equipe}`;
+  });
 
   return { text, substitutions };
 }

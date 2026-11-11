@@ -8,6 +8,7 @@ import { vetModel } from '../domain/library-vetting';
 import { ingestTexts } from '../domain/style-corpus';
 import type { IngestEntry, IngestReport } from '../domain/style-corpus';
 import { vetStyle } from '../domain/style-learn';
+import { redactionProblems } from '../domain/block-vetting';
 import { approveItems, proposeTraining, toEngineText, vetLine } from '../domain/style-train';
 import type { TrainingProposal } from '../domain/style-train';
 import type { CommunicationType, LanguageProfile } from '../domain/types';
@@ -55,6 +56,15 @@ export interface ImportReport {
 }
 
 const dayOf = (d: Date): string => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+/** Cópia do registro sem os trechos que carregam fato de chamado. O registro guardado não é alterado. */
+function withoutTicketFacts(ledger: Ledger, profile: LanguageProfile): Ledger {
+  const copy = structuredClone(ledger);
+  for (const bucket of Object.values(copy.byType)) {
+    if (bucket) bucket.blocks = bucket.blocks.filter((b) => redactionProblems(b.text, profile).length === 0);
+  }
+  return copy;
+}
 
 export class LearningService {
   constructor(private readonly store: AppStorage, private readonly context: () => LearningContext) {}
@@ -104,8 +114,10 @@ export class LearningService {
 
   /** Gera o arquivo cifrado. Exige senha. Lança LearningCryptoError com o motivo. */
   async exportFile(password: string): Promise<{ filename: string; text: string }> {
-    const { version, now } = this.context();
-    const [ledger, trained, style] = await Promise.all([this.store.loadLedger(), this.store.loadTrained(), this.store.loadTaughtStyle()]);
+    const { version, now, profile } = this.context();
+    const [stored, trained, style] = await Promise.all([this.store.loadLedger(), this.store.loadTrained(), this.store.loadTaughtStyle()]);
+    // Trecho antigo com fato de chamado (nome de terceiro, sistema, número) fica no navegador e não sai no arquivo.
+    const ledger = stored ? withoutTicketFacts(stored, profile) : stored;
     if (!ledger && !trained && !style) {
       throw new LearningCryptoError('NOTHING_TO_EXPORT', 'Ainda não há aprendizado para exportar. Ensine alguns textos primeiro.');
     }
@@ -142,8 +154,11 @@ export class LearningService {
         if (!bucket) continue;
         const type = (Object.keys(clean.byType) as CommunicationType[]).find((t) => clean.byType[t] === bucket) as CommunicationType;
         const before = bucket.blocks.length;
+        // Fato de chamado (nome, sistema, número, dia) de quem exportou não entra no registro de quem importa.
         bucket.blocks = bucket.blocks.filter(
-          (b) => vetModel({ id: 'bloco', title: 'Bloco', types: [type], recipients: [], text: b.text, keywords: [], reviewedAt: '' }, profile).reasons.length === 0,
+          (b) =>
+            redactionProblems(b.text, profile).length === 0 &&
+            vetModel({ id: 'bloco', title: 'Bloco', types: [type], recipients: [], text: b.text, keywords: [], reviewedAt: '' }, profile).reasons.length === 0,
         );
         const labelsBefore = bucket.labels.length;
         bucket.labels = bucket.labels.filter((l) => vetLine(l.text, profile).length === 0);

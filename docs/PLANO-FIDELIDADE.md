@@ -1,0 +1,60 @@
+# Plano de fidelidade: o texto não afirma o que o analista não disse
+
+A extensão não usa IA. A "alucinação" aqui é o motor afirmar algo que o analista não informou, ou o estudo dos textos de referência guardar fato de um chamado como se fosse redação reaproveitável. Este documento registra a medição de 11/11/2026 (textos fictícios, não textos reais do Digimais), o plano em fases e o estado de cada uma. A régua executável é `src/tests/fidelity.test.ts`.
+
+## Defeitos medidos
+
+### Estudo do texto de referência
+
+| # | Defeito | Exemplo medido | Fase |
+|---|---|---|---|
+| E1 | Fato de um chamado vira "abertura" reaproveitável, com nome de terceiro | "Conforme contato telefônico realizado hoje com a Ana Paula da contabilidade, o notebook HP ProBook será trocado na quinta-feira." | 1 |
+| E2 | A montagem cola esse trecho em outro assunto | Chamado de impressora recebeu a abertura do notebook | 2 |
+| E3 | A montagem ignora o formulário | A pergunta digitada não aparece no texto montado | 2 |
+| E4 | Palavra comum tomada por cortesia | "Identificamos" e "Verificamos" contêm "ficamos" | 1 |
+| E5 | Trocas erradas por campo | "versão 2/3" e "24/7" viram data; "time do Flamengo" vira equipe; "Olá, Boa tarde," vira nome | 1 |
+| E6 | Frase alheia entra no pedido | "O time do {equipe} ganhou. Favor enviar o print." guardado inteiro | 1 |
+
+### Geração de texto
+
+| # | Defeito | Exemplo medido | Fase |
+|---|---|---|---|
+| G1 | Ação já feita sai como próximo passo | "Agendamento removido da fila" em "Os próximos passos são" | 3 |
+| G2 | Ação de terceiro sai como nossa | "O que já fizemos: Usuário reiniciou o computador. Fornecedor trocou o toner." | 3 |
+| G3 | O tipo contradiz o conteúdo | Confirmação de solução com resultado "o erro continua" | 4 |
+| G4 | Rótulo afirma mais que o analista | Sem confirmação do usuário, o texto diz "situação solucionada" | 4 |
+| G5 | Fechos empilhados depois do treino | "Ficamos à disposição." seguido de "Agradecemos a colaboração." | 5 |
+| G6 | Campo vazio deixa buraco | `{destination}` sem valor vira texto vazio (lido no código, não reproduzido) | 5 |
+
+## Fases
+
+| Fase | Prioridade | O que corrige | Modelo e esforço | Estado |
+|---|---|---|---|---|
+| 0. Régua de fidelidade | Pré-requisito | `fidelity.test.ts` com os casos da medição | Sonnet 5.5, médio | Feita |
+| 1. Estudo de referência | Crítica | E1, E4, E5, E6 e o registro já guardado | Sonnet 5.5, alto | Feita |
+| 2. Montagem por trechos | Crítica | E2, E3 | Sonnet 5.5, alto | Pendente |
+| 3. Fatos na geração | Crítica | G1, G2 | Sonnet 5.5, alto | Pendente |
+| 4. Coerência do texto | Alta | G3, G4 | Sonnet 5.5, médio | Pendente |
+| 5. Acabamento | Média | G5, G6 | Sonnet 5.5, baixo | Pendente |
+| 6. Medida com textos reais | Validação | Confirma tudo com 20 a 40 textos anonimizados do Digimais | Sonnet 5.5, médio | Depende dos textos |
+
+Escalada para Opus 5.5 (esforço alto) só se a fase 1 ou a 3 não chegar a zero falso positivo em duas rodadas, ou se a fase 2 exigir mudar o formato do arquivo cifrado.
+
+## Fase 1: o que mudou
+
+- `domain/block-vetting.ts` é a única definição de "dado de chamado" (`redactionProblems`: nome próprio, sigla, número, dia da semana ou mês, "hoje", "ontem", "amanhã") e de "repetição mínima" (`MIN_BLOCK_USES = 2`). `judgeBlock` devolve `ok`, `waiting` (ainda sem repetição) ou `out` (fora das regras), sempre com o motivo.
+- Ingestão (`style-corpus.ts`): trecho com dado de chamado nem chega a ser guardado. O pedido guarda só a frase que pede. A cortesia é reconhecida por palavra inteira.
+- Campos (`teach.ts`, `style-learn.ts`): data sem ano só vira campo depois de palavra de data (dia, em, até, para, desde, prazo); dia e mês são validados; "time" só vira equipe com "de" ou "da"; "Bom dia" e "Boa tarde" não são nome.
+- Treino (`style-train.ts`) e montagem (`style-compose.ts`) ignoram trecho com dado de chamado, e a montagem ignora trecho de uma ocorrência só.
+- Triagem única (`application/analyst-content.ts`): `blocksNotInUse` lista, com o motivo, o que está guardado e fora de uso. Nada é apagado. A aba Ensinar mostra o painel "Trechos fora de uso" com o botão Esquecer e marca na lista "aguardando repetição".
+- Privacidade: a exportação deixa no navegador o trecho antigo com dado de chamado, e a importação descarta o que chegar assim (conta como descartado no resumo).
+
+### Trade-off assumido
+
+A regra prefere perder aprendizado a vazar fato de chamado. Uma abertura que cita um sistema ("acesso ao SAP") não é aprendida como estilo, mesmo que se repita. O caminho para o analista é ensinar com campo (`{sistema}`, `{equipamento}`), que a biblioteca já aceita.
+
+## Como validar
+
+- `npm run check` verde.
+- `src/tests/fidelity.test.ts`: os testes da fase 1 passam; os `it.fails` das fases 3 a 5 passam enquanto o defeito existe e quebram quando for corrigido (trocar por `it`); os `it.todo` da fase 2 listam o que falta.
+- Na tela: ensinar os textos do estudo e conferir que nome de terceiro, sistema e dia da semana aparecem em "Trechos fora de uso" ou nem entram, e que a montagem só usa trechos vistos em pelo menos 2 textos.

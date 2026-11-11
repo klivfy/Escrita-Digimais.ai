@@ -39,7 +39,7 @@ import { useUsageCounters } from './hooks/useUsageCounters';
 import { fillModel, pendingFields } from '../domain/library-search';
 import type { LibraryModel, ModelLibrary } from '../config/library-schema';
 import { ModelPicker } from './components/ModelPicker';
-import { effectiveProfile, isStyleLocked, loadAnalystContent } from '../application/analyst-content';
+import { blockKey, effectiveProfile, isStyleLocked, loadAnalystContent } from '../application/analyst-content';
 import { LearningService } from '../application/learning-service';
 import type { ImportPreview, ImportReport } from '../application/learning-service';
 import type { BlockRole } from '../config/learning-ledger';
@@ -49,8 +49,7 @@ import type { Ledger } from '../config/learning-ledger';
 import type { TrainedStyle } from '../config/trained-style';
 import { composeFromBlocks } from '../domain/style-compose';
 import type { Composition } from '../domain/style-compose';
-import { vetModel } from '../domain/library-vetting';
-import type { AnalystContent, OutOfUseModel } from '../application/analyst-content';
+import type { AnalystContent, BlockNotInUse, OutOfUseModel } from '../application/analyst-content';
 import type { TaughtStyle } from '../config/taught-style';
 import { TeachMode } from './components/TeachMode';
 import { TeamLearning } from './components/TeamLearning';
@@ -129,6 +128,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
   const [trained, setTrained] = useState<TrainedStyle | null>(null);
   const [trainedOut, setTrainedOut] = useState<string[]>([]);
   const [ledger, setLedger] = useState<Ledger | null>(null);
+  const [blocksNotInUse, setBlocksNotInUse] = useState<BlockNotInUse[]>([]);
   const [composeVariant, setComposeVariant] = useState(0);
   const [composeNote, setComposeNote] = useState('');
   const [teachSeed, setTeachSeed] = useState<TeachSeed | null>(null);
@@ -152,6 +152,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
     setTrained(c.trained);
     setTrainedOut(c.trainedOut);
     setLedger(c.ledger);
+    setBlocksNotInUse(c.blocksNotInUse);
   }, []);
 
   /** Refaz a triagem do conteúdo guardado com as fontes do perfil informadas (depois de importar perfil ou camada). */
@@ -462,15 +463,8 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
     () => new LearningService(store, () => ({ profile, version: extensionVersion(), now: now?.() ?? new Date() })),
     [store, profile, now],
   );
-  // Só entram na montagem os trechos que ainda passam nas regras em vigor; calculado uma vez por mudança, não a cada tecla.
-  const usableBlocks = useMemo(() => {
-    const ok = new Set<string>();
-    for (const b of ledger?.byType[form.type]?.blocks ?? []) {
-      const pseudo = { id: 'bloco', title: 'Bloco', types: [form.type], recipients: [], text: b.text, keywords: [], reviewedAt: '' };
-      if (vetModel(pseudo, profile).reasons.length === 0) ok.add(`${b.role}|${b.text}`);
-    }
-    return ok;
-  }, [ledger, form.type, profile]);
+  // A triagem única decide o que está fora de uso (regras em vigor, fato de chamado, pouca repetição); aqui só se consulta.
+  const blocksOut = useMemo(() => new Set(blocksNotInUse.map((b) => blockKey(b.type, b.role, b.text))), [blocksNotInUse]);
 
   /** Combinação de trechos ensinados do tipo mais parecidos com o que foi descrito. Só monta; o analista edita e copia. */
   const compose = (variant: number): Composition | null =>
@@ -478,7 +472,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
       ? composeFromBlocks({
           ledger, type: form.type, recipient: form.recipient, formality: form.formality, profile, query: contextQuery,
           values: { nome: form.requesterName, prazo: form.explicitDeadline, equipe: form.destinationTeam },
-          usable: (b) => usableBlocks.has(`${b.role}|${b.text}`), variant,
+          usable: (b) => !blocksOut.has(blockKey(form.type, b.role, b.text)), variant,
         })
       : null;
   const composeAvailable = compose(0);
@@ -1028,6 +1022,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
             ledger={ledger}
             trained={trained}
             trainedOut={trainedOut}
+            blocksNotInUse={blocksNotInUse}
             styleLocked={styleLocked}
             onIngest={teamIngest}
             onTrain={teamTrain}

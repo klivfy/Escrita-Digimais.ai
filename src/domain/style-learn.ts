@@ -53,7 +53,8 @@ export function greetingBase(firstLine: string): string | undefined {
   const rest = l.slice(m[0].length).replace(/^[,\s]+/, '').replace(/[,!:.\s]+$/, '');
   if (!rest) return `${m[0]},`;
   const first = rest.split(/\s+/)[0] ?? '';
-  if (COLLECTIVE.test(first)) return `${m[0]}, ${rest},`;
+  // "Olá, Boa tarde," é uma saudação fixa, não uma pessoa chamada Boa.
+  if (COLLECTIVE.test(first) || /^(?:Bom dia|Boa tarde|Boa noite)$/iu.test(rest)) return `${m[0]}, ${rest},`;
   return COMMA_BEFORE_NAME.has(m[0]) ? `${m[0]}, ${NAME_SLOT},` : `${m[0]} ${NAME_SLOT},`;
 }
 

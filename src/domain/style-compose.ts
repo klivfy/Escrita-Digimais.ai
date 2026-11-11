@@ -5,6 +5,7 @@
  */
 import type { LibraryModel } from '../config/library-schema';
 import type { Block, BlockRole, Ledger } from '../config/learning-ledger';
+import { MIN_BLOCK_USES, redactionProblems } from './block-vetting';
 import { buildSearchIndex, fillModel, searchModels } from './library-search';
 import type { FieldValues } from './library-search';
 import { greetingFor } from './planner';
@@ -52,7 +53,10 @@ function rank(blocks: Block[], type: CommunicationType, query: string): Block[] 
 export function composeFromBlocks(input: ComposeInput): Composition | null {
   const { ledger, type, recipient, formality, profile, query, values } = input;
   const variant = Math.max(0, Math.trunc(input.variant ?? 0));
-  const all = (ledger.byType[type]?.blocks ?? []).filter((b) => input.usable?.(b) ?? true);
+  // Defesa em profundidade: mesmo sem o filtro da triagem, trecho de uma ocorrência ou com fato de chamado não entra.
+  const all = (ledger.byType[type]?.blocks ?? []).filter(
+    (b) => b.count >= MIN_BLOCK_USES && redactionProblems(b.text, profile).length === 0 && (input.usable?.(b) ?? true),
+  );
   const pick = (role: BlockRole): { block: Block; size: number } | undefined => {
     const ranked = rank(all.filter((b) => b.role === role), type, query);
     return ranked.length > 0 ? { block: ranked[variant % ranked.length], size: ranked.length } : undefined;
