@@ -35,7 +35,7 @@ A extensão não usa IA. A "alucinação" aqui é o motor afirmar algo que o ana
 | 2. Montagem por trechos | Crítica | E2, E3 | Sonnet 5.5, alto | Feita |
 | 3. Fatos na geração | Crítica | G1, G2 | Sonnet 5.5, alto | Feita |
 | 4. Coerência do texto | Alta | G3, G4 | Sonnet 5.5, médio | Feita |
-| 5. Acabamento | Média | G5, G6 | Sonnet 5.5, baixo | Pendente |
+| 5. Acabamento | Média | G5, G6 | Sonnet 5.5, baixo | Feita |
 | 6. Medida com textos reais | Validação | Confirma tudo com 20 a 40 textos anonimizados do Digimais | Sonnet 5.5, médio | Depende dos textos |
 
 Escalada para Opus 5.5 (esforço alto) só se a fase 1 ou a 3 não chegar a zero falso positivo em duas rodadas, ou se a fase 2 exigir mudar o formato do arquivo cifrado.
@@ -76,8 +76,15 @@ A regra prefere perder aprendizado a vazar fato de chamado. Uma abertura que cit
 - G4, `domain/planner.ts` e `config/templates.ts`: em `closure_resolved`, sem confirmação do usuário registrada, a abertura usa `UNCONFIRMED_CLOSURE_OPENINGS` ("Estamos encerrando este chamado após as ações descritas abaixo."), que não afirma solução. Com confirmação `yes`, a abertura segue afirmando. Abertura definida no perfil (inclusive a aprovada no treino) é respeitada.
 - Limites: o padrão de resultado negativo é lista fechada e não pega toda forma de dizer que o problema continua. G4 troca só a abertura; o analista que quer afirmar a solução registra a confirmação do usuário. A fase 6 mede com textos reais.
 
+## Fase 5: o que mudou
+
+- G5, `domain/planner.ts`: quando o fecho do tipo (inclusive o ensinado no treino) já é uma cortesia (disponibilidade, agradecimento: `COURTESY_FAMILY`), a cortesia do perfil que viria logo depois é omitida. Fecho que não é cortesia ("Aguardamos o seu retorno.") continua com a cortesia do perfil.
+- G6, `fillComplete` e `pickComplete`: redação com campo sem valor (`{destination}`, `{organization}`) não sai com buraco ("equipe ."). O planejador usa a próxima redação da lista que esteja completa; sem nenhuma, a seção é omitida. Vale para abertura, fecho do tipo, cortesia, textos obrigatórios, aviso de privacidade e assinatura.
+- Nenhum snapshot mudou: os textos padrão não tinham fecho empilhado nem campo vazio.
+- Limites: `COURTESY_FAMILY` é lista fechada de três radicais (`disposi`, `agradec`, `obrigad`); fecho de cortesia com outra redação ainda empilha. Quando só resta redação com campo vazio, a seção some em silêncio, sem aviso ao analista.
+
 ## Como validar
 
 - `npm run check` verde.
-- `src/tests/fidelity.test.ts`: os testes das fases 1 a 4 passam; o `it.fails` da fase 5 passa enquanto o defeito existe e quebra quando for corrigido (trocar por `it`).
+- `src/tests/fidelity.test.ts`: os testes das fases 1 a 5 passam e não resta `it.fails`. Falta a fase 6 (medida com textos reais).
 - Na tela: ensinar os textos do estudo e conferir que nome de terceiro, sistema e dia da semana aparecem em "Trechos fora de uso" ou nem entram, e que a montagem só usa trechos vistos em pelo menos 2 textos.

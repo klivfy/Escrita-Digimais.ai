@@ -337,11 +337,34 @@ describe('fase 4: coerência do texto com o que o analista informou', () => {
   });
 });
 
-describe('fase 5 (defeito conhecido): acabamento', () => {
-  it.fails('fecho treinado não empilha com a cortesia do perfil', () => {
-    const trained = { version: 1 as const, closings: { request_information: 'Ficamos à disposição.' } };
-    const r = gen('request_information', { summary: 'impressora não imprime', questions: ['qual o modelo'] }, {}, applyTrainedStyle(P, trained));
-    expect(r.text.includes('Ficamos à disposição.') && r.text.includes('Agradecemos a colaboração.')).toBe(false);
+describe('fase 5: acabamento', () => {
+  const ctx = { summary: 'impressora não imprime', questions: ['qual o modelo'] };
+  const withClosing = (closing: string) => applyTrainedStyle(P, { version: 1 as const, closings: { request_information: closing } });
+  const COURTESY = /Agradecemos a colaboração\.|Ficamos à disposição\.|Obrigado pela atenção\.|Qualquer dúvida, estamos à disposição\./g;
+
+  it('fecho treinado não empilha com a cortesia do perfil', () => {
+    for (let variant = 0; variant < 4; variant++) {
+      const r = gen('request_information', ctx, { variant }, withClosing('Ficamos à disposição.'));
+      expect(r.text.includes('Ficamos à disposição.'), `variante ${variant}`).toBe(true);
+      expect((r.text.match(COURTESY) ?? []).length, `variante ${variant}`).toBe(1);
+    }
+  });
+
+  it('fecho que não é cortesia continua com a cortesia do perfil', () => {
+    const r = gen('request_information', ctx, {}, withClosing('Aguardamos o seu retorno.'));
+    expect(r.text).toContain('Aguardamos o seu retorno.');
+    expect((r.text.match(COURTESY) ?? []).length).toBe(1);
+  });
+
+  it('campo sem valor não deixa buraco: a redação com campo vazio é pulada', () => {
+    const r = gen('request_information', ctx, {}, withClosing('Retornamos à equipe {destination}.'));
+    expect(r.text).not.toMatch(/equipe \.|\{|\}/);
+    expect(r.text).not.toContain('Retornamos à equipe');
+  });
+
+  it('com o campo preenchido, a redação entra completa', () => {
+    const r = gen('request_information', { ...ctx, destinationTeam: 'Infraestrutura' }, {}, withClosing('Retornamos à equipe {destination}.'));
+    expect(r.text).toContain('Retornamos à equipe Infraestrutura.');
   });
 });
 
