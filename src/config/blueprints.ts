@@ -7,6 +7,7 @@ export type SectionKind =
   | 'context'
   | 'justification'
   | 'actions_done'
+  | 'actions_others'
   | 'actions_planned'
   | 'result'
   | 'pending'
@@ -49,30 +50,30 @@ export const BLUEPRINTS: Record<CommunicationType, Entry[]> = {
     ['evidence', D], ['notes', D], ['privacy', N], ['type_closing', S], ['required', S], ['courtesy', S], ['signature', N],
   ],
   technical_note: [
-    ['context', N], ['actions_done', S], ['result', S], ['evidence', N], ['pending', S], ['actions_planned', S],
+    ['context', N], ['actions_done', S], ['actions_others', S], ['result', S], ['evidence', N], ['pending', S], ['actions_planned', S],
     ['expected_action', S], ['deadline', S], ['notes', N], ['required', S],
   ],
   pending: [
     ['greeting', S], ['opening', S], ['pending', S], ['depends_on', S], ['expected_action', S], ['deadline', S],
-    ['context', N], ['actions_done', N], ['result', D], ['evidence', D], ['notes', D], ['type_closing', N],
+    ['context', N], ['actions_done', N], ['actions_others', N], ['result', D], ['evidence', D], ['notes', D], ['type_closing', N],
     ['required', S], ['courtesy', S], ['signature', N],
   ],
   manager_approval: [
     ['greeting', S], ['opening', S], ['approval_object', S], ['justification', S], ['approval_effect', S],
-    ['actions_done', D], ['expected_action', N], ['deadline', S], ['approval_response', S], ['evidence', D], ['notes', D],
+    ['actions_done', D], ['actions_others', D], ['expected_action', N], ['deadline', S], ['approval_response', S], ['evidence', D], ['notes', D],
     ['required', S], ['courtesy', S], ['signature', N],
   ],
   progress_update: [
-    ['greeting', S], ['opening', S], ['context', N], ['actions_done', S], ['result', S], ['pending', S],
+    ['greeting', S], ['opening', S], ['context', N], ['actions_done', S], ['actions_others', S], ['result', S], ['pending', S],
     ['actions_planned', S], ['expected_action', S], ['deadline', S], ['evidence', D], ['notes', D],
     ['required', S], ['courtesy', S], ['signature', N],
   ],
   solution_confirmation: [
-    ['greeting', S], ['opening', S], ['context', N], ['actions_done', S], ['result', S], ['expected_action', N],
+    ['greeting', S], ['opening', S], ['context', N], ['actions_done', S], ['actions_others', S], ['result', S], ['expected_action', N],
     ['deadline', S], ['evidence', D], ['notes', D], ['type_closing', S], ['required', S], ['courtesy', S], ['signature', N],
   ],
   closure_resolved: [
-    ['greeting', S], ['opening', S], ['context', N], ['actions_done', S], ['result', S], ['user_confirmation', S],
+    ['greeting', S], ['opening', S], ['context', N], ['actions_done', S], ['actions_others', S], ['result', S], ['user_confirmation', S],
     ['evidence', D], ['notes', D], ['type_closing', S], ['reopen', N], ['required', S], ['courtesy', S], ['signature', N],
   ],
   closure_no_response: [
@@ -80,12 +81,12 @@ export const BLUEPRINTS: Record<CommunicationType, Entry[]> = {
     ['no_response_meaning', S], ['reopen', S], ['notes', D], ['required', S], ['courtesy', S], ['signature', N],
   ],
   redirect_or_escalate: [
-    ['greeting', S], ['opening', S], ['reason', S], ['context', N], ['actions_done', N], ['result', N], ['pending', N],
+    ['greeting', S], ['opening', S], ['reason', S], ['context', N], ['actions_done', N], ['actions_others', N], ['result', N], ['pending', N],
     ['expected_action', S], ['deadline', S], ['evidence', D], ['notes', D], ['type_closing', S],
     ['required', S], ['courtesy', S], ['signature', N],
   ],
   guided_free_text: [
-    ['greeting', S], ['intent', S], ['context', N], ['actions_done', N], ['result', N], ['pending', N],
+    ['greeting', S], ['intent', S], ['context', N], ['actions_done', N], ['actions_others', N], ['result', N], ['pending', N],
     ['expected_action', S], ['deadline', S], ['evidence', D], ['notes', D], ['required', S], ['courtesy', S], ['signature', N],
   ],
 };

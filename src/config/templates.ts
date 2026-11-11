@@ -330,6 +330,9 @@ export const FIXED_PHRASES_TO_USER = {
   user_not_confirmed: 'Até o momento do encerramento, não há registro de confirmação da sua parte sobre a solução.',
 } as const;
 
+/** Rótulo de ações cujo sujeito é outra parte (usuário, fornecedor...). Fixo: não afirma que a equipe fez ou fará. */
+export const OTHER_PARTY_LABEL = 'Informado por outras partes';
+
 export interface ResolvedTemplates {
   openings: PhraseTable;
   typeClosings: PhraseTable;

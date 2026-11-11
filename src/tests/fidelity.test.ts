@@ -18,7 +18,7 @@ import { emptyLedger } from '../config/learning-ledger';
 import type { Ledger } from '../config/learning-ledger';
 import { applyTrainedStyle } from '../config/trained-style';
 import { judgeBlock, MIN_BLOCK_USES, redactionProblems } from '../domain/block-vetting';
-import { isPlannedAction } from '../domain/classify';
+import { isOtherPartyAction, isPlannedAction } from '../domain/classify';
 import { generate } from '../domain/engine';
 import { composeFromBlocks } from '../domain/style-compose';
 import { decompose, ingestTexts } from '../domain/style-corpus';
@@ -254,16 +254,45 @@ describe('fase 1: fato de chamado não sai no arquivo exportado nem entra pelo a
 // nesse momento, troque por `it`.
 // ---------------------------------------------------------------------------------------------------------------
 
-describe('fase 3 (defeito conhecido): fatos na geração', () => {
-  it.fails('ação já feita não vira "próximo passo" por causa de radical solto (agend*, planej*)', () => {
+describe('fase 3: fatos na geração', () => {
+  it('ação já feita não vira "próximo passo" por causa de radical solto (agend*, planej*)', () => {
     expect(isPlannedAction('Agendamento removido da fila')).toBe(false);
     expect(isPlannedAction('Verificado o planejamento de capacidade')).toBe(false);
     expect(isPlannedAction('Confirmado que a tarefa agendada rodou')).toBe(false);
   });
 
-  it.fails('ação de terceiro não sai em "O que já fizemos"', () => {
+  it('o que ainda será feito continua sendo planejado', () => {
+    for (const item of ['Vamos agendar a visita', 'Será agendada a troca do cabo', 'Agendada para sexta-feira', 'Planejar a migração da caixa', 'Planejamos trocar o cabo']) {
+      expect(isPlannedAction(item), item).toBe(true);
+    }
+  });
+
+  it('só ação com sujeito de terceiro é reconhecida como de terceiro', () => {
+    for (const item of ['Usuário reiniciou o computador', 'Fornecedor trocou o toner', 'O cliente confirmou o horário', 'Toner trocado pelo fornecedor']) {
+      expect(isOtherPartyAction(item), item).toBe(true);
+    }
+    for (const item of ['Resetei a senha do usuário', 'Usuário com acesso validado', 'Validei o cadastro do cliente', 'Reiniciado o serviço']) {
+      expect(isOtherPartyAction(item), item).toBe(false);
+    }
+  });
+
+  it('ação de terceiro não sai em "O que já fizemos"', () => {
     const r = gen('progress_update', { actions: ['Usuário reiniciou o computador', 'Fornecedor trocou o toner'] });
     expect(r.text).not.toMatch(/fizemos[\s\S]*Usuário reiniciou/);
+    expect(r.text).not.toMatch(/Até aqui, realizamos|Já realizamos/);
+    expect(r.text).toContain('Informado por outras partes');
+    expect(r.text).toContain('Usuário reiniciou o computador.');
+    expect(r.text).toContain('Fornecedor trocou o toner.');
+  });
+
+  it('com ação nossa e de terceiro, cada uma fica no seu lugar e o texto do analista não muda', () => {
+    const r = gen('progress_update', { actions: ['limpei o cache do navegador', 'Fornecedor trocou o toner'] });
+    const ours = r.text.indexOf('limpamos o cache do navegador');
+    const label = r.text.indexOf('Informado por outras partes');
+    const theirs = r.text.indexOf('Fornecedor trocou o toner.');
+    expect(ours).toBeGreaterThanOrEqual(0);
+    expect(label).toBeGreaterThan(ours);
+    expect(theirs).toBeGreaterThan(label);
   });
 });
 

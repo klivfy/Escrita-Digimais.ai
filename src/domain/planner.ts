@@ -1,6 +1,6 @@
 import { BLUEPRINTS, RECORD_SKIPPED, includedAt, isRecordStyle } from '../config/blueprints';
 import type { SectionKind } from '../config/blueprints';
-import { FIXED_PHRASES, FIXED_PHRASES_TO_USER, FLOW_LEADS, LABEL_OVERRIDES, LEAD_SIZE, NATURAL_EXPECTED_ACTION, NATURAL_LEADS } from '../config/templates';
+import { FIXED_PHRASES, FIXED_PHRASES_TO_USER, FLOW_LEADS, LABEL_OVERRIDES, LEAD_SIZE, NATURAL_EXPECTED_ACTION, NATURAL_LEADS, OTHER_PARTY_LABEL } from '../config/templates';
 import type { ResolvedTemplates } from '../config/templates';
 import type { ClassifiedContext } from './classify';
 import { capitalizeFirst, ensureQuestion, ensureTerminalPunctuation, lowerFirst, stripTerminalPunctuation } from './text-utils';
@@ -206,6 +206,9 @@ export function buildPlan(
         const flow = natural ? flowingActions(c.actionsDone, false, leadVariant) : undefined;
         return flow ? { text: flow, flowing: true } : { items: c.actionsDone.map(sentence) };
       }
+      case 'actions_others':
+        // Texto do analista como está: quem agiu foi outra parte, então não passa pela voz da equipe.
+        return c.actionsOthers.length ? { items: c.actionsOthers.map(sentence) } : undefined;
       case 'actions_planned': {
         if (!c.actionsPlanned.length) return undefined;
         const flow = natural ? flowingActions(c.actionsPlanned, true, leadVariant) : undefined;
@@ -286,7 +289,8 @@ export function buildPlan(
     if (!body) continue;
     const key = LABEL_KEY[kind];
     const { flowing, ...rest } = body;
-    sections.push({ kind, label: key && !flowing ? labels[key] : undefined, ...rest, ...(natural && PARAGRAPH_GROUP[kind] ? { group: PARAGRAPH_GROUP[kind] } : {}) });
+    const label = kind === 'actions_others' ? OTHER_PARTY_LABEL : key && !flowing ? labels[key] : undefined;
+    sections.push({ kind, label, ...rest, ...(natural && PARAGRAPH_GROUP[kind] ? { group: PARAGRAPH_GROUP[kind] } : {}) });
   }
   const has = (kind: SectionKind): boolean => sections.some((s) => s.kind === kind);
   const choices: PhraseChoices = {};

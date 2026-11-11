@@ -33,7 +33,7 @@ A extensão não usa IA. A "alucinação" aqui é o motor afirmar algo que o ana
 | 0. Régua de fidelidade | Pré-requisito | `fidelity.test.ts` com os casos da medição | Sonnet 5.5, médio | Feita |
 | 1. Estudo de referência | Crítica | E1, E4, E5, E6 e o registro já guardado | Sonnet 5.5, alto | Feita |
 | 2. Montagem por trechos | Crítica | E2, E3 | Sonnet 5.5, alto | Feita |
-| 3. Fatos na geração | Crítica | G1, G2 | Sonnet 5.5, alto | Pendente |
+| 3. Fatos na geração | Crítica | G1, G2 | Sonnet 5.5, alto | Feita |
 | 4. Coerência do texto | Alta | G3, G4 | Sonnet 5.5, médio | Pendente |
 | 5. Acabamento | Média | G5, G6 | Sonnet 5.5, baixo | Pendente |
 | 6. Medida com textos reais | Validação | Confirma tudo com 20 a 40 textos anonimizados do Digimais | Sonnet 5.5, médio | Depende dos textos |
@@ -62,8 +62,15 @@ A regra prefere perder aprendizado a vazar fato de chamado. Uma abertura que cit
 - Sobre bloquear a cópia com parte de uma ocorrência só: a fase 1 já impede que esse trecho entre na montagem, então não há o que bloquear. O teste garante que nenhuma parte ensinada tem menos de `MIN_BLOCK_USES`.
 - Limite conhecido: o limiar vem de uma amostra pequena e fictícia. A fase 6 confirma com textos reais.
 
+## Fase 3: o que mudou
+
+- G1, `domain/classify.ts`: `isPlannedAction` deixou de usar radical solto (`agend\w+`, `planej\w+`). Só formas que anunciam o futuro contam (`agendar`, `agendaremos`, `agendado para`, `planejar`, `planejamos`...). "Agendamento removido da fila" e "tarefa agendada rodou" voltam a ser ação feita.
+- G2, `isOtherPartyAction`: ação com sujeito de terceiro (usuário, cliente, solicitante, fornecedor, terceiro, gestor, colaborador, ou "pelo fornecedor") sai de "O que já fizemos" e de "Próximos passos". Vai para a seção nova `actions_others`, com o rótulo fixo "Informado por outras partes" (`OTHER_PARTY_LABEL`), nas posições de `actions_done` de cada tipo. O texto do analista entra como está, sem passar pela voz da equipe.
+- O rótulo é fixo de propósito: não é um `LabelKey`, então o perfil e o treino não o trocam por um que afirme que a equipe agiu.
+- Limites conhecidos: a detecção olha o início da frase (sujeito + verbo no passado) e a voz passiva com "pelo/pela"; frase com o sujeito no meio ("Hoje o usuário reiniciou") continua sendo tratada como ação da equipe. Ação planejada com marcador ("Planejado: fornecedor trocará") também. A fase 6 mede com textos reais quanto disso aparece.
+
 ## Como validar
 
 - `npm run check` verde.
-- `src/tests/fidelity.test.ts`: os testes da fase 1 passam; os `it.fails` das fases 3 a 5 passam enquanto o defeito existe e quebram quando for corrigido (trocar por `it`); os `it.todo` da fase 2 listam o que falta.
+- `src/tests/fidelity.test.ts`: os testes das fases 1 a 3 passam; os `it.fails` das fases 4 e 5 passam enquanto o defeito existe e quebram quando for corrigido (trocar por `it`).
 - Na tela: ensinar os textos do estudo e conferir que nome de terceiro, sistema e dia da semana aparecem em "Trechos fora de uso" ou nem entram, e que a montagem só usa trechos vistos em pelo menos 2 textos.

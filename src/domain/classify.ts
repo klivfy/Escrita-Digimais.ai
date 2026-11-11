@@ -28,6 +28,8 @@ export interface ClassifiedContext {
   requesterName?: string;
   actionsDone: string[];
   actionsPlanned: string[];
+  /** Ações cujo sujeito é outra parte; entram como informadas, com o texto do analista, nunca como feitas ou planejadas por nós. */
+  actionsOthers: string[];
   evidence: string[];
   questions: string[];
   attempts: ParsedAttempt[];
@@ -36,11 +38,27 @@ export interface ClassifiedContext {
 }
 
 const PLANNED_PREFIX = /^\[?\s*(?:planejad[oa]s?|previst[oa]s?|pr[óo]ximo passo|a fazer|agendad[oa]s?)\s*\]?\s*[:.-]?\s*/iu;
+// Só formas que anunciam o que ainda será feito. Radical solto (`agend\w+`, `planej\w+`) pegava substantivo e particípio
+// de ação já feita ("Agendamento removido da fila", "Verificado o planejamento de capacidade").
 const PLANNED_PATTERN =
-  /\b(?:ser[áa]o?|vamos|iremos|pretend\w+|planej\w+|agend\w+|a (?:realizar|validar|verificar|testar|executar|enviar)|ser[áa] (?:realizad|feit|enviad|testad)\w*)\b/iu;
+  /\b(?:ser[áa]o?|vamos|iremos|pretend\w+|planej(?:ar|amos|aremos|arei)|agend(?:ar|aremos|arei)|agendad[oa]s? para|a (?:realizar|validar|verificar|testar|executar|enviar)|ser[áa] (?:realizad|feit|enviad|testad)\w*)(?=[\s.,;:!?]|$)/iu;
 
 export function isPlannedAction(item: string): boolean {
   return PLANNED_PREFIX.test(item) || PLANNED_PATTERN.test(item);
+}
+
+// Quem agiu foi outra parte (usuário, fornecedor...), não a equipe. "O que já fizemos" nunca leva essas ações.
+const OTHER_PARTY = '(?:usu[áa]rios?|clientes?|solicitantes?|requisitantes?|fornecedor(?:es|a)?|terceir[oa]s?|gestor(?:a|es)?|colaborador(?:a|es)?)';
+const OTHER_PARTY_SUBJECT = new RegExp(
+  `^(?:(?:o|a|os|as)\\s+)?${OTHER_PARTY}\\s+(?:(?:j[áa]|tamb[ée]m|n[ãa]o)\\s+)?\\p{L}+(?:ou|eu|iu|aram|eram|iram)(?=[\\s.,;:!?]|$)`,
+  'iu',
+);
+const OTHER_PARTY_AGENT = new RegExp(`\\bpel[oa]s?\\s+${OTHER_PARTY}(?=[\\s.,;:!?]|$)`, 'iu');
+
+/** Ação com sujeito de terceiro ("Fornecedor trocou o toner", "Toner trocado pelo fornecedor"). */
+export function isOtherPartyAction(item: string): boolean {
+  const text = item.trim();
+  return OTHER_PARTY_SUBJECT.test(text) || OTHER_PARTY_AGENT.test(text);
 }
 
 function stripPlannedPrefix(item: string): string {
@@ -50,8 +68,10 @@ function stripPlannedPrefix(item: string): string {
 export function classifyContext(context: TicketContext): ClassifiedContext {
   const actionsDone: string[] = [];
   const actionsPlanned: string[] = [];
+  const actionsOthers: string[] = [];
   for (const item of context.actions ?? []) {
-    if (isPlannedAction(item)) actionsPlanned.push(stripPlannedPrefix(item));
+    if (isOtherPartyAction(item)) actionsOthers.push(item);
+    else if (isPlannedAction(item)) actionsPlanned.push(stripPlannedPrefix(item));
     else actionsDone.push(item);
   }
   const parseDate = (raw: string): ParsedAttempt => ({ raw, iso: parseDateToIso(raw) });
@@ -70,6 +90,7 @@ export function classifyContext(context: TicketContext): ClassifiedContext {
     requesterName: context.requesterName,
     actionsDone,
     actionsPlanned,
+    actionsOthers,
     evidence: context.evidence ?? [],
     questions: context.questions ?? [],
     attempts: (context.contactAttempts ?? []).map(parseDate),
