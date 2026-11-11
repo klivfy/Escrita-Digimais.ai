@@ -225,7 +225,7 @@ export const CLOSURE_THREAT_PATTERN = new RegExp(
 export const HEDGE_PATTERN = new RegExp('\\btalvez\\b|\\bpossivelmente\\b|\\baparentemente\\b|\\bparece\\b|\\bacredito\\b|\\btentativa\\b|\\borientad[oa]\\b|\\bprovavelmente\\b', i);
 
 export const NEGATIVE_RESULT_PATTERN = new RegExp(
-  'n[ãa]o (?:resolveu|funcionou|solucionou|foi (?:resolvid|solucionad))\\w*|sem sucesso|\\bpersiste\\b|\\bpersistiu\\b|continua (?:com|apresentando|ocorrendo)|ainda (?:ocorre|persiste|apresenta|n[ãa]o)|permanece (?:o|a|com)',
+  'n[ãa]o (?:resolveu|funcionou|solucionou|foi (?:resolvid|solucionad))\\w*|sem sucesso|\\bpersiste\\b|\\bpersistiu\\b|continua (?:com|apresentando|ocorrendo|igual|sem|travando|falhando|lent[oa])|(?:erro|problema|falha|lentid[ãa]o|travamento)s? (?:ainda )?(?:continua|continuam|segue|seguem|se repete)\\b|ainda (?:ocorre|persiste|apresenta|n[ãa]o)|permanece (?:o|a|com)',
   i,
 );
 

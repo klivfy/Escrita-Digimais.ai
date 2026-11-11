@@ -34,7 +34,7 @@ A extensão não usa IA. A "alucinação" aqui é o motor afirmar algo que o ana
 | 1. Estudo de referência | Crítica | E1, E4, E5, E6 e o registro já guardado | Sonnet 5.5, alto | Feita |
 | 2. Montagem por trechos | Crítica | E2, E3 | Sonnet 5.5, alto | Feita |
 | 3. Fatos na geração | Crítica | G1, G2 | Sonnet 5.5, alto | Feita |
-| 4. Coerência do texto | Alta | G3, G4 | Sonnet 5.5, médio | Pendente |
+| 4. Coerência do texto | Alta | G3, G4 | Sonnet 5.5, médio | Feita |
 | 5. Acabamento | Média | G5, G6 | Sonnet 5.5, baixo | Pendente |
 | 6. Medida com textos reais | Validação | Confirma tudo com 20 a 40 textos anonimizados do Digimais | Sonnet 5.5, médio | Depende dos textos |
 
@@ -69,8 +69,15 @@ A regra prefere perder aprendizado a vazar fato de chamado. Uma abertura que cit
 - O rótulo é fixo de propósito: não é um `LabelKey`, então o perfil e o treino não o trocam por um que afirme que a equipe agiu.
 - Limites conhecidos: a detecção olha o início da frase (sujeito + verbo no passado) e a voz passiva com "pelo/pela"; frase com o sujeito no meio ("Hoje o usuário reiniciou") continua sendo tratada como ação da equipe. Ação planejada com marcador ("Planejado: fornecedor trocará") também. A fase 6 mede com textos reais quanto disso aparece.
 
+## Fase 4: o que mudou
+
+- G3, `config/vocabulary.ts` e `domain/policy.ts`: `NEGATIVE_RESULT_PATTERN` passou a reconhecer "o erro continua", "o problema persiste", "a falha segue", "continua travando". Em `solution_confirmation`, resultado negativo gera o aviso `confirmation_negative_result` (severidade aviso, não bloqueia): o texto pede confirmação de solução e o resultado diz que o problema continua. No encerramento solucionado o mesmo padrão já bloqueava, e agora pega mais casos.
+- "o erro não continua" e "a situação segue normal" não disparam o aviso (teste negativo).
+- G4, `domain/planner.ts` e `config/templates.ts`: em `closure_resolved`, sem confirmação do usuário registrada, a abertura usa `UNCONFIRMED_CLOSURE_OPENINGS` ("Estamos encerrando este chamado após as ações descritas abaixo."), que não afirma solução. Com confirmação `yes`, a abertura segue afirmando. Abertura definida no perfil (inclusive a aprovada no treino) é respeitada.
+- Limites: o padrão de resultado negativo é lista fechada e não pega toda forma de dizer que o problema continua. G4 troca só a abertura; o analista que quer afirmar a solução registra a confirmação do usuário. A fase 6 mede com textos reais.
+
 ## Como validar
 
 - `npm run check` verde.
-- `src/tests/fidelity.test.ts`: os testes das fases 1 a 3 passam; os `it.fails` das fases 4 e 5 passam enquanto o defeito existe e quebram quando for corrigido (trocar por `it`).
+- `src/tests/fidelity.test.ts`: os testes das fases 1 a 4 passam; o `it.fails` da fase 5 passa enquanto o defeito existe e quebra quando for corrigido (trocar por `it`).
 - Na tela: ensinar os textos do estudo e conferir que nome de terceiro, sistema e dia da semana aparecem em "Trechos fora de uso" ou nem entram, e que a montagem só usa trechos vistos em pelo menos 2 textos.

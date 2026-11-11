@@ -296,15 +296,44 @@ describe('fase 3: fatos na geração', () => {
   });
 });
 
-describe('fase 4 (defeito conhecido): coerência do texto com o que o analista informou', () => {
-  it.fails('confirmação de solução com resultado negativo é alertada', () => {
-    const r = gen('solution_confirmation', { actions: ['limpamos o cache'], observedResult: 'o erro continua' });
-    expect(r.blocked || r.warnings.some((w) => w.severity === 'block' || (w.severity === 'warning' && /continua|persist/i.test(w.message)))).toBe(true);
+describe('fase 4: coerência do texto com o que o analista informou', () => {
+  const alerted = (r: ReturnType<typeof gen>): boolean =>
+    r.blocked || r.warnings.some((w) => w.severity === 'block' || (w.severity === 'warning' && /continua|persist/i.test(w.message)));
+
+  it('confirmação de solução com resultado negativo é alertada', () => {
+    for (const result of ['o erro continua', 'o problema persiste', 'a falha segue', 'continua travando']) {
+      expect(alerted(gen('solution_confirmation', { actions: ['limpamos o cache'], observedResult: result })), result).toBe(true);
+    }
   });
 
-  it.fails('encerramento sem confirmação do usuário não afirma "situação solucionada"', () => {
-    const r = gen('closure_resolved', { actions: ['reinstalado o Office'], observedResult: 'Outlook abre normalmente' });
-    expect(r.text).not.toMatch(/situação solucionada/);
+  it('resultado positivo ou negado não dispara o alerta', () => {
+    for (const result of ['o erro não continua', 'Outlook abre normalmente', 'a situação segue normal', 'continua funcionando']) {
+      expect(alerted(gen('solution_confirmation', { actions: ['limpamos o cache'], observedResult: result })), result).toBe(false);
+    }
+  });
+
+  it('o alerta não altera o texto: só avisa', () => {
+    const r = gen('solution_confirmation', { actions: ['limpamos o cache'], observedResult: 'o erro continua' });
+    expect(r.blocked).toBe(false);
+    expect(r.text).toContain('O erro continua.');
+  });
+
+  it('encerramento sem confirmação do usuário não afirma "situação solucionada"', () => {
+    for (const formality of ['cordial', 'formal', 'direct'] as const) {
+      const r = gen('closure_resolved', { actions: ['reinstalado o Office'], observedResult: 'Outlook abre normalmente' }, { formality });
+      expect(r.text, formality).not.toMatch(/solucionad/);
+    }
+  });
+
+  it('com confirmação do usuário registrada, o encerramento afirma a solução', () => {
+    const r = gen('closure_resolved', { actions: ['reinstalado o Office'], observedResult: 'Outlook abre normalmente', userConfirmation: 'yes' });
+    expect(r.text).toMatch(/solucionad/);
+  });
+
+  it('abertura própria definida no perfil é respeitada', () => {
+    const profile = { ...P, templates: { ...P.templates, openings: { closure_resolved: { cordial: ['Encerramos este chamado com a solução validada.'] } } } };
+    const r = gen('closure_resolved', { actions: ['reinstalado o Office'], observedResult: 'Outlook abre normalmente' }, {}, profile as never);
+    expect(r.text).toContain('Encerramos este chamado com a solução validada.');
   });
 });
 

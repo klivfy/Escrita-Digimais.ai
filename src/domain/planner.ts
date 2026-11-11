@@ -1,6 +1,6 @@
 import { BLUEPRINTS, RECORD_SKIPPED, includedAt, isRecordStyle } from '../config/blueprints';
 import type { SectionKind } from '../config/blueprints';
-import { FIXED_PHRASES, FIXED_PHRASES_TO_USER, FLOW_LEADS, LABEL_OVERRIDES, LEAD_SIZE, NATURAL_EXPECTED_ACTION, NATURAL_LEADS, OTHER_PARTY_LABEL } from '../config/templates';
+import { FIXED_PHRASES, FIXED_PHRASES_TO_USER, FLOW_LEADS, LABEL_OVERRIDES, LEAD_SIZE, NATURAL_EXPECTED_ACTION, NATURAL_LEADS, OTHER_PARTY_LABEL, UNCONFIRMED_CLOSURE_OPENINGS } from '../config/templates';
 import type { ResolvedTemplates } from '../config/templates';
 import type { ClassifiedContext } from './classify';
 import { capitalizeFirst, ensureQuestion, ensureTerminalPunctuation, lowerFirst, stripTerminalPunctuation } from './text-utils';
@@ -155,7 +155,9 @@ export function buildPlan(
 ): MessagePlan {
   const { type, recipient, formality, techLevel, length } = settings;
   const variant = settings.variant ?? 0;
-  const openingPool = templates.openings[type][formality];
+  // Sem confirmação do usuário, o encerramento não afirma "situação solucionada" (a menos que o perfil defina a abertura).
+  const unconfirmedClosure = type === 'closure_resolved' && c.userConfirmation !== 'yes' && !profile.templates.openings?.closure_resolved;
+  const openingPool = unconfirmedClosure ? UNCONFIRMED_CLOSURE_OPENINGS[formality] : templates.openings[type][formality];
   const typeClosingPool = templates.typeClosings[type][formality];
   const courtesyPool = profile.closings[formality];
   const learned = settings.learned ?? {};
