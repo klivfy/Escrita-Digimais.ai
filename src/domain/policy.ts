@@ -82,6 +82,19 @@ export function checkPolicy(
     }
   }
 
+  // O pedido de confirmação de solução contradiz um resultado que diz que o problema continua. Só alerta: quem decide é o analista.
+  if (type === 'solution_confirmation' && c.observedResult && NEGATIVE_RESULT_PATTERN.test(c.observedResult)) {
+    warnings.push({
+      code: 'confirmation_negative_result',
+      severity: 'warning',
+      message: 'O resultado informado indica que o problema continua ou persiste, mas o texto pede confirmação de que a situação foi resolvida.',
+      suggestion: 'Se o problema continua, comunique o andamento em vez de pedir confirmação de solução.',
+      field: 'observedResult',
+      dimension: 'safety',
+      penalty: 20,
+    });
+  }
+
   if (type === 'closure_no_response') {
     const rules = profile.closureRules;
     if (!rules.noResponseEnabled) {

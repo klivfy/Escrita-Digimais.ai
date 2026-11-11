@@ -126,7 +126,7 @@ describe('aprovação e aplicação no perfil', () => {
 
 describe('composeFromBlocks (opção B)', () => {
   const ledger = learned([
-    text('A', OPEN), text('B', OPEN), text('C', 'Seguimos com a análise do seu caso.'),
+    text('A', OPEN), text('B', OPEN), text('C', 'Seguimos com a análise do seu caso.'), text('D', 'Seguimos com a análise do seu caso.'),
   ]);
   const base = { ledger, type: 'request_information' as const, recipient: 'user' as const, formality: 'cordial' as const, profile: DEFAULT_PROFILE, query: '', values: { nome: 'Paula' } };
 
