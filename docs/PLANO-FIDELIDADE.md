@@ -32,7 +32,7 @@ A extensão não usa IA. A "alucinação" aqui é o motor afirmar algo que o ana
 |---|---|---|---|---|
 | 0. Régua de fidelidade | Pré-requisito | `fidelity.test.ts` com os casos da medição | Sonnet 5.5, médio | Feita |
 | 1. Estudo de referência | Crítica | E1, E4, E5, E6 e o registro já guardado | Sonnet 5.5, alto | Feita |
-| 2. Montagem por trechos | Crítica | E2, E3 | Sonnet 5.5, alto | Pendente |
+| 2. Montagem por trechos | Crítica | E2, E3 | Sonnet 5.5, alto | Feita |
 | 3. Fatos na geração | Crítica | G1, G2 | Sonnet 5.5, alto | Pendente |
 | 4. Coerência do texto | Alta | G3, G4 | Sonnet 5.5, médio | Pendente |
 | 5. Acabamento | Média | G5, G6 | Sonnet 5.5, baixo | Pendente |
@@ -52,6 +52,15 @@ Escalada para Opus 5.5 (esforço alto) só se a fase 1 ou a 3 não chegar a zero
 ### Trade-off assumido
 
 A regra prefere perder aprendizado a vazar fato de chamado. Uma abertura que cita um sistema ("acesso ao SAP") não é aprendida como estilo, mesmo que se repita. O caminho para o analista é ensinar com campo (`{sistema}`, `{equipamento}`), que a biblioteca já aceita.
+
+## Fase 2: o que mudou
+
+- `domain/style-compose.ts`: o texto montado leva, sem alteração, o que o analista digitou (pergunta, pendência, ação esperada), como parte "Informado" com origem "o que você digitou".
+- Abertura e pedido só entram se combinarem com o assunto descrito (pontuação mínima `COMPOSE_MIN_SCORE = 0,25`, medida: mesmo assunto de 0,27 a 0,58, outro assunto até 0,23). Sem trecho do assunto, entra a abertura padrão do tipo, nunca a mais frequente de outro assunto. O fecho é cortesia e segue a frequência.
+- A pontuação é calculada sobre todos os trechos do tipo juntos, porque o peso por raridade das palavras não vale com um trecho só.
+- A montagem só é oferecida quando há ao menos um trecho ensinado do assunto; sem isso não há "jeito da equipe" a mostrar.
+- Sobre bloquear a cópia com parte de uma ocorrência só: a fase 1 já impede que esse trecho entre na montagem, então não há o que bloquear. O teste garante que nenhuma parte ensinada tem menos de `MIN_BLOCK_USES`.
+- Limite conhecido: o limiar vem de uma amostra pequena e fictícia. A fase 6 confirma com textos reais.
 
 ## Como validar
 

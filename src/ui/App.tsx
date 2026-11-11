@@ -459,6 +459,12 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
     [form.summary, form.pendingItem, form.questions, form.freeIntent, form.escalationReason],
   );
 
+  // O que o analista digitou e deve aparecer como está no texto montado.
+  const typedLines = useMemo(
+    () => [form.questions, form.pendingItem, form.expectedAction].flatMap((v) => (v ?? '').split('\n')).map((l) => l.trim()).filter(Boolean),
+    [form.questions, form.pendingItem, form.expectedAction],
+  );
+
   const learningService = useMemo(
     () => new LearningService(store, () => ({ profile, version: extensionVersion(), now: now?.() ?? new Date() })),
     [store, profile, now],
@@ -472,6 +478,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
       ? composeFromBlocks({
           ledger, type: form.type, recipient: form.recipient, formality: form.formality, profile, query: contextQuery,
           values: { nome: form.requesterName, prazo: form.explicitDeadline, equipe: form.destinationTeam },
+          typed: typedLines,
           usable: (b) => !blocksOut.has(blockKey(form.type, b.role, b.text)), variant,
         })
       : null;
@@ -481,8 +488,9 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
     const c = compose(variant);
     if (!c) return;
     setComposeVariant(variant);
-    const names = { opening: 'Abertura', request: 'Pedido', closing: 'Fecho', greeting: 'Saudação', signature: 'Assinatura' } as const;
-    setComposeNote(c.parts.map((p) => `${names[p.role]}: ${p.origin === 'ensinado' ? `ensinado, visto em ${p.count} texto(s)` : 'do perfil'}`).join('. ') + '.');
+    const names = { opening: 'Abertura', informed: 'Informado', request: 'Pedido', closing: 'Fecho', greeting: 'Saudação', signature: 'Assinatura' } as const;
+    const origins = { ensinado: (n?: number) => `ensinado, visto em ${n} texto(s)`, perfil: () => 'do perfil', formulario: () => 'o que você digitou' };
+    setComposeNote(c.parts.map((p) => `${names[p.role]}: ${origins[p.origin](p.count)}`).join('. ') + '.');
     presentText(
       { id: 'montagem', title: 'Montado com o jeito da equipe', types: [form.type], recipients: [], text: c.text, keywords: [], reviewedAt: '' },
       TEAM_ENGINE, 'compose.used',

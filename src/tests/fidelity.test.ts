@@ -62,6 +62,10 @@ const ingest = (texts: string[], type: CommunicationType = 'request_information'
 
 const allBlocks = (ledger: Ledger): string[] => Object.values(ledger.byType).flatMap((t) => t?.blocks.map((b) => b.text) ?? []);
 
+const ledgerWith = (blocks: { role: 'opening' | 'request' | 'closing'; text: string; count: number }[], texts = 5): Ledger => ({
+  ...emptyLedger('2026-11-11'), byType: { request_information: { texts, blocks, labels: [] } },
+});
+
 describe('fase 1: o que é dado de chamado não vira redação aprendida', () => {
   it('redactionProblems recusa nome próprio, sistema, número, dia da semana e "hoje"', () => {
     expect(redactionProblems('Falamos com a Ana Paula da contabilidade.')[0]).toContain('"Ana"');
@@ -145,10 +149,6 @@ describe('fase 1: cortesia, pedido e campos', () => {
 });
 
 describe('fase 1: uma ocorrência só não vira estilo', () => {
-  const ledgerWith = (blocks: { role: 'opening' | 'request' | 'closing'; text: string; count: number }[], texts = 5): Ledger => ({
-    ...emptyLedger('2026-11-11'), byType: { request_information: { texts, blocks, labels: [] } },
-  });
-
   it('judgeBlock: ok com repetição, aguardando com uma ocorrência, fora de uso com fato de chamado', () => {
     const generic = { role: 'request' as const, text: 'Poderia confirmar se consegue acessar agora?' };
     expect(judgeBlock({ ...generic, count: MIN_BLOCK_USES }, 'request_information', P).state).toBe('ok');
@@ -287,8 +287,51 @@ describe('fase 5 (defeito conhecido): acabamento', () => {
   });
 });
 
-describe('fase 2 (a implementar): montagem por trechos', () => {
-  it.todo('o texto montado inclui o que o analista digitou no formulário (perguntas, pendência, ação esperada)');
-  it.todo('sem trecho parecido com o formulário, a abertura padrão do tipo entra no lugar do mais frequente');
-  it.todo('a tela bloqueia a cópia enquanto houver parte de uma ocorrência só');
+describe('fase 2: montagem por trechos', () => {
+  const printer = ledgerWith([
+    { role: 'opening', text: 'Seguimos com a análise do problema de impressão.', count: 3 },
+    { role: 'request', text: 'Poderia confirmar se a impressora aparece na lista de dispositivos?', count: 2 },
+    { role: 'closing', text: 'Ficamos à disposição.', count: 4 },
+  ]);
+  const base = { ledger: printer, type: 'request_information' as const, recipient: 'user' as const, formality: 'cordial' as const, profile: P, values: {} };
+
+  it('o texto montado inclui, sem alteração, o que o analista digitou no formulário', () => {
+    const c = composeFromBlocks({ ...base, query: 'impressora não imprime', typed: ['Qual o modelo da impressora?', 'Aparece alguma mensagem de erro?'] })!;
+    expect(c.text).toContain('Qual o modelo da impressora?');
+    expect(c.text).toContain('Aparece alguma mensagem de erro?');
+    expect(c.parts.filter((p) => p.role === 'informed').every((p) => p.origin === 'formulario')).toBe(true);
+  });
+
+  it('sem trecho parecido com o formulário, a abertura padrão do tipo entra no lugar do mais frequente', () => {
+    const c = composeFromBlocks({ ...base, ledger: ledgerWith([
+      { role: 'opening', text: 'Seguimos com a análise do problema de notebook.', count: 9 },
+      { role: 'closing', text: 'Ficamos à disposição.', count: 4 },
+    ]), query: 'impressora não imprime', typed: ['Qual o modelo?'] })!;
+    expect(c.text).not.toContain('notebook');
+    const opening = c.parts.find((p) => p.role === 'opening')!;
+    expect(opening.origin).toBe('perfil');
+    expect(opening.text).toMatch(/informações|análise/);
+  });
+
+  it('pedido de outro assunto não entra: o do formulário toma o lugar', () => {
+    const c = composeFromBlocks({ ...base, ledger: ledgerWith([
+      { role: 'request', text: 'Poderia confirmar se o notebook liga normalmente?', count: 5 },
+      { role: 'closing', text: 'Ficamos à disposição.', count: 4 },
+    ]), query: 'impressora não imprime', typed: ['Qual o modelo da impressora?'] })!;
+    expect(c.text).not.toContain('notebook');
+    expect(c.text).toContain('Qual o modelo da impressora?');
+  });
+
+  it('o fecho não depende do assunto', () => {
+    const c = composeFromBlocks({ ...base, query: 'impressora não imprime' })!;
+    expect(c.parts.find((p) => p.role === 'closing')).toMatchObject({ origin: 'ensinado', text: 'Ficamos à disposição.' });
+  });
+
+  it('nenhuma parte ensinada tem menos de MIN_BLOCK_USES ocorrências, então não há o que bloquear na tela', () => {
+    const c = composeFromBlocks({ ...base, ledger: ledgerWith([
+      { role: 'opening', text: 'Seguimos com a análise do problema de impressão.', count: 1 },
+      { role: 'request', text: 'Poderia confirmar se a impressora aparece na lista?', count: 2 },
+    ]), query: 'impressora' })!;
+    expect(c.parts.filter((p) => p.origin === 'ensinado').every((p) => (p.count ?? 0) >= MIN_BLOCK_USES)).toBe(true);
+  });
 });
