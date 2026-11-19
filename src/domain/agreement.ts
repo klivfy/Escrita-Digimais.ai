@@ -33,6 +33,7 @@ function pluralOf(sg: string): string {
   if (/[rz]$/.test(sg)) return `${sg}es`;
   if (/l$/.test(sg)) return sg.replace(/l$/, 'is');
   if (/m$/.test(sg)) return sg.replace(/m$/, 'ns');
+  if (/ch$/.test(sg)) return `${sg}es`; // termos de TI em inglês: switch, patch (switches, patches); "switchs" não existe
   if (/s$/.test(sg)) return sg;
   return `${sg}s`;
 }

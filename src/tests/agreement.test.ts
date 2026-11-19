@@ -26,6 +26,16 @@ describe('camada 2: concordância nominal', () => {
     expect(fix('as configuração estão corretas')).toBe('as configurações estão corretas');
   });
 
+  it('plural de termo de TI em inglês terminado em "ch": switches, nunca "switchs"', () => {
+    expect(fix('os switch estão desligados')).toBe('os switches estão desligados');
+    expect(fix('três switch foram trocados')).toBe('três switches foram trocados');
+    // Já no plural correto, nada a sugerir; e o plural nunca vira "switchs".
+    quiet('Os switches da filial foram trocados na quarta-feira.');
+    for (const t of ['os switch estão desligados', 'dois switch queimaram']) {
+      expect(fix(t), t).not.toContain('switchs');
+    }
+  });
+
   it('gênero do determinante, menos em nomes de pessoa', () => {
     expect(fix('o senha expirou')).toBe('a senha expirou');
     expect(fix('nosso equipe verificou')).toBe('nossa equipe verificou');
