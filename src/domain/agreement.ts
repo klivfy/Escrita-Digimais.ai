@@ -117,6 +117,19 @@ function chainBefore(t: Tok[], text: string, i: number): Link[] {
   return out;
 }
 
+/** Palavras que, logo antes de um sintagma, indicam que uma oração começa ali (e não que o sintagma seja objeto de um verbo). */
+const CLAUSE_OPENERS = new Set(['e', 'mas', 'pois', 'porque', 'que', 'se', 'como', 'quando', 'enquanto', 'apos', 'ontem', 'hoje', 'amanha', 'agora', 'depois', 'entao', 'tambem', 'ja']);
+
+/**
+ * O sintagma que começa no token `idx` abre uma oração? Só então ele pode ser sujeito. Depois de um verbo ("reiniciar o
+ * serviço e o acesso voltou") o primeiro termo é objeto, e tratar os dois como sujeito composto inventa um erro.
+ */
+function startsClause(t: Tok[], text: string, idx: number): boolean {
+  if (idx <= 0) return true;
+  if (/[,.;:!?\n]/.test(text.slice(t[idx - 1].e, t[idx].s))) return true;
+  return CLAUSE_OPENERS.has(strip(t[idx - 1].w));
+}
+
 const DAYS = /^(segunda|terca|quarta|quinta|sexta)(-feira)?$|^(sabado|domingo|hoje|ontem|amanha)$/;
 const TIME_UNITS = /^(dias|horas|semanas|meses|anos|minutos)$/;
 const COUNT_WORDS = /^(um|uma|dois|duas|tres|quatro|cinco|seis|sete|dez|varios|varias)$/;
@@ -172,7 +185,9 @@ export function checkAgreement(text: string): ProofreadSuggestion[] {
     const plural = VERB_PLURAL[lw];
     if (plural) {
       const subject = chainBefore(t, text, i).at(-1);
-      const compound = i >= 4 && strip(t[i - 3].w) === 'e' && noun(t[i - 1].w) && !noun(t[i - 1].w)?.plural && DET_INFO.has(strip(t[i - 2].w)) && noun(t[i - 4].w);
+      const firstStart = i >= 5 && DET_INFO.has(strip(t[i - 5].w)) ? i - 5 : i - 4;
+      const compound =
+        i >= 4 && strip(t[i - 3].w) === 'e' && noun(t[i - 1].w) && !noun(t[i - 1].w)?.plural && DET_INFO.has(strip(t[i - 2].w)) && noun(t[i - 4].w) && startsClause(t, text, firstStart);
       if ((subject && subject.plural) || compound) add(t[i].s, t[i].e, w, matchCase(w, plural), 'concordancia', 'O verbo concorda com o sujeito no plural.');
     }
     if (lw === 'nós' && next && /ou$/.test(next.w) && next.w.length > 4) {

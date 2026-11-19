@@ -55,6 +55,19 @@ describe('camada 2: concordância verbal', () => {
     expect(fix('nós atualizou o driver')).toBe('nós atualizamos o driver');
   });
 
+  it('sujeito composto só vale quando o primeiro termo abre a oração', () => {
+    // Abre a oração: início da frase, depois de pontuação, de conjunção ou de advérbio de tempo.
+    expect(fix('o técnico e o analista verificou o servidor')).toBe('o técnico e o analista verificaram o servidor');
+    expect(fix('Ontem o relatório e o arquivo voltou, depois o técnico e o analista confirmou')).toBe(
+      'Ontem o relatório e o arquivo voltaram, depois o técnico e o analista confirmaram',
+    );
+    expect(fix('Confirmamos que o relatório e o arquivo voltou')).toBe('Confirmamos que o relatório e o arquivo voltaram');
+    // Depois de um verbo, o primeiro termo é objeto e o sujeito é só o segundo: nenhuma sugestão.
+    quiet('Conseguimos reiniciar o serviço e o acesso voltou ao normal.');
+    quiet('Reiniciamos o servidor e o acesso voltou.');
+    quiet('Atualizamos o driver e o serviço voltou ao normal.');
+  });
+
   it('houveram, fazem com tempo e existe com plural', () => {
     expect(fix('houveram duas quedas')).toBe('houve duas quedas');
     expect(fix('fazem cinco horas que caiu')).toBe('faz cinco horas que caiu');

@@ -187,3 +187,12 @@ O conjunto continua sendo de autor único e escrito pelo mesmo autor das regras.
 - O protótipo, antes dos ajustes, no gold-3: 26 de 32, 4 textos piorados e 5 sugestões indevidas em frases corretas (3 de crase em "a tarde", 1 de porquê, mais as trocas de singular que o determinante evita).
 - **Leitura honesta:** o gold-novo foi usado para decidir os ajustes, então os 16 de 20 não são mais validação. O gold-3 foi escrito antes do porte e rodado uma vez, mas quem o escreveu conhecia as regras: ele mede a regressão e as armadilhas conhecidas, não a cobertura em texto real. A revocação em texto livre será menor. Os erros que escapam são, em geral, substantivos fora do léxico (`pendrive`, `filial`), verbos fora da lista e "mais o" no lugar de "mas o".
 - Limite de projeto mantido: nenhuma sugestão é aplicada sem ação, e o teste exige que um texto com erro nunca fique pior do que o original.
+
+## 11. Correção do sujeito composto (falso positivo)
+
+Achado numa sonda com frases novas (fictícias, escritas depois das regras): "Conseguimos reiniciar o serviço e o acesso voltou ao normal." recebia a sugestão `voltou` para `voltaram`. A regra de sujeito composto (substantivo, "e", determinante, substantivo, verbo) tratava "o serviço e o acesso" como sujeito, mas depois de um verbo o primeiro termo é objeto e o sujeito é só "o acesso".
+
+- `domain/agreement.ts`: o sujeito composto só vale quando o primeiro termo abre a oração (início do texto, pontuação, conjunção ou advérbio de tempo antes: `startsClause`, `CLAUSE_OPENERS`). Depois de um verbo, nenhuma sugestão.
+- Custo assumido: composto depois de verbo ("Verificamos que o relatório e o arquivo voltou" continua corrigido por causa do "que"; "Reiniciamos o relatório e o arquivo voltou" não é mais corrigido). Perde-se revocação para ganhar precisão: um falso positivo faz o analista desligar o recurso, uma lacuna não.
+- Testes: `src/tests/agreement.test.ts` ("sujeito composto só vale quando o primeiro termo abre a oração"), positivo e negativo. Os conjuntos `gold*.json` seguem com 0 texto piorado e 0 frase correta com sugestão.
+- Ainda abertos (plano em fases): plural de palavra estrangeira ("switchs"), correção parcial de dois verbos, lacunas de cobertura e um conjunto de regressão novo (`gold-4`).
