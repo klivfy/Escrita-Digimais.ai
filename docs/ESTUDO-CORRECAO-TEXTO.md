@@ -267,4 +267,8 @@ Auditoria no Chromium real, com a extensão carregada e um texto de pior caso (3
   - O gerundismo ganhou a regra `estilo`, com etiqueta "Estilo". Ela nunca entra em "aceitar todas" (só acento e grafia entram) e gera as chaves de contador `proofread.estilo.acc|ign`.
   - O script do piloto (`scripts/analyze-usage.mjs`) tinha a própria lista de regras e descartaria as contagens de "estilo" sem avisar. O teste `analyze-usage.test.ts` pegou o acoplamento, e a lista foi atualizada.
   - Verificado no Chromium real, a 320 px e 420 px, nos dois temas: axe sem violações, sem rolagem horizontal, foco coerente depois de aceitar pelo teclado. A tela ficou 90 px mais curta (a ação em lote não precisa mais de uma linha no fim) e o motivo deixou de ficar menor que o corpo.
-- Pendentes da auditoria (P3, polimento): contexto na fonte do corpo em vez de monoespaçada, seleção de texto tematizada e revisão do corte global de movimento em `prefers-reduced-motion`.
+- **Fase 3 (P3, polimento):**
+  - Contexto do texto do analista na fonte do corpo, não monoespaçada (não é código).
+  - Seleção de texto com o par `on-primary-container` / `primary-container`, já conferido em `contrast.test.ts`.
+  - O corte global de movimento (`0.01ms !important`) apagava o fade de opacidade e cor sem ganho de conforto, porque a interface não se desloca. Agora `prefers-reduced-motion` só remove `animation` e restringe as transições a opacidade e cor. Medido no Chromium: `transition-property` = `opacity, background-color, border-color, color`, `animation` = `none`. A camada de estado do botão (`::after`) não foi medida separadamente.
+  - Achado de processo: a primeira medida rodou sobre o `dist` antigo. A regra estava certa no código, mas o pacote não tinha sido reconstruído. Medidas de render precisam de `npm run build` antes.

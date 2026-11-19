@@ -128,7 +128,8 @@ button:disabled::after { display: none; }
 .tag.info { background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); }
 
 mark { background: var(--md-sys-color-warning-container); color: var(--md-sys-color-on-warning-container); padding: 0 0.125rem; border-radius: var(--md-sys-shape-corner-extra-small); }
-code.ctx { white-space: pre-wrap; word-break: break-word; font-size: 0.75rem; font-family: var(--md-sys-typescale-mono); }
+/* Trecho do texto do analista: fonte do corpo, não monoespaçada (não é código). */
+code.ctx { white-space: pre-wrap; word-break: break-word; font-size: 0.75rem; font-family: var(--md-sys-typescale-font); }
 /* O resumo é o alvo de toque: altura de pelo menos 36 px (WCAG 2.5.8 pede 24 px). */
 details { border: 1px solid var(--md-sys-color-outline-variant); border-radius: var(--md-sys-shape-corner-medium); padding: 0 0.75rem; }
 summary { cursor: pointer; font-weight: 500; letter-spacing: 0.007em; padding: 0.5rem 0; }
@@ -157,10 +158,18 @@ summary { cursor: pointer; font-weight: 500; letter-spacing: 0.007em; padding: 0
 }
 body.popup { width: 17.5rem; padding: 1rem; }
 
-/* Movimento reduzido: sem transições (a interface não tem deslocamentos nem molas). */
+/*
+ * Movimento reduzido: a interface não tem deslocamento nem animação de quadros. Corta-se o que se move
+ * (animation e transform) e mantém-se o fade de opacidade e cor, que ajuda a entender o estado (ex.: foco, botão
+ * pressionado). Um corte global de duração apagava esse feedback sem nenhum ganho de conforto.
+ */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { transition-duration: 0.01ms !important; animation: none !important; }
+  *, *::before, *::after { animation: none !important; }
+  *, *::before, *::after { transition-property: opacity, background-color, border-color, color !important; }
 }
+
+/* Seleção de texto no tema: par on-primary-container / primary-container, já conferido em contrast.test.ts. */
+::selection { background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); }
 
 /* Cores forçadas (Windows Alto Contraste): bordas e camadas de estado ficam por conta do sistema. */
 @media (forced-colors: active) {
