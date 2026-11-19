@@ -65,6 +65,24 @@ describe('camada 2: concordância verbal', () => {
     expect(fix('nós atualizou o driver')).toBe('nós atualizamos o driver');
   });
 
+  it('o verbo ligado por "e" herda o sujeito plural do verbo anterior', () => {
+    expect(fix('Os técnicos verificou o cabo e concluiu o teste')).toBe('Os técnicos verificaram o cabo e concluíram o teste');
+    // O primeiro verbo já está certo; o segundo, não.
+    expect(fix('Os técnicos verificaram o cabo e concluiu o teste')).toBe('Os técnicos verificaram o cabo e concluíram o teste');
+    expect(fix('O técnico e o analista verificou o cabo e concluiu o teste')).toBe('O técnico e o analista verificaram o cabo e concluíram o teste');
+  });
+
+  it('sem sujeito plural em comum, o verbo depois de "e" não muda', () => {
+    quiet('O técnico verificou o cabo e concluiu o teste.');
+    quiet('Os técnicos verificaram o cabo e o analista concluiu o teste.');
+    quiet('Os técnicos verificaram o cabo e ele concluiu o teste.');
+    quiet('Os técnicos verificaram que o cabo falhou e travou.');
+    // "Voltou" tem o servidor como sujeito: só verbo de ação de pessoas herda o sujeito do verbo anterior.
+    quiet('Os técnicos reiniciaram o servidor e voltou ao normal.');
+    quiet('Os técnicos trocaram o cabo e funcionou.');
+    quiet('Os técnicos verificaram o cabo. Depois e concluiu o teste.');
+  });
+
   it('sujeito composto só vale quando o primeiro termo abre a oração', () => {
     // Abre a oração: início da frase, depois de pontuação, de conjunção ou de advérbio de tempo.
     expect(fix('o técnico e o analista verificou o servidor')).toBe('o técnico e o analista verificaram o servidor');

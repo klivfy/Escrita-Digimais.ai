@@ -131,6 +131,42 @@ function startsClause(t: Tok[], text: string, idx: number): boolean {
   return CLAUSE_OPENERS.has(strip(t[idx - 1].w));
 }
 
+/** O verbo no token `i` tem sujeito plural (núcleo plural logo antes, ou sujeito composto que abre a oração)? */
+function pluralSubjectAt(t: Tok[], text: string, i: number): boolean {
+  const subject = chainBefore(t, text, i).at(-1);
+  const firstStart = i >= 5 && DET_INFO.has(strip(t[i - 5].w)) ? i - 5 : i - 4;
+  const compound =
+    i >= 4 && strip(t[i - 3].w) === 'e' && noun(t[i - 1].w) && !noun(t[i - 1].w)?.plural && DET_INFO.has(strip(t[i - 2].w)) && noun(t[i - 4].w) && startsClause(t, text, firstStart);
+  return Boolean((subject && subject.plural) || compound);
+}
+
+/** Formas plurais conhecidas dos verbos da lista: um verbo já certo também conta como sujeito plural para o verbo seguinte. */
+const VERB_PLURAL_FORMS = new Set(Object.values(VERB_PLURAL).map(strip));
+/**
+ * Verbos de ação de pessoas: só eles herdam o sujeito do verbo anterior. "Os técnicos reiniciaram o servidor e voltou ao
+ * normal" está certo, porque quem voltou foi o servidor; por isso "voltou", "falhou", "travou" e semelhantes ficam de fora.
+ */
+const AGENTIVE_SINGULAR = new Set([
+  'relatou', 'verificou', 'concluiu', 'analisou', 'resolveu', 'abriu', 'encerrou', 'atualizou', 'reiniciou', 'enviou', 'informou',
+  'solicitou', 'confirmou', 'aprovou', 'liberou', 'testou', 'instalou', 'tentou', 'conseguiu', 'recebeu',
+]);
+/** Palavras que trocam o sujeito ou abrem outra oração entre dois verbos ligados por "e". */
+const SUBJECT_BREAKERS = new Set(['que', 'se', 'como', 'quando', 'porque', 'pois', 'mas', 'onde', 'enquanto']);
+
+/**
+ * "Os técnicos verificaram o cabo e concluiu o teste": o verbo logo depois de "e" herda o sujeito do verbo anterior.
+ * Só vale sem pontuação nem palavra que troque o sujeito entre os dois, e quando o "e" é seguido direto do verbo
+ * ("... e o analista concluiu" tem outro sujeito e fica de fora).
+ */
+function sharesPluralSubject(t: Tok[], text: string, i: number, agreeing: readonly number[]): boolean {
+  if (i < 2 || strip(t[i - 1].w) !== 'e' || text.slice(t[i - 1].e, t[i].s) !== ' ') return false;
+  const j = agreeing.at(-1);
+  if (j === undefined || j >= i - 1) return false;
+  if (/[,.;:!?\n]/.test(text.slice(t[j].e, t[i].s))) return false;
+  for (let k = j + 1; k < i; k++) if (SUBJECT_BREAKERS.has(strip(t[k].w))) return false;
+  return true;
+}
+
 const DAYS = /^(segunda|terca|quarta|quinta|sexta)(-feira)?$|^(sabado|domingo|hoje|ontem|amanha)$/;
 const TIME_UNITS = /^(dias|horas|semanas|meses|anos|minutos)$/;
 const COUNT_WORDS = /^(um|uma|dois|duas|tres|quatro|cinco|seis|sete|dez|varios|varias)$/;
@@ -142,6 +178,8 @@ export function checkAgreement(text: string): ProofreadSuggestion[] {
   const add = (s: number, e: number, original: string, replacement: string, rule: ProofreadSuggestion['rule'], reason: string): void => {
     out.push({ start: s, end: e, original, replacement, rule, reason });
   };
+  /** Verbos que concordam (ou devem concordar) com sujeito plural, em ordem: o seguinte, ligado por "e", herda o sujeito. */
+  const pluralVerbs: number[] = [];
   for (let i = 0; i < t.length; i++) {
     const w = t[i].w;
     const lw = w.toLowerCase();
@@ -182,14 +220,18 @@ export function checkAgreement(text: string): ProofreadSuggestion[] {
         }
       }
     }
-    // Verbo no singular logo depois de núcleo plural, ou de sujeito composto.
+    // Verbo no singular logo depois de núcleo plural, ou de sujeito composto; o verbo ligado por "e" herda o sujeito.
     const plural = VERB_PLURAL[lw];
     if (plural) {
-      const subject = chainBefore(t, text, i).at(-1);
-      const firstStart = i >= 5 && DET_INFO.has(strip(t[i - 5].w)) ? i - 5 : i - 4;
-      const compound =
-        i >= 4 && strip(t[i - 3].w) === 'e' && noun(t[i - 1].w) && !noun(t[i - 1].w)?.plural && DET_INFO.has(strip(t[i - 2].w)) && noun(t[i - 4].w) && startsClause(t, text, firstStart);
-      if ((subject && subject.plural) || compound) add(t[i].s, t[i].e, w, matchCase(w, plural), 'concordancia', 'O verbo concorda com o sujeito no plural.');
+      if (pluralSubjectAt(t, text, i)) {
+        add(t[i].s, t[i].e, w, matchCase(w, plural), 'concordancia', 'O verbo concorda com o sujeito no plural.');
+        pluralVerbs.push(i);
+      } else if (AGENTIVE_SINGULAR.has(lw) && sharesPluralSubject(t, text, i, pluralVerbs)) {
+        add(t[i].s, t[i].e, w, matchCase(w, plural), 'concordancia', 'O verbo ligado por "e" tem o mesmo sujeito plural do verbo anterior.');
+        pluralVerbs.push(i);
+      }
+    } else if (VERB_PLURAL_FORMS.has(k) && pluralSubjectAt(t, text, i)) {
+      pluralVerbs.push(i);
     }
     if (lw === 'nós' && next && /ou$/.test(next.w) && next.w.length > 4) {
       add(next.s, next.e, next.w, next.w.replace(/ou$/, 'amos'), 'concordancia', 'Com "nós", o verbo fica na primeira pessoa do plural.');
