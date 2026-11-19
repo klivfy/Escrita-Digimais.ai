@@ -260,4 +260,11 @@ Auditoria no Chromium real, com a extensão carregada e um texto de pior caso (3
 - Custo assumido: um erro de digitação dentro de um domínio deixa de ser sinalizado. Preferi perder essa cobertura a arriscar a corrupção de um dado de chamado.
 - Limites: domínio com sufixo fora da lista acima (por exemplo `.pt`, `.de`) e nome de arquivo com extensão (`relatorio.docx`) não são protegidos. Domínio com letra maiúscula também não.
 - Medida no render depois da correção: o texto de pior caso passou de 9 para 8 sugestões, a do e-mail saiu, e "aceitar acentos e grafia" deixou o e-mail, o domínio e a URL intactos.
-- Pendentes da auditoria (P2 e P3, mudam a tela e aguardam aprovação): motivo da sugestão em 14 px, palavra destacada no contexto, ação em lote no topo da lista, etiqueta própria "Estilo" para o gerundismo, contexto na fonte do corpo, seleção de texto tematizada e revisão do corte global de movimento.
+- **Fase 2 (P2, tela):**
+  - O motivo da sugestão passou de `.subtle` (12 px, cinza) para `.reason` (14 px, cor do texto): é ele que decide aceitar ou não.
+  - A palavra aparece destacada (`mark`) dentro do trecho de contexto, em vez de obrigar a procurá-la.
+  - "Aceitar acentos e grafia (N)" subiu para logo abaixo da explicação da lista, antes das sugestões.
+  - O gerundismo ganhou a regra `estilo`, com etiqueta "Estilo". Ela nunca entra em "aceitar todas" (só acento e grafia entram) e gera as chaves de contador `proofread.estilo.acc|ign`.
+  - O script do piloto (`scripts/analyze-usage.mjs`) tinha a própria lista de regras e descartaria as contagens de "estilo" sem avisar. O teste `analyze-usage.test.ts` pegou o acoplamento, e a lista foi atualizada.
+  - Verificado no Chromium real, a 320 px e 420 px, nos dois temas: axe sem violações, sem rolagem horizontal, foco coerente depois de aceitar pelo teclado. A tela ficou 90 px mais curta (a ação em lote não precisa mais de uma linha no fim) e o motivo deixou de ficar menor que o corpo.
+- Pendentes da auditoria (P3, polimento): contexto na fonte do corpo em vez de monoespaçada, seleção de texto tematizada e revisão do corte global de movimento em `prefers-reduced-motion`.

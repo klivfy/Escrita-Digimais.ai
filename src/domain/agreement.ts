@@ -255,7 +255,7 @@ export function checkAgreement(text: string): ProofreadSuggestion[] {
       const g = t[i + 2].w;
       const gk = strip(g);
       if (/(ando|endo|indo)$/.test(gk) && !IRREGULAR_GERUNDS.has(gk) && g.length > 5) {
-        add(next.s, t[i + 2].e, `${next.w} ${g}`, g.replace(/ando$/, 'ar').replace(/endo$/, 'er').replace(/indo$/, 'ir'), 'uso', 'Gerundismo (estilo): "vou enviar" é mais direto que "vou estar enviando".');
+        add(next.s, t[i + 2].e, `${next.w} ${g}`, g.replace(/ando$/, 'ar').replace(/endo$/, 'er').replace(/indo$/, 'ir'), 'estilo', 'Gerundismo: "vou enviar" é mais direto que "vou estar enviando". É uma preferência de estilo, não um erro.');
       }
     }
     if (k === 'houveram') add(t[i].s, t[i].e, w, matchCase(w, 'houve'), 'concordancia', 'Haver no sentido de existir fica no singular.');

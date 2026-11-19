@@ -66,6 +66,44 @@ describe('modo Corrigir texto: camada 2 (concordância, crase e uso)', () => {
   });
 });
 
+describe('modo Corrigir texto: leitura e decisão (auditoria de 19/11/2026)', () => {
+  const TEXT = 'o usuario nao consegue abrir. Vou estar enviando o log amanhã.';
+
+  it('o motivo é texto de corpo, não metadado, e o contexto destaca a palavra', async () => {
+    const { user } = setup();
+    await openAndVerify(user, TEXT);
+    // "usuario" e "nao" têm o mesmo motivo: confere todos.
+    const reasons = screen.getAllByText('Falta acento: a forma com acento é muito mais comum.', { selector: 'p' });
+    expect(reasons.length).toBe(2);
+    for (const reason of reasons) {
+      expect(reason.className).toBe('reason');
+      expect(reason.classList.contains('subtle')).toBe(false);
+    }
+    const first = document.querySelector('ol.list > li') as HTMLElement;
+    const marks = first.querySelectorAll('mark');
+    expect(marks.length).toBe(2); // uma no "Trocar X por Y" e outra dentro do trecho de contexto
+    expect(first.querySelector('code.ctx mark')?.textContent).toBe('usuario');
+  });
+
+  it('"Aceitar acentos e grafia" fica antes da lista, e não depois de todos os itens', async () => {
+    const { user } = setup();
+    await openAndVerify(user, TEXT);
+    const batch = screen.getByRole('button', { name: 'Aceitar acentos e grafia (2)' });
+    const list = document.querySelector('ol.list') as HTMLElement;
+    expect(batch.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('o gerundismo vem com a etiqueta "Estilo", fora de "Uso da palavra", e não entra em "aceitar todas"', async () => {
+    const { user } = setup();
+    await openAndVerify(user, TEXT);
+    expect(screen.getByText('Estilo')).toBeTruthy();
+    expect(screen.queryByText('Uso da palavra')).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Aceitar acentos e grafia (2)' }));
+    expect(field().value).toContain('Vou estar enviando');
+    expect(screen.getByText('Estilo')).toBeTruthy();
+  });
+});
+
 describe('modo Corrigir texto', () => {
   it('lista as sugestões sem alterar o texto', async () => {
     const { user } = setup();

@@ -10,7 +10,8 @@ import { PROOFREAD_DOMAIN_TERMS, PROOFREAD_LIMITS } from '../config/proofread/ru
 import { checkAgreement } from './agreement';
 import { FUTURE_FIRST_PERSON, PARTICIPLE_OPENERS, PAST_FIRST_PERSON, POSSESSIVES } from '../config/voice-lists';
 
-export const PROOFREAD_RULES = ['acento', 'grafia', 'concordancia', 'crase', 'uso'] as const;
+/** `estilo` é preferência de redação (ex.: gerundismo), não erro: tem etiqueta própria e nunca entra em "aceitar todas". */
+export const PROOFREAD_RULES = ['acento', 'grafia', 'concordancia', 'crase', 'uso', 'estilo'] as const;
 export type ProofreadRule = (typeof PROOFREAD_RULES)[number];
 
 /** Regras de ortografia (camada 1): trocas de baixo risco, que "Aceitar acentos e grafia" aplica de uma vez. */

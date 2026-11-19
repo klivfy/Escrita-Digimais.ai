@@ -107,7 +107,7 @@ describe('camada 2: concordância verbal', () => {
     expect(fix('A equipe vai estar verificando o cabo.')).toBe('A equipe vai verificar o cabo.');
     expect(fix('Vamos estar abrindo o chamado.')).toBe('Vamos abrir o chamado.');
     const s = checkAgreement('Vou estar enviando o arquivo hoje.')[0];
-    expect(s.rule).toBe('uso');
+    expect(s.rule).toBe('estilo');
     expect(s.reason).toMatch(/estilo/);
     quiet('Vou enviar o arquivo hoje.');
     quiet('Estou enviando o arquivo agora.');
