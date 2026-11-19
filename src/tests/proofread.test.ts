@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { loadFreqIndex } from '../application/proofread-data';
-import { applySuggestion, applySuggestions, buildFreqIndex, proofread } from '../domain/proofread';
+import { applySuggestion, applySuggestions, buildFreqIndex, inProtectedSpan, proofread, proofreadAll, protectedSpans } from '../domain/proofread';
 import type { FreqIndex } from '../domain/proofread';
 
 interface Gold {
@@ -79,6 +79,41 @@ describe('proofread: acento e grafia', () => {
   it('texto vazio ou só com espaços não gera sugestões', () => {
     expect(proofread('', index)).toEqual([]);
     expect(proofread('   \n  ', index)).toEqual([]);
+  });
+});
+
+describe('proofread: e-mail, URL e domínio são dado e não redação', () => {
+  const EMAIL = 'aleksandra.wisniewska-kowalczyk@exemplo.com.br';
+
+  it('nenhuma palavra dentro de e-mail, URL ou domínio vira sugestão (a troca corromperia o endereço)', () => {
+    const textos = [
+      `Enviei para ${EMAIL} e para jsilva@exemplo.com.br.`,
+      'Veja https://intranet.exemplo.com.br/chamados/relatorio-completo-de-diagnostico.pdf para os detalhes.',
+      'Acesse portal.exemplo.com.br e confirme o acesso.',
+      'O endereço é www.exemplo.com.br/suporte, conforme combinado.',
+    ];
+    for (const t of textos) {
+      expect(proofread(t, index), t).toEqual([]);
+      expect(proofreadAll(t, index), t).toEqual([]);
+    }
+  });
+
+  it('a palavra ao lado do endereço continua sendo corrigida', () => {
+    const t = `O usuario escreveu para ${EMAIL} e nao recebeu resposta.`;
+    expect(proofreadAll(t, index).map((s) => s.original)).toEqual(['usuario', 'nao']);
+    expect(fix(t)).toBe(`O usuário escreveu para ${EMAIL} e não recebeu resposta.`);
+  });
+
+  it('a pontuação final da frase não faz parte do endereço', () => {
+    const t = 'Escreva para jsilva@exemplo.com.br.';
+    const [span] = protectedSpans(t);
+    expect(t.slice(span.start, span.end)).toBe('jsilva@exemplo.com.br');
+    expect(inProtectedSpan(t, t.length - 1, t.length)).toBe(false);
+  });
+
+  it('texto sem endereço não tem trecho protegido, e ponto no meio da frase não vira domínio', () => {
+    expect(protectedSpans('O usuario nao consegue abrir a planilha.')).toEqual([]);
+    expect(protectedSpans('Reiniciamos o servidor.Com o retorno do usuário, seguimos.')).toEqual([]);
   });
 });
 

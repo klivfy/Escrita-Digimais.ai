@@ -250,3 +250,14 @@ Pergunta: dá para trocar as listas fechadas da camada 2 (121 substantivos, 45 v
 ### Recomendação
 
 Não adotar agora. Para decidir com dado: (1) confirmar as licenças de Unitex-PB, Label-Lex e FreeLing; (2) escrever um script que gere o léxico podado (`zipf >= 3,0`, cerca de 208 KB) com a origem de cada linha; (3) rodar `gold-4` e um conjunto independente com e sem o léxico; (4) adotar só se o acerto exato subir sem nenhuma frase correta com sugestão. Esforço estimado: 3 a 5 dias, dependendo da resposta sobre licença.
+
+## 14. Auditoria da tela "Corrigir texto" e proteção de endereços (fase 1)
+
+Auditoria no Chromium real, com a extensão carregada e um texto de pior caso (320 px e 420 px, temas claro e escuro, zoom de 200%): axe sem violações, contraste de 6,3:1 a 16,6:1, alvos de 40 px, sem rolagem horizontal, foco coerente depois de aceitar pelo teclado. O achado crítico foi de conteúdo, não de visual.
+
+- **P1 corrigido.** Em `aleksandra.wisniewska-kowalczyk@exemplo.com.br` o motor sugeria `aleksandra` por `alessandra`: `ignorable` só protegia a palavra imediatamente antes do `@`. Aceitar a sugestão corrompia o endereço sem que quem aceita percebesse.
+- `protectedSpans` e `inProtectedSpan` (`domain/proofread.ts`) detectam e-mail, URL (`http(s)://`, `www.`) e domínio sem protocolo (rótulos em minúsculas terminando em `com`, `net`, `org`, `gov`, `edu`, `io`, `app`, `dev`, `info` ou `br`). Palavra dentro deles nunca é sugerida. `ignorable` usa essa proteção, e por isso `ai-guard.ts` também passa a rejeitar reescrita de modelo dentro de um endereço.
+- Custo assumido: um erro de digitação dentro de um domínio deixa de ser sinalizado. Preferi perder essa cobertura a arriscar a corrupção de um dado de chamado.
+- Limites: domínio com sufixo fora da lista acima (por exemplo `.pt`, `.de`) e nome de arquivo com extensão (`relatorio.docx`) não são protegidos. Domínio com letra maiúscula também não.
+- Medida no render depois da correção: o texto de pior caso passou de 9 para 8 sugestões, a do e-mail saiu, e "aceitar acentos e grafia" deixou o e-mail, o domínio e a URL intactos.
+- Pendentes da auditoria (P2 e P3, mudam a tela e aguardam aprovação): motivo da sugestão em 14 px, palavra destacada no contexto, ação em lote no topo da lista, etiqueta própria "Estilo" para o gerundismo, contexto na fonte do corpo, seleção de texto tematizada e revisão do corte global de movimento.
