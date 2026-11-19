@@ -220,3 +220,33 @@ Reúne as frases das sondas desta rodada: 52 com erro e 57 corretas, todas fict�
 - O caso parcial é "os switch queimou": corrige o plural e deixa o verbo, porque `queimou` não está na lista.
 - **Leitura honesta:** o critério da seção 7 pedia um conjunto escrito por outra pessoa, congelado antes do ajuste, com 80% de acerto. O `gold-4` não cumpre isso: o autor é o mesmo das regras e as conhecia, e parte das frases foi escrita para exercitar regra que eu acabara de criar. Os 96% medem regressão e as armadilhas conhecidas, não cobertura em texto real, e a revocação em texto livre será menor. O critério da seção 7 segue aberto até haver um conjunto independente.
 - Para fechar o critério: 30 a 40 frases (com e sem erro) escritas por quem não conhece as regras, guardadas fora do repositório se vierem de chamados reais, e rodadas uma vez, sem ajuste prévio.
+
+## 13. Prova de conceito do léxico morfológico (licença e tamanho)
+
+Pergunta: dá para trocar as listas fechadas da camada 2 (121 substantivos, 45 verbos) por um léxico morfológico do português e ganhar concordância geral? Esta seção só mede licença e tamanho. Nenhum léxico foi integrado às regras e nenhum ganho de acerto foi medido.
+
+| Candidato | Licença | Tamanho medido | Serve? |
+|---|---|---|---|
+| UniMorph `por` | CC BY-SA 3.0 (README do repositório; fonte declarada: Wikipedia) | 303.996 formas, 4.002 lemas, 11 MB | **Não.** 100% das formas são verbos; não traz gênero nem número de substantivo ou adjetivo |
+| MorphoBr (`LR-POR/MorphoBr`) | Apache-2.0 no repositório; **dados herdados sem licença confirmada** (ver abaixo) | Substantivos 538.081 linhas (19 MB), adjetivos 543.690 (19 MB), verbos 2.372.752 (88 MB), advérbios 21.182; checkout com 553 MB | **Sim, com poda.** Formato `forma<TAB>lema+N+M+SG` |
+| Apertium `apertium-por` | GPL-3.0 | repositório com 13,2 MB (o dicionário não foi medido) | Descartado por enquanto: copyleft forte e sem medida de tamanho |
+| LanguageTool (regras `pt`) | LGPL 2.1 ou posterior | não medido | Regras em XML para Java; portar um subconjunto é possível, mas pouco mantido para pt-BR |
+
+### MorphoBr podado pela lista de frequência que o projeto já embarca
+
+- Das 118.326 palavras de `freq-pt.json`, 34.583 aparecem como substantivo e 26.310 como adjetivo no MorphoBr (cerca de 49 mil formas distintas no total).
+- Com `zipf >= 3,0`: 18.785 formas, cerca de 208 KB em texto simples. Com `zipf >= 3,5`: 10.373 formas, cerca de 111 KB. Todas as 49 mil formas: cerca de 573 KB.
+- Só 164 das 49.110 formas (0,3%) têm mais de uma combinação de gênero e número, então a ambiguidade de gênero e número da própria forma é baixa.
+- 116 das 121 palavras do léxico atual do projeto existem no MorphoBr. Os termos de TI do domínio faltam: de 20 conferidos, ausentes `pendrive`, `switch`, `token`, `print`, `toner`, `driver`; presentes `backup`, `log`, `e-mail`, `notebook`, `roteador`, `firewall`, `impressora`, `servidor`, `chamado`, `senha`, `antivírus`, `planilha`. Um léxico próprio de termos de TI continuaria sendo necessário.
+
+### Pendências e riscos que a prova de conceito não resolve
+
+1. **Licença dos dados de origem sem confirmação.** O README do MorphoBr diz que os dados derivam do Unitex-PB (NILC) e dos dados do FreeLing para o português, que por sua vez derivam do Label-Lex. O projeto Unitex/GramLab distribui seus recursos linguísticos sob a LGPL-LR, mas não confirmei que isso vale para os arquivos do NILC, nem a licença do Label-Lex ou dos dados do FreeLing. O Apache-2.0 do repositório não prova nada sobre esses dados. Confirmar antes de embarcar, e registrar em `THIRD-PARTY-NOTICES.md`.
+2. **A lista de frequência já é CC BY-SA 4.0** (`freq-pt.json`, aviso em `licenses/lista-frequencia-AVISO.txt`). Um léxico derivado dela herdaria a mesma atribuição; verificar a compatibilidade com a licença dos dados do MorphoBr.
+3. **O léxico resolve o gênero e o número da palavra, não a estrutura da frase.** Os defeitos reais achados nesta rodada (sujeito composto, sujeito de verbo depois de "e", objeto contra sujeito) são sintáticos. Um léxico maior amplia o alcance dessas regras e, com isso, amplia também o risco de falso positivo delas.
+4. **Sem classe gramatical no contexto, uma forma pode ser substantivo e verbo** ("conserto", "volta"). Sem um desambiguador, o léxico poderia sugerir concordância onde não há substantivo.
+5. **Ganho não medido.** Não há conjunto independente (seção 12), então hoje não dá para provar se um léxico maior melhora o acerto sem aumentar o falso positivo.
+
+### Recomendação
+
+Não adotar agora. Para decidir com dado: (1) confirmar as licenças de Unitex-PB, Label-Lex e FreeLing; (2) escrever um script que gere o léxico podado (`zipf >= 3,0`, cerca de 208 KB) com a origem de cada linha; (3) rodar `gold-4` e um conjunto independente com e sem o léxico; (4) adotar só se o acerto exato subir sem nenhuma frase correta com sugestão. Esforço estimado: 3 a 5 dias, dependendo da resposta sobre licença.
