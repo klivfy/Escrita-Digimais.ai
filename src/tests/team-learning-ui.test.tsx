@@ -51,6 +51,39 @@ describe('aprendizado da equipe na tela', () => {
     await waitFor(() => expect(ledgerOf(local)?.byType.request_information.blocks.some((b) => b.role === 'closing')).toBe(false));
   });
 
+  it('trecho antigo com nome de terceiro aparece em "Trechos fora de uso", com o motivo, e só some quando o analista esquece', async () => {
+    const named = 'Falamos com a Ana Paula da contabilidade sobre o notebook.';
+    const { local, user } = setup({
+      learningLedger: {
+        version: 1, since: '2026-11-01', updatedAt: '2026-11-04', textsAtTraining: 0,
+        byType: {
+          request_information: {
+            texts: 4,
+            blocks: [
+              { role: 'opening', text: named, count: 3 },
+              { role: 'closing', text: 'Ficamos no aguardo.', count: 3 },
+              { role: 'request', text: 'Poderia nos enviar uma captura de tela?', count: 1 },
+            ],
+            labels: [],
+          },
+        },
+      },
+    });
+    await openTeach(user);
+    const panel = await screen.findByRole('list', { name: 'Trechos fora de uso' });
+    expect(panel.textContent).toContain(named);
+    expect(panel.textContent).toMatch(/nome próprio/);
+    expect(panel.textContent).not.toContain('Ficamos no aguardo.');
+    expect(panel.textContent).not.toContain('captura de tela');
+    // Continua guardado até o analista esquecer; o de uma ocorrência só aparece como aguardando repetição.
+    expect(ledgerOf(local)?.byType.request_information.blocks).toHaveLength(3);
+    await user.click(screen.getByText('Ver o que foi guardado'));
+    expect(screen.getByText(/aguardando repetição para ser usado/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: `Esquecer abertura fora de uso: ${named}` }));
+    await waitFor(() => expect(ledgerOf(local)?.byType.request_information.blocks.some((b) => b.text === named)).toBe(false));
+    await waitFor(() => expect(screen.queryByRole('list', { name: 'Trechos fora de uso' })).toBeNull());
+  });
+
   it('recusa texto com dado sensível, dizendo o motivo, e não acumula', async () => {
     const { local, user } = setup();
     await learn(user, 'Olá, Ana,\n\nEscreva para ana@empresa.com.br.\n\nObrigado.');
@@ -87,7 +120,7 @@ describe('aprendizado da equipe na tela', () => {
             texts: 3,
             blocks: [
               { role: 'opening', text: OPEN, count: 3 },
-              { role: 'opening', text: 'Seguimos com a análise do seu caso.', count: 1 },
+              { role: 'opening', text: 'Seguimos com a análise do seu caso.', count: 2 },
               { role: 'request', text: 'Envie uma captura de tela do erro, por favor.', count: 2 },
               { role: 'closing', text: 'Ficamos no aguardo.', count: 3 },
             ],

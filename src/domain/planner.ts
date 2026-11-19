@@ -1,6 +1,6 @@
 import { BLUEPRINTS, RECORD_SKIPPED, includedAt, isRecordStyle } from '../config/blueprints';
 import type { SectionKind } from '../config/blueprints';
-import { FIXED_PHRASES, FIXED_PHRASES_TO_USER, FLOW_LEADS, LABEL_OVERRIDES, LEAD_SIZE, NATURAL_EXPECTED_ACTION, NATURAL_LEADS } from '../config/templates';
+import { FIXED_PHRASES, FIXED_PHRASES_TO_USER, FLOW_LEADS, LABEL_OVERRIDES, LEAD_SIZE, NATURAL_EXPECTED_ACTION, NATURAL_LEADS, OTHER_PARTY_LABEL, UNCONFIRMED_CLOSURE_OPENINGS } from '../config/templates';
 import type { ResolvedTemplates } from '../config/templates';
 import type { ClassifiedContext } from './classify';
 import { capitalizeFirst, ensureQuestion, ensureTerminalPunctuation, lowerFirst, stripTerminalPunctuation } from './text-utils';
@@ -147,6 +147,24 @@ export function fillPlaceholders(template: string, vars: Record<string, string>)
   return template.replace(/\{(\w+)\}/g, (_whole, key: string) => vars[key] ?? '');
 }
 
+/** Preenche o modelo, ou undefined se algum campo ficaria vazio ("Destino: ." nunca sai). */
+export function fillComplete(template: string, vars: Record<string, string>): string | undefined {
+  for (const m of template.matchAll(/\{(\w+)\}/g)) if (!vars[m[1] ?? '']?.trim()) return undefined;
+  return fillPlaceholders(template, vars);
+}
+
+/** Primeira redação da lista, a partir do índice, cujos campos têm valor; sem nenhuma, a seção é omitida. */
+function pickComplete(list: readonly string[], index: number, vars: Record<string, string>): string | undefined {
+  for (let i = 0; i < list.length; i++) {
+    const t = fillComplete(list[((index + i) % list.length + list.length) % list.length] ?? '', vars);
+    if (t !== undefined) return t;
+  }
+  return undefined;
+}
+
+/** Fechos de cortesia (disponibilidade, agradecimento). Dois deles juntos soam repetidos. */
+const COURTESY_FAMILY = /disposi[çc][ãa]o|agradec|obrigad/iu;
+
 export function buildPlan(
   settings: GenerationSettings,
   c: ClassifiedContext,
@@ -155,7 +173,9 @@ export function buildPlan(
 ): MessagePlan {
   const { type, recipient, formality, techLevel, length } = settings;
   const variant = settings.variant ?? 0;
-  const openingPool = templates.openings[type][formality];
+  // Sem confirmação do usuário, o encerramento não afirma "situação solucionada" (a menos que o perfil defina a abertura).
+  const unconfirmedClosure = type === 'closure_resolved' && c.userConfirmation !== 'yes' && !profile.templates.openings?.closure_resolved;
+  const openingPool = unconfirmedClosure ? UNCONFIRMED_CLOSURE_OPENINGS[formality] : templates.openings[type][formality];
   const typeClosingPool = templates.typeClosings[type][formality];
   const courtesyPool = profile.closings[formality];
   const learned = settings.learned ?? {};
@@ -193,8 +213,8 @@ export function buildPlan(
               : withoutNameSlot(profile.greetings[formality][recipient]),
         };
       case 'opening': {
-        const t = pick(openingPool, openingIdx);
-        return t ? { text: fillPlaceholders(t, vars) } : undefined;
+        const t = pickComplete(openingPool, openingIdx, vars);
+        return t ? { text: t } : undefined;
       }
       case 'intent':
         return c.freeIntent ? { text: sentence(c.freeIntent) } : undefined;
@@ -206,6 +226,9 @@ export function buildPlan(
         const flow = natural ? flowingActions(c.actionsDone, false, leadVariant) : undefined;
         return flow ? { text: flow, flowing: true } : { items: c.actionsDone.map(sentence) };
       }
+      case 'actions_others':
+        // Texto do analista como está: quem agiu foi outra parte, então não passa pela voz da equipe.
+        return c.actionsOthers.length ? { items: c.actionsOthers.map(sentence) } : undefined;
       case 'actions_planned': {
         if (!c.actionsPlanned.length) return undefined;
         const flow = natural ? flowingActions(c.actionsPlanned, true, leadVariant) : undefined;
@@ -254,39 +277,49 @@ export function buildPlan(
       case 'reason':
         return c.escalationReason ? { text: sentence(c.escalationReason) } : undefined;
       case 'privacy':
-        return profile.privacyNotice.text && profile.privacyNotice.types.includes(type)
-          ? { text: fillPlaceholders(profile.privacyNotice.text, vars) }
-          : undefined;
+        {
+          const t = profile.privacyNotice.text && profile.privacyNotice.types.includes(type) ? fillComplete(profile.privacyNotice.text, vars) : undefined;
+          return t ? { text: t } : undefined;
+        }
       case 'type_closing': {
-        const t = pick(typeClosingPool, typeClosingIdx);
-        return t ? { text: fillPlaceholders(t, vars) } : undefined;
+        const t = pickComplete(typeClosingPool, typeClosingIdx, vars);
+        return t ? { text: t } : undefined;
       }
       case 'reopen':
         return profile.closureRules.reopenInstruction ? { text: profile.closureRules.reopenInstruction } : undefined;
       case 'required': {
         const texts = profile.requiredTexts
           .filter((r) => r.types.length === 0 || r.types.includes(type))
-          .map((r) => fillPlaceholders(r.text, vars));
+          .map((r) => fillComplete(r.text, vars))
+          .filter((t): t is string => t !== undefined);
         return texts.length ? { text: [...new Set(texts)].join('\n') } : undefined;
       }
       case 'courtesy': {
-        const t = pick(courtesyPool, courtesyIdx);
-        return t ? { text: fillPlaceholders(t, vars) } : undefined;
+        const t = pickComplete(courtesyPool, courtesyIdx, vars);
+        return t ? { text: t } : undefined;
       }
       case 'signature':
-        return profile.signature ? { text: fillPlaceholders(profile.signature, vars).trim() } : undefined;
+        {
+          const t = profile.signature ? fillComplete(profile.signature, vars)?.trim() : undefined;
+          return t ? { text: t } : undefined;
+        }
     }
   };
 
   const sections: PlannedSection[] = [];
+  let typeClosingIsCourtesy = false;
   for (const [kind, min] of BLUEPRINTS[type]) {
     if (!includedAt(min, length)) continue;
     if (record && RECORD_SKIPPED.includes(kind)) continue;
     const body = content(kind);
     if (!body) continue;
+    // Fecho do tipo (inclusive o ensinado) já é cortesia: a cortesia do perfil não vem logo depois dele.
+    if (kind === 'type_closing' && body.text && COURTESY_FAMILY.test(body.text)) typeClosingIsCourtesy = true;
+    if (kind === 'courtesy' && typeClosingIsCourtesy && body.text && COURTESY_FAMILY.test(body.text)) continue;
     const key = LABEL_KEY[kind];
     const { flowing, ...rest } = body;
-    sections.push({ kind, label: key && !flowing ? labels[key] : undefined, ...rest, ...(natural && PARAGRAPH_GROUP[kind] ? { group: PARAGRAPH_GROUP[kind] } : {}) });
+    const label = kind === 'actions_others' ? OTHER_PARTY_LABEL : key && !flowing ? labels[key] : undefined;
+    sections.push({ kind, label, ...rest, ...(natural && PARAGRAPH_GROUP[kind] ? { group: PARAGRAPH_GROUP[kind] } : {}) });
   }
   const has = (kind: SectionKind): boolean => sections.some((s) => s.kind === kind);
   const choices: PhraseChoices = {};

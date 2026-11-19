@@ -10,7 +10,8 @@ import { PROOFREAD_DOMAIN_TERMS, PROOFREAD_LIMITS } from '../config/proofread/ru
 import { checkAgreement } from './agreement';
 import { FUTURE_FIRST_PERSON, PARTICIPLE_OPENERS, PAST_FIRST_PERSON, POSSESSIVES } from '../config/voice-lists';
 
-export const PROOFREAD_RULES = ['acento', 'grafia', 'concordancia', 'crase', 'uso'] as const;
+/** `estilo` é preferência de redação (ex.: gerundismo), não erro: tem etiqueta própria e nunca entra em "aceitar todas". */
+export const PROOFREAD_RULES = ['acento', 'grafia', 'concordancia', 'crase', 'uso', 'estilo'] as const;
 export type ProofreadRule = (typeof PROOFREAD_RULES)[number];
 
 /** Regras de ortografia (camada 1): trocas de baixo risco, que "Aceitar acentos e grafia" aplica de uma vez. */
@@ -86,9 +87,47 @@ function candidates(lower: string, index: FreqIndex): string[] {
 
 const WORD = /\p{L}[\p{L}\p{N}_'’-]*/gu;
 
+const EMAIL = /[\p{L}\p{N}._%+'-]+@[\p{L}\p{N}-]+(?:\.[\p{L}\p{N}-]+)*\.\p{L}{2,}/gu;
+const URL_LIKE = /\b(?:https?:\/\/|www\.)[^\s<>"'\])]+/giu;
+// Domínio sem protocolo ("portal.exemplo.com.br"): rótulos separados por ponto terminando em sufixo conhecido, em minúsculas.
+const DOMAIN = /\b(?:[\p{Ll}\p{N}-]+\.)+(?:com|net|org|gov|edu|io|app|dev|info|br)(?:\.[a-z]{2})?\b(?:\/[^\s]*)?/gu;
+
+export interface TextSpan {
+  start: number;
+  end: number;
+}
+
+let spansText = '';
+let spansCache: TextSpan[] = [];
+
+/**
+ * Trechos que são dado e não redação: e-mail, URL e domínio. Palavra dentro deles nunca é sugerida nem trocada, porque
+ * trocar uma letra de um endereço o corrompe sem que quem aceita perceba (ex.: "aleksandra" virar "alessandra" num e-mail).
+ */
+export function protectedSpans(text: string): readonly TextSpan[] {
+  if (text === spansText) return spansCache;
+  const spans: TextSpan[] = [];
+  for (const re of [EMAIL, URL_LIKE, DOMAIN]) {
+    for (const m of text.matchAll(re)) {
+      // Pontuação final da frase não faz parte do endereço.
+      const raw = m[0].replace(/[.,;:!?]+$/u, '');
+      if (raw) spans.push({ start: m.index, end: m.index + raw.length });
+    }
+  }
+  spansText = text;
+  spansCache = spans;
+  return spans;
+}
+
+/** O trecho [start, end) cai dentro de e-mail, URL ou domínio? */
+export function inProtectedSpan(text: string, start: number, end: number): boolean {
+  return protectedSpans(text).some((s) => start < s.end && s.start < end);
+}
+
 /** Siglas, códigos, nomes próprios no meio da frase, caminhos e termos de TI não são verificados. */
 export function ignorable(word: string, start: number, text: string): boolean {
   if (/\p{Nd}/u.test(word)) return true;
+  if (inProtectedSpan(text, start, start + word.length)) return true;
   if (text[start + word.length] === '@') return true;
   if (/^[A-ZÀ-Ú]{2,}$/.test(word)) return true;
   if (/[a-zà-ú][A-ZÀ-Ú]/.test(word)) return true;

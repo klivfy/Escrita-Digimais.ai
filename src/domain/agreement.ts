@@ -33,6 +33,7 @@ function pluralOf(sg: string): string {
   if (/[rz]$/.test(sg)) return `${sg}es`;
   if (/l$/.test(sg)) return sg.replace(/l$/, 'is');
   if (/m$/.test(sg)) return sg.replace(/m$/, 'ns');
+  if (/ch$/.test(sg)) return `${sg}es`; // termos de TI em inglês: switch, patch (switches, patches); "switchs" não existe
   if (/s$/.test(sg)) return sg;
   return `${sg}s`;
 }
@@ -117,6 +118,61 @@ function chainBefore(t: Tok[], text: string, i: number): Link[] {
   return out;
 }
 
+/** Palavras que, logo antes de um sintagma, indicam que uma oração começa ali (e não que o sintagma seja objeto de um verbo). */
+const CLAUSE_OPENERS = new Set(['e', 'mas', 'pois', 'porque', 'que', 'se', 'como', 'quando', 'enquanto', 'apos', 'ontem', 'hoje', 'amanha', 'agora', 'depois', 'entao', 'tambem', 'ja']);
+
+/**
+ * O sintagma que começa no token `idx` abre uma oração? Só então ele pode ser sujeito. Depois de um verbo ("reiniciar o
+ * serviço e o acesso voltou") o primeiro termo é objeto, e tratar os dois como sujeito composto inventa um erro.
+ */
+function startsClause(t: Tok[], text: string, idx: number): boolean {
+  if (idx <= 0) return true;
+  if (/[,.;:!?\n]/.test(text.slice(t[idx - 1].e, t[idx].s))) return true;
+  return CLAUSE_OPENERS.has(strip(t[idx - 1].w));
+}
+
+/** O verbo no token `i` tem sujeito plural (núcleo plural logo antes, ou sujeito composto que abre a oração)? */
+function pluralSubjectAt(t: Tok[], text: string, i: number): boolean {
+  const subject = chainBefore(t, text, i).at(-1);
+  const firstStart = i >= 5 && DET_INFO.has(strip(t[i - 5].w)) ? i - 5 : i - 4;
+  const compound =
+    i >= 4 && strip(t[i - 3].w) === 'e' && noun(t[i - 1].w) && !noun(t[i - 1].w)?.plural && DET_INFO.has(strip(t[i - 2].w)) && noun(t[i - 4].w) && startsClause(t, text, firstStart);
+  return Boolean((subject && subject.plural) || compound);
+}
+
+/** Formas plurais conhecidas dos verbos da lista: um verbo já certo também conta como sujeito plural para o verbo seguinte. */
+const VERB_PLURAL_FORMS = new Set(Object.values(VERB_PLURAL).map(strip));
+/**
+ * Verbos de ação de pessoas: só eles herdam o sujeito do verbo anterior. "Os técnicos reiniciaram o servidor e voltou ao
+ * normal" está certo, porque quem voltou foi o servidor; por isso "voltou", "falhou", "travou" e semelhantes ficam de fora.
+ */
+const AGENTIVE_SINGULAR = new Set([
+  'relatou', 'verificou', 'concluiu', 'analisou', 'resolveu', 'abriu', 'encerrou', 'atualizou', 'reiniciou', 'enviou', 'informou',
+  'solicitou', 'confirmou', 'aprovou', 'liberou', 'testou', 'instalou', 'tentou', 'conseguiu', 'recebeu',
+]);
+/** Verbos no singular que, com "nós" no início da oração, vão para a primeira pessoa do plural ("nós vai" vira "nós vamos"). Lista fechada. */
+const NOS_VERBS: Record<string, string> = {
+  vai: 'vamos', tem: 'temos', está: 'estamos', pode: 'podemos', deve: 'devemos', precisa: 'precisamos', consegue: 'conseguimos', faz: 'fazemos', fez: 'fizemos',
+};
+/** Gerúndios que não viram infinitivo regular (o infinitivo é pôr, ser, ter, vir, ir): ficam sem sugestão de gerundismo. */
+const IRREGULAR_GERUNDS = new Set(['pondo', 'sendo', 'tendo', 'vindo', 'indo']);
+/** Palavras que trocam o sujeito ou abrem outra oração entre dois verbos ligados por "e". */
+const SUBJECT_BREAKERS = new Set(['que', 'se', 'como', 'quando', 'porque', 'pois', 'mas', 'onde', 'enquanto']);
+
+/**
+ * "Os técnicos verificaram o cabo e concluiu o teste": o verbo logo depois de "e" herda o sujeito do verbo anterior.
+ * Só vale sem pontuação nem palavra que troque o sujeito entre os dois, e quando o "e" é seguido direto do verbo
+ * ("... e o analista concluiu" tem outro sujeito e fica de fora).
+ */
+function sharesPluralSubject(t: Tok[], text: string, i: number, agreeing: readonly number[]): boolean {
+  if (i < 2 || strip(t[i - 1].w) !== 'e' || text.slice(t[i - 1].e, t[i].s) !== ' ') return false;
+  const j = agreeing.at(-1);
+  if (j === undefined || j >= i - 1) return false;
+  if (/[,.;:!?\n]/.test(text.slice(t[j].e, t[i].s))) return false;
+  for (let k = j + 1; k < i; k++) if (SUBJECT_BREAKERS.has(strip(t[k].w))) return false;
+  return true;
+}
+
 const DAYS = /^(segunda|terca|quarta|quinta|sexta)(-feira)?$|^(sabado|domingo|hoje|ontem|amanha)$/;
 const TIME_UNITS = /^(dias|horas|semanas|meses|anos|minutos)$/;
 const COUNT_WORDS = /^(um|uma|dois|duas|tres|quatro|cinco|seis|sete|dez|varios|varias)$/;
@@ -128,6 +184,8 @@ export function checkAgreement(text: string): ProofreadSuggestion[] {
   const add = (s: number, e: number, original: string, replacement: string, rule: ProofreadSuggestion['rule'], reason: string): void => {
     out.push({ start: s, end: e, original, replacement, rule, reason });
   };
+  /** Verbos que concordam (ou devem concordar) com sujeito plural, em ordem: o seguinte, ligado por "e", herda o sujeito. */
+  const pluralVerbs: number[] = [];
   for (let i = 0; i < t.length; i++) {
     const w = t[i].w;
     const lw = w.toLowerCase();
@@ -168,15 +226,37 @@ export function checkAgreement(text: string): ProofreadSuggestion[] {
         }
       }
     }
-    // Verbo no singular logo depois de núcleo plural, ou de sujeito composto.
+    // Verbo no singular logo depois de núcleo plural, ou de sujeito composto; o verbo ligado por "e" herda o sujeito.
     const plural = VERB_PLURAL[lw];
     if (plural) {
-      const subject = chainBefore(t, text, i).at(-1);
-      const compound = i >= 4 && strip(t[i - 3].w) === 'e' && noun(t[i - 1].w) && !noun(t[i - 1].w)?.plural && DET_INFO.has(strip(t[i - 2].w)) && noun(t[i - 4].w);
-      if ((subject && subject.plural) || compound) add(t[i].s, t[i].e, w, matchCase(w, plural), 'concordancia', 'O verbo concorda com o sujeito no plural.');
+      if (pluralSubjectAt(t, text, i)) {
+        add(t[i].s, t[i].e, w, matchCase(w, plural), 'concordancia', 'O verbo concorda com o sujeito no plural.');
+        pluralVerbs.push(i);
+      } else if (AGENTIVE_SINGULAR.has(lw) && sharesPluralSubject(t, text, i, pluralVerbs)) {
+        add(t[i].s, t[i].e, w, matchCase(w, plural), 'concordancia', 'O verbo ligado por "e" tem o mesmo sujeito plural do verbo anterior.');
+        pluralVerbs.push(i);
+      }
+    } else if (VERB_PLURAL_FORMS.has(k) && pluralSubjectAt(t, text, i)) {
+      pluralVerbs.push(i);
     }
     if (lw === 'nós' && next && /ou$/.test(next.w) && next.w.length > 4) {
       add(next.s, next.e, next.w, next.w.replace(/ou$/, 'amos'), 'concordancia', 'Com "nós", o verbo fica na primeira pessoa do plural.');
+    }
+    // "Nós vai": com "nós" abrindo a oração, o verbo vai para a primeira pessoa do plural. Depois de preposição ("para nós vai ser...") nós não é sujeito.
+    if (lw === 'nós' && next && gapNext === ' ' && NOS_VERBS[next.w.toLowerCase()] && startsClause(t, text, i)) {
+      add(next.s, next.e, next.w, matchCase(next.w, NOS_VERBS[next.w.toLowerCase()]), 'concordancia', 'Com "nós", o verbo fica na primeira pessoa do plural.');
+    }
+    // "Entre eu e você": depois de preposição o pronome é "mim". Só com "e" ou "ou" logo depois ("entre eu ir e ele ficar" está certo).
+    if (k === 'entre' && next && gapNext === ' ' && nk === 'eu' && t[i + 2] && /^(e|ou)$/.test(strip(t[i + 2].w))) {
+      add(next.s, next.e, next.w, matchCase(next.w, 'mim'), 'uso', 'Depois de "entre", o pronome é "mim": entre mim e você.');
+    }
+    // Gerundismo ("vou estar enviando"): é questão de estilo, não de gramática; a sugestão diz isso e só vale com um gerúndio regular.
+    if (/^(vou|vamos|vai|vao)$/.test(k) && next && nk === 'estar' && gapNext === ' ' && t[i + 2] && text.slice(next.e, t[i + 2].s) === ' ') {
+      const g = t[i + 2].w;
+      const gk = strip(g);
+      if (/(ando|endo|indo)$/.test(gk) && !IRREGULAR_GERUNDS.has(gk) && g.length > 5) {
+        add(next.s, t[i + 2].e, `${next.w} ${g}`, g.replace(/ando$/, 'ar').replace(/endo$/, 'er').replace(/indo$/, 'ir'), 'estilo', 'Gerundismo: "vou enviar" é mais direto que "vou estar enviando". É uma preferência de estilo, não um erro.');
+      }
     }
     if (k === 'houveram') add(t[i].s, t[i].e, w, matchCase(w, 'houve'), 'concordancia', 'Haver no sentido de existir fica no singular.');
     if (k === 'fazem' && next && NUMERALS_PL.has(nk) && t[i + 2] && TIME_UNITS.test(strip(t[i + 2].w))) {

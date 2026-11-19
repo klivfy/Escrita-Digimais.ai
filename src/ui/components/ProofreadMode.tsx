@@ -15,13 +15,22 @@ interface Props {
   loadIndex?: () => Promise<FreqIndex>;
 }
 
-const RULE_LABEL = { acento: 'Acento', grafia: 'Grafia', concordancia: 'Concordância', crase: 'Crase', uso: 'Uso da palavra' } as const;
+const RULE_LABEL = { acento: 'Acento', grafia: 'Grafia', concordancia: 'Concordância', crase: 'Crase', uso: 'Uso da palavra', estilo: 'Estilo' } as const;
 const CONTEXT_CHARS = 24;
 
-function contextOf(text: string, s: ProofreadSuggestion): string {
+/** Trecho do texto em volta da palavra, com a palavra destacada para não obrigar a procurá-la. */
+function Context({ text, s }: { text: string; s: ProofreadSuggestion }) {
   const before = text.slice(Math.max(0, s.start - CONTEXT_CHARS), s.start).replace(/\s+/g, ' ');
   const after = text.slice(s.end, s.end + CONTEXT_CHARS).replace(/\s+/g, ' ');
-  return `${s.start > CONTEXT_CHARS ? '…' : ''}${before}${s.original}${after}${s.end + CONTEXT_CHARS < text.length ? '…' : ''}`;
+  return (
+    <code className="ctx">
+      {s.start > CONTEXT_CHARS ? '…' : ''}
+      {before}
+      <mark>{s.original}</mark>
+      {after}
+      {s.end + CONTEXT_CHARS < text.length ? '…' : ''}
+    </code>
+  );
 }
 
 const plural = (n: number, one: string, many: string): string => `${n} ${n === 1 ? one : many}`;
@@ -194,6 +203,11 @@ export function ProofreadMode({ text, onChange, onClear, onCopy, onAnnounce, onE
           ) : (
             <>
               <p className="subtle">Cada troca só acontece quando você aceita; confira o motivo antes. Palavras ignoradas valem só até a próxima verificação.</p>
+              {spelling.length > 1 && (
+                <div className="row">
+                  <button type="button" onClick={acceptSpelling}>Aceitar acentos e grafia ({spelling.length})</button>
+                </div>
+              )}
               <ol className="list" ref={listRef}>
                 {current.map((s, i) => (
                   <li key={`${s.start}-${s.original}`}>
@@ -202,8 +216,8 @@ export function ProofreadMode({ text, onChange, onClear, onCopy, onAnnounce, onE
                       {' '}
                       <span className="tag info">{RULE_LABEL[s.rule]}</span>
                     </p>
-                    <p className="subtle">{s.reason}</p>
-                    <p className="subtle"><code className="ctx">{contextOf(text, s)}</code></p>
+                    <p className="reason">{s.reason}</p>
+                    <p className="subtle"><Context text={text} s={s} /></p>
                     <div className="row">
                       <button type="button" onClick={() => accept(i)} aria-label={`Aceitar: trocar ${s.original} por ${s.replacement}`}>Aceitar</button>
                       <button type="button" onClick={() => ignore(i)} aria-label={`Ignorar a palavra ${s.original}`}>Ignorar</button>
@@ -211,11 +225,6 @@ export function ProofreadMode({ text, onChange, onClear, onCopy, onAnnounce, onE
                   </li>
                 ))}
               </ol>
-              {spelling.length > 1 && (
-                <div className="row">
-                  <button type="button" onClick={acceptSpelling}>Aceitar acentos e grafia ({spelling.length})</button>
-                </div>
-              )}
             </>
           )}
         </div>

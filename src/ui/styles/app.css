@@ -30,6 +30,8 @@ h1 { font-size: 1.375rem; line-height: 1.27; font-weight: 400; letter-spacing: 0
 h2 { font-size: 1rem; line-height: 1.5; font-weight: 500; letter-spacing: 0.009em; margin: 1.25rem 0 0.5rem; } /* title-medium 16/24 */
 h3 { font-size: 0.875rem; line-height: 1.43; font-weight: 500; letter-spacing: 0.007em; margin: 0.75rem 0 0.25rem; } /* title-small 14/20 */
 body.popup h1 { font-size: 1rem; line-height: 1.5; font-weight: 500; letter-spacing: 0.009em; }
+/* O motivo de uma sugestão é o que decide aceitar ou não: corpo de 14 px na cor do texto, não metadado de 12 px. */
+.reason { margin: 0.25rem 0; }
 .subtle { color: var(--md-sys-color-on-surface-variant); font-size: 0.75rem; line-height: 1.33; letter-spacing: 0.033em; margin: 0.25rem 0; } /* body-small 12/16 */
 .stack > * + * { margin-top: var(--space); }
 .row { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
@@ -126,7 +128,8 @@ button:disabled::after { display: none; }
 .tag.info { background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); }
 
 mark { background: var(--md-sys-color-warning-container); color: var(--md-sys-color-on-warning-container); padding: 0 0.125rem; border-radius: var(--md-sys-shape-corner-extra-small); }
-code.ctx { white-space: pre-wrap; word-break: break-word; font-size: 0.75rem; font-family: var(--md-sys-typescale-mono); }
+/* Trecho do texto do analista: fonte do corpo, não monoespaçada (não é código). */
+code.ctx { white-space: pre-wrap; word-break: break-word; font-size: 0.75rem; font-family: var(--md-sys-typescale-font); }
 /* O resumo é o alvo de toque: altura de pelo menos 36 px (WCAG 2.5.8 pede 24 px). */
 details { border: 1px solid var(--md-sys-color-outline-variant); border-radius: var(--md-sys-shape-corner-medium); padding: 0 0.75rem; }
 summary { cursor: pointer; font-weight: 500; letter-spacing: 0.007em; padding: 0.5rem 0; }
@@ -155,10 +158,18 @@ summary { cursor: pointer; font-weight: 500; letter-spacing: 0.007em; padding: 0
 }
 body.popup { width: 17.5rem; padding: 1rem; }
 
-/* Movimento reduzido: sem transições (a interface não tem deslocamentos nem molas). */
+/*
+ * Movimento reduzido: a interface não tem deslocamento nem animação de quadros. Corta-se o que se move
+ * (animation e transform) e mantém-se o fade de opacidade e cor, que ajuda a entender o estado (ex.: foco, botão
+ * pressionado). Um corte global de duração apagava esse feedback sem nenhum ganho de conforto.
+ */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { transition-duration: 0.01ms !important; animation: none !important; }
+  *, *::before, *::after { animation: none !important; }
+  *, *::before, *::after { transition-property: opacity, background-color, border-color, color !important; }
 }
+
+/* Seleção de texto no tema: par on-primary-container / primary-container, já conferido em contrast.test.ts. */
+::selection { background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); }
 
 /* Cores forçadas (Windows Alto Contraste): bordas e camadas de estado ficam por conta do sistema. */
 @media (forced-colors: active) {

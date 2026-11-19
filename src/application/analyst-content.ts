@@ -2,7 +2,10 @@ import { applyOverlay } from '../config/profile-overlay';
 import type { ProfileOverlay } from '../config/profile-overlay';
 import type { LibraryModel, ModelLibrary } from '../config/library-schema';
 import { applyTaughtStyle } from '../config/taught-style';
-import type { Ledger } from '../config/learning-ledger';
+import type { BlockRole, Ledger } from '../config/learning-ledger';
+import { judgeBlock } from '../domain/block-vetting';
+import { COMMUNICATION_TYPES } from '../domain/types';
+import type { CommunicationType } from '../domain/types';
 import { applyTrainedStyle } from '../config/trained-style';
 import type { TrainedStyle } from '../config/trained-style';
 import { toEngineText, vetLine } from '../domain/style-train';
@@ -61,7 +64,22 @@ export interface AnalystContent {
   trainedOut: string[];
   /** Registro do que foi aprendido (null se nunca houve). */
   ledger: Ledger | null;
+  /** Trechos do registro que não estão em uso, com o motivo. Continuam guardados; o analista decide esquecer. */
+  blocksNotInUse: BlockNotInUse[];
 }
+
+/** Trecho aprendido guardado que não está em uso: fora das regras ("out") ou ainda sem repetição suficiente ("waiting"). */
+export interface BlockNotInUse {
+  type: CommunicationType;
+  role: BlockRole;
+  text: string;
+  count: number;
+  state: 'out' | 'waiting';
+  reasons: string[];
+}
+
+/** Chave estável de um trecho: tipo, papel e texto. */
+export const blockKey = (type: CommunicationType, role: BlockRole, text: string): string => `${type}|${role}|${text}`;
 
 export interface StoredContent {
   library: LibraryLoad;
@@ -73,6 +91,7 @@ export interface StoredContent {
 
 export const EMPTY_CONTENT: AnalystContent = {
   library: null, libraryNote: null, taught: [], taughtOut: [], style: null, styleOff: null, trained: null, trainedOut: [], ledger: null,
+  blocksNotInUse: [],
 };
 
 const sentence = (text: string): string => (/[.!?]$/u.test(text.trim()) ? text.trim() : `${text.trim()}.`);
@@ -138,7 +157,16 @@ export function triageContent(stored: StoredContent, sources: Omit<ProfileSource
     else taughtOut.push({ model, reasons: reasons.slice(0, 2).map(sentence) });
   }
 
-  return { library, libraryNote, taught, taughtOut, style: stored.style, styleOff, trained, trainedOut, ledger: stored.ledger ?? null };
+  // 5. Trechos aprendidos: com fato de chamado ou fora das regras ficam fora de uso; com uma ocorrência só, aguardam repetição.
+  const blocksNotInUse: BlockNotInUse[] = [];
+  for (const type of COMMUNICATION_TYPES) {
+    for (const block of stored.ledger?.byType[type]?.blocks ?? []) {
+      const verdict = judgeBlock(block, type, effective);
+      if (verdict.state !== 'ok') blocksNotInUse.push({ type, role: block.role, text: block.text, count: block.count, state: verdict.state, reasons: verdict.reasons });
+    }
+  }
+
+  return { library, libraryNote, taught, taughtOut, style: stored.style, styleOff, trained, trainedOut, ledger: stored.ledger ?? null, blocksNotInUse };
 }
 
 /** Lê o que está guardado e aplica a triagem. */

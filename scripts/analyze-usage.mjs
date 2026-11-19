@@ -5,7 +5,7 @@
 import { readFileSync } from 'node:fs';
 
 // Mesma lista fechada de src/application/usage-counters.ts (o teste analyze-usage.test.ts confere que nenhuma chave falta).
-const RULES = 'acento|grafia|concordancia|crase|uso';
+const RULES = 'acento|grafia|concordancia|crase|uso|estilo';
 const KEY = new RegExp(
   '^(?:(?:generate|blocked|alert)\\.[a-z][a-z0-9_]{1,47}|time_to_copy\\.(?:lt1m|1to3m|3to10m|gt10m)|copy|variant|review_again|draft_split|draft_apply'
   + '|recipient\\.(?:user|manager|technical_team|vendor|other)|proofread\\.run|proofread\\.(?:' + RULES + ')\\.(?:acc|ign)'

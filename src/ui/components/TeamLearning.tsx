@@ -1,6 +1,8 @@
 import { useId, useState } from 'react';
 import { LearningCryptoError, MIN_PASSWORD_LENGTH } from '../../application/learning-crypto';
 import type { ImportPreview, ImportReport } from '../../application/learning-service';
+import { blockKey } from '../../application/analyst-content';
+import type { BlockNotInUse } from '../../application/analyst-content';
 import { BLOCK_ROLES, ledgerTexts } from '../../config/learning-ledger';
 import type { BlockRole, Ledger } from '../../config/learning-ledger';
 import type { TrainedStyle } from '../../config/trained-style';
@@ -16,6 +18,8 @@ interface Props {
   trained: TrainedStyle | null;
   /** Itens do estilo treinado que deixaram de passar nas regras em vigor (continuam guardados). */
   trainedOut: readonly string[];
+  /** Trechos guardados que não estão em uso (fora das regras ou ainda sem repetição), com o motivo. */
+  blocksNotInUse: readonly BlockNotInUse[];
   /** Perfil assinado exigido pela organização: o estilo treinado não se aplica, mas o aprendizado continua acumulando. */
   styleLocked: boolean;
   onIngest: (entries: IngestEntry[]) => Promise<IngestReport>;
@@ -40,7 +44,9 @@ const errorText = (e: unknown): string => (e instanceof LearningCryptoError ? e.
  * virou estilo, e pode exportar e importar cifrado com senha. Nada sai do navegador sem o arquivo que ele baixa.
  */
 export function TeamLearning(props: Props) {
-  const { profile, ledger, trained, trainedOut, styleLocked, onAnnounce } = props;
+  const { profile, ledger, trained, trainedOut, blocksNotInUse, styleLocked, onAnnounce } = props;
+  const blockOut = blocksNotInUse.filter((b) => b.state === 'out');
+  const blockStatus = new Map(blocksNotInUse.map((b) => [blockKey(b.type, b.role, b.text), b]));
   const id = useId();
   const total = ledger ? ledgerTexts(ledger) : 0;
 
@@ -271,6 +277,20 @@ export function TeamLearning(props: Props) {
         </div>
       )}
 
+      {blockOut.length > 0 && (
+        <div role="status" className="panel warn">
+          <p>Trechos fora de uso por trazerem dado de chamado ou não passarem nas regras atuais (continuam guardados até você esquecer):</p>
+          <ul className="list" aria-label="Trechos fora de uso">
+            {blockOut.map((b) => (
+              <li key={blockKey(b.type, b.role, b.text)}>
+                <p><strong>{ROLE_LABEL[b.role]}</strong> em {profile.categoryNames[b.type]}: {b.text} {b.reasons.join(' ')}</p>
+                <button type="button" onClick={() => void props.onForget(b.type, b.role, b.text)} aria-label={`Esquecer ${ROLE_LABEL[b.role].toLowerCase()} fora de uso: ${b.text}`}>Esquecer</button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {ledger && total > 0 && (
         <details>
           <summary>Ver o que foi guardado</summary>
@@ -283,7 +303,11 @@ export function TeamLearning(props: Props) {
                 <ul className="list" aria-label={`Guardado em ${profile.categoryNames[type]}`}>
                   {BLOCK_ROLES.flatMap((role) => bucket.blocks.filter((b) => b.role === role)).map((b) => (
                     <li key={`${b.role}|${b.text}`}>
-                      <p><strong>{ROLE_LABEL[b.role]}</strong> ({b.count}x): {b.text}</p>
+                      <p>
+                        <strong>{ROLE_LABEL[b.role]}</strong> ({b.count}x): {b.text}
+                        {blockStatus.get(blockKey(type, b.role, b.text))?.state === 'waiting' ? ' (aguardando repetição para ser usado)' : ''}
+                        {blockStatus.get(blockKey(type, b.role, b.text))?.state === 'out' ? ' (fora de uso)' : ''}
+                      </p>
                       <button type="button" onClick={() => void props.onForget(type, b.role, b.text)} aria-label={`Esquecer ${ROLE_LABEL[b.role].toLowerCase()}: ${b.text}`}>Esquecer</button>
                     </li>
                   ))}

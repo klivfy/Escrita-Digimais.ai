@@ -8,6 +8,7 @@ import type { Block, BlockRole, Ledger, TypeLedger } from '../config/learning-le
 import { CATEGORY_LABELS, scanText } from './sensitive';
 import { greetingBase } from './style-learn';
 import { prepareTaught } from './teach';
+import { redactionProblems } from './block-vetting';
 import { vetModel } from './library-vetting';
 import type { CommunicationType, LanguageProfile } from './types';
 
@@ -24,7 +25,12 @@ export interface Decomposed {
 const LABEL_LINE = /^(\p{Lu}[^:\n]{2,40}):(?:\s|$)/u;
 const LIST_LINE = /^(?:\d+[.)]|[-*•])\s/u;
 const REQUEST_CUE = /\b(?:envie|enviar|enviem|informe|informar|informem|precisamos|preciso|pedimos|solicitamos|poderia|poderiam|favor|confirme|confirmar|aguardamos|gostar[ií]amos)\b|\?/iu;
-const COURTESY_CUE = /(?:agradec|obrigad|dispos|aguard|atenciosamente|cordialmente|abra[çc]o|qualquer d[uú]vida|ficamos|contamos|permanecemos|bom trabalho|boa semana)/iu;
+// Palavra inteira: "Identificamos" e "Verificamos" contêm "ficamos", e "dispositivo" contém "dispos".
+const NOT_LETTER_BEFORE = '(?<![\\p{L}\\p{N}_])';
+const COURTESY_CUE = new RegExp(
+  `${NOT_LETTER_BEFORE}(?:agradec\\p{L}*|obrigad\\p{L}*|(?:à|a)\\s+disposi[çc][ãa]o|disposi[çc][ãa]o|aguardo|atenciosamente|cordialmente|abra[çc]os?|qualquer\\s+d[uú]vida|ficamos\\s+(?:à|a|no)|contamos\\s+com|permanecemos\\s+(?:à|a|no)|bom\\s+trabalho|boa\\s+semana)(?![\\p{L}\\p{N}_])`,
+  'iu',
+);
 const SENTENCE_SPLIT = /(?<=[.!?])\s+/u;
 
 const isSignatureLine = (line: string): boolean =>
@@ -81,16 +87,18 @@ export function decompose(raw: string): Decomposed {
     }
     // Parágrafo com rótulo ou lista guarda conteúdo do chamado, não redação reaproveitável.
     if (labelled || paragraph.some((l) => LIST_LINE.test(l))) continue;
-    const joined = paragraph.join(' ');
+    const sentences = paragraph.join(' ').split(SENTENCE_SPLIT);
+    let rest = sentences;
     if (!openingTaken) {
       openingTaken = true;
-      const [head, ...rest] = joined.split(SENTENCE_SPLIT);
+      const [head, ...others] = sentences;
+      rest = others;
       if (head && head.length >= MIN_BLOCK_TEXT && head.length <= MAX_BLOCK_TEXT && !isCourtesy(head)) out.blocks.push({ role: 'opening', text: head });
-      const tail = rest.join(' ');
-      if (tail && tail.length <= MAX_BLOCK_TEXT && REQUEST_CUE.test(tail)) out.blocks.push({ role: 'request', text: tail });
-      continue;
     }
-    if (joined.length <= MAX_BLOCK_TEXT && REQUEST_CUE.test(joined)) out.blocks.push({ role: 'request', text: joined });
+    // Pedido: só a frase que pede alguma coisa. O resto do parágrafo é conteúdo do chamado e não é guardado.
+    for (const s of rest) {
+      if (s.length >= MIN_BLOCK_TEXT && s.length <= MAX_BLOCK_TEXT && REQUEST_CUE.test(s) && !isCourtesy(s)) out.blocks.push({ role: 'request', text: s });
+    }
   }
   if (closing) out.blocks.push({ role: 'closing', text: closing });
   return out;
@@ -154,7 +162,10 @@ export function ingestTexts(ledger: Ledger, entries: readonly IngestEntry[], pro
       const key = `${b.role}|${b.text}`;
       if (seen.has(key)) continue;
       seen.add(key);
-      const reasons = validBlockText(b.text) ? vetModel({ id: 'bloco', title: 'Bloco', types: [type], recipients: [], text: b.text, keywords: [], reviewedAt: '' }, profile).reasons : ['formato'];
+      // Fato de chamado (nome, sistema, número, dia) não é redação: nem chega a ser guardado.
+      const reasons = validBlockText(b.text)
+        ? [...redactionProblems(b.text, profile), ...vetModel({ id: 'bloco', title: 'Bloco', types: [type], recipients: [], text: b.text, keywords: [], reviewedAt: '' }, profile).reasons]
+        : ['formato'];
       if (reasons.length > 0) {
         report.discarded += 1;
         continue;

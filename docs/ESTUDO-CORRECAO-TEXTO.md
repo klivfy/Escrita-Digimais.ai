@@ -187,3 +187,88 @@ O conjunto continua sendo de autor único e escrito pelo mesmo autor das regras.
 - O protótipo, antes dos ajustes, no gold-3: 26 de 32, 4 textos piorados e 5 sugestões indevidas em frases corretas (3 de crase em "a tarde", 1 de porquê, mais as trocas de singular que o determinante evita).
 - **Leitura honesta:** o gold-novo foi usado para decidir os ajustes, então os 16 de 20 não são mais validação. O gold-3 foi escrito antes do porte e rodado uma vez, mas quem o escreveu conhecia as regras: ele mede a regressão e as armadilhas conhecidas, não a cobertura em texto real. A revocação em texto livre será menor. Os erros que escapam são, em geral, substantivos fora do léxico (`pendrive`, `filial`), verbos fora da lista e "mais o" no lugar de "mas o".
 - Limite de projeto mantido: nenhuma sugestão é aplicada sem ação, e o teste exige que um texto com erro nunca fique pior do que o original.
+
+## 11. Correção do sujeito composto (falso positivo)
+
+Achado numa sonda com frases novas (fictícias, escritas depois das regras): "Conseguimos reiniciar o serviço e o acesso voltou ao normal." recebia a sugestão `voltou` para `voltaram`. A regra de sujeito composto (substantivo, "e", determinante, substantivo, verbo) tratava "o serviço e o acesso" como sujeito, mas depois de um verbo o primeiro termo é objeto e o sujeito é só "o acesso".
+
+- `domain/agreement.ts`: o sujeito composto só vale quando o primeiro termo abre a oração (início do texto, pontuação, conjunção ou advérbio de tempo antes: `startsClause`, `CLAUSE_OPENERS`). Depois de um verbo, nenhuma sugestão.
+- Custo assumido: composto depois de verbo ("Verificamos que o relatório e o arquivo voltou" continua corrigido por causa do "que"; "Reiniciamos o relatório e o arquivo voltou" não é mais corrigido). Perde-se revocação para ganhar precisão: um falso positivo faz o analista desligar o recurso, uma lacuna não.
+- Testes: `src/tests/agreement.test.ts` ("sujeito composto só vale quando o primeiro termo abre a oração"), positivo e negativo. Os conjuntos `gold*.json` seguem com 0 texto piorado e 0 frase correta com sugestão.
+- Plural de termo de TI em inglês (`pluralOf`): palavra terminada em `ch` ganha `es` ("os switch" vira "os switches"; antes saía "switchs", que troca um erro por outro). O léxico só tem `switch` nesse caso; novo termo com `ch` entra com teste.
+- Dois verbos ligados por "e" (`sharesPluralSubject`): "Os técnicos verificou o cabo e concluiu o teste" corrigia só o primeiro. Agora o verbo logo depois de "e" herda o sujeito plural do verbo anterior (que pode já estar certo). Só vale sem pontuação nem palavra que troque o sujeito entre os dois (`que`, `se`, `como`, `quando`...), com o "e" seguido direto do verbo, e só para verbos de ação de pessoas (`AGENTIVE_SINGULAR`): "Os técnicos reiniciaram o servidor e voltou ao normal" está certo, porque quem voltou foi o servidor, e "voltou", "falhou" e "travou" ficam de fora.
+- Medida (frases novas, fictícias, escritas depois da regra): 5 de 5 erros corrigidos exatamente e 0 de 16 frases corretas com sugestão. A mesma ressalva dos outros conjuntos vale: autor único, e quem escreveu conhecia a regra.
+- Três lacunas de cobertura, cada uma estreita e com teste negativo (`agreement.ts`):
+  - "nós vai" vira "nós vamos" (`NOS_VERBS`, lista fechada de 9 verbos): só quando "nós" abre a oração. Depois de preposição não é sujeito ("para nós vai ser complicado", "isso para nós é importante" ficam sem sugestão).
+  - "entre eu e você" vira "entre mim e você": só quando "e" ou "ou" vem logo depois do "eu" ("entre eu ir e ele ficar" está certo).
+  - Gerundismo "vou estar enviando" vira "vou enviar": é questão de estilo, e a sugestão diz isso no motivo. Só com `vou`, `vamos`, `vai` ou `vão` e gerúndio regular; "vou estar de férias" e "vou estar sendo avaliado" ficam de fora. Quem usa o progressivo de propósito ("amanhã às 10h vou estar trabalhando no servidor") recebe uma sugestão que pode ignorar.
+- Medida (frases novas, fictícias): 5 de 5 erros corrigidos exatamente e 0 de 16 frases corretas com sugestão. Mesma ressalva: autor único, conhecia as regras.
+- Ainda abertos (plano em fases): um conjunto escrito por outra pessoa (o `gold-4` não cumpre isso, ver a seção 12) e a decisão sobre o léxico morfológico.
+
+## 12. Conjunto de regressão 4 (`scripts/estudo-correcao/gold-4.json`)
+
+Reúne as frases das sondas desta rodada: 52 com erro e 57 corretas, todas fictícias. Categorias: ortografia, nominal, verbal, crase, uso, estilo (gerundismo) e `fora` (limites já documentados: léxico, lista de verbos, frequência). O teste está em `src/tests/agreement.test.ts`.
+
+| Medida | Resultado |
+|---|---|
+| Frases corretas com sugestão | 0 de 57 |
+| Erros cobertos corrigidos exatamente | 45 de 47 (96%) |
+| Erros cobertos com resultado diferente do esperado ou do original | 0 |
+| Fora do desenho (5): sem sugestão / parcial | 4 / 1 |
+
+- Os 2 erros cobertos que escapam: "seguimos a espera" (o verbo `seguir` não está na lista da regra de crase) e ", mais o erro voltou" (o artigo ficou de fora de propósito). Estão no teste como limites conhecidos: se um for corrigido, o teste quebra e deve ser atualizado.
+- O caso parcial é "os switch queimou": corrige o plural e deixa o verbo, porque `queimou` não está na lista.
+- **Leitura honesta:** o critério da seção 7 pedia um conjunto escrito por outra pessoa, congelado antes do ajuste, com 80% de acerto. O `gold-4` não cumpre isso: o autor é o mesmo das regras e as conhecia, e parte das frases foi escrita para exercitar regra que eu acabara de criar. Os 96% medem regressão e as armadilhas conhecidas, não cobertura em texto real, e a revocação em texto livre será menor. O critério da seção 7 segue aberto até haver um conjunto independente.
+- Para fechar o critério: 30 a 40 frases (com e sem erro) escritas por quem não conhece as regras, guardadas fora do repositório se vierem de chamados reais, e rodadas uma vez, sem ajuste prévio.
+
+## 13. Prova de conceito do léxico morfológico (licença e tamanho)
+
+Pergunta: dá para trocar as listas fechadas da camada 2 (121 substantivos, 45 verbos) por um léxico morfológico do português e ganhar concordância geral? Esta seção só mede licença e tamanho. Nenhum léxico foi integrado às regras e nenhum ganho de acerto foi medido.
+
+| Candidato | Licença | Tamanho medido | Serve? |
+|---|---|---|---|
+| UniMorph `por` | CC BY-SA 3.0 (README do repositório; fonte declarada: Wikipedia) | 303.996 formas, 4.002 lemas, 11 MB | **Não.** 100% das formas são verbos; não traz gênero nem número de substantivo ou adjetivo |
+| MorphoBr (`LR-POR/MorphoBr`) | Apache-2.0 no repositório; **dados herdados sem licença confirmada** (ver abaixo) | Substantivos 538.081 linhas (19 MB), adjetivos 543.690 (19 MB), verbos 2.372.752 (88 MB), advérbios 21.182; checkout com 553 MB | **Sim, com poda.** Formato `forma<TAB>lema+N+M+SG` |
+| Apertium `apertium-por` | GPL-3.0 | repositório com 13,2 MB (o dicionário não foi medido) | Descartado por enquanto: copyleft forte e sem medida de tamanho |
+| LanguageTool (regras `pt`) | LGPL 2.1 ou posterior | não medido | Regras em XML para Java; portar um subconjunto é possível, mas pouco mantido para pt-BR |
+
+### MorphoBr podado pela lista de frequência que o projeto já embarca
+
+- Das 118.326 palavras de `freq-pt.json`, 34.583 aparecem como substantivo e 26.310 como adjetivo no MorphoBr (cerca de 49 mil formas distintas no total).
+- Com `zipf >= 3,0`: 18.785 formas, cerca de 208 KB em texto simples. Com `zipf >= 3,5`: 10.373 formas, cerca de 111 KB. Todas as 49 mil formas: cerca de 573 KB.
+- Só 164 das 49.110 formas (0,3%) têm mais de uma combinação de gênero e número, então a ambiguidade de gênero e número da própria forma é baixa.
+- 116 das 121 palavras do léxico atual do projeto existem no MorphoBr. Os termos de TI do domínio faltam: de 20 conferidos, ausentes `pendrive`, `switch`, `token`, `print`, `toner`, `driver`; presentes `backup`, `log`, `e-mail`, `notebook`, `roteador`, `firewall`, `impressora`, `servidor`, `chamado`, `senha`, `antivírus`, `planilha`. Um léxico próprio de termos de TI continuaria sendo necessário.
+
+### Pendências e riscos que a prova de conceito não resolve
+
+1. **Licença dos dados de origem sem confirmação.** O README do MorphoBr diz que os dados derivam do Unitex-PB (NILC) e dos dados do FreeLing para o português, que por sua vez derivam do Label-Lex. O projeto Unitex/GramLab distribui seus recursos linguísticos sob a LGPL-LR, mas não confirmei que isso vale para os arquivos do NILC, nem a licença do Label-Lex ou dos dados do FreeLing. O Apache-2.0 do repositório não prova nada sobre esses dados. Confirmar antes de embarcar, e registrar em `THIRD-PARTY-NOTICES.md`.
+2. **A lista de frequência já é CC BY-SA 4.0** (`freq-pt.json`, aviso em `licenses/lista-frequencia-AVISO.txt`). Um léxico derivado dela herdaria a mesma atribuição; verificar a compatibilidade com a licença dos dados do MorphoBr.
+3. **O léxico resolve o gênero e o número da palavra, não a estrutura da frase.** Os defeitos reais achados nesta rodada (sujeito composto, sujeito de verbo depois de "e", objeto contra sujeito) são sintáticos. Um léxico maior amplia o alcance dessas regras e, com isso, amplia também o risco de falso positivo delas.
+4. **Sem classe gramatical no contexto, uma forma pode ser substantivo e verbo** ("conserto", "volta"). Sem um desambiguador, o léxico poderia sugerir concordância onde não há substantivo.
+5. **Ganho não medido.** Não há conjunto independente (seção 12), então hoje não dá para provar se um léxico maior melhora o acerto sem aumentar o falso positivo.
+
+### Recomendação
+
+Não adotar agora. Para decidir com dado: (1) confirmar as licenças de Unitex-PB, Label-Lex e FreeLing; (2) escrever um script que gere o léxico podado (`zipf >= 3,0`, cerca de 208 KB) com a origem de cada linha; (3) rodar `gold-4` e um conjunto independente com e sem o léxico; (4) adotar só se o acerto exato subir sem nenhuma frase correta com sugestão. Esforço estimado: 3 a 5 dias, dependendo da resposta sobre licença.
+
+## 14. Auditoria da tela "Corrigir texto" e proteção de endereços (fase 1)
+
+Auditoria no Chromium real, com a extensão carregada e um texto de pior caso (320 px e 420 px, temas claro e escuro, zoom de 200%): axe sem violações, contraste de 6,3:1 a 16,6:1, alvos de 40 px, sem rolagem horizontal, foco coerente depois de aceitar pelo teclado. O achado crítico foi de conteúdo, não de visual.
+
+- **P1 corrigido.** Em `aleksandra.wisniewska-kowalczyk@exemplo.com.br` o motor sugeria `aleksandra` por `alessandra`: `ignorable` só protegia a palavra imediatamente antes do `@`. Aceitar a sugestão corrompia o endereço sem que quem aceita percebesse.
+- `protectedSpans` e `inProtectedSpan` (`domain/proofread.ts`) detectam e-mail, URL (`http(s)://`, `www.`) e domínio sem protocolo (rótulos em minúsculas terminando em `com`, `net`, `org`, `gov`, `edu`, `io`, `app`, `dev`, `info` ou `br`). Palavra dentro deles nunca é sugerida. `ignorable` usa essa proteção, e por isso `ai-guard.ts` também passa a rejeitar reescrita de modelo dentro de um endereço.
+- Custo assumido: um erro de digitação dentro de um domínio deixa de ser sinalizado. Preferi perder essa cobertura a arriscar a corrupção de um dado de chamado.
+- Limites: domínio com sufixo fora da lista acima (por exemplo `.pt`, `.de`) e nome de arquivo com extensão (`relatorio.docx`) não são protegidos. Domínio com letra maiúscula também não.
+- Medida no render depois da correção: o texto de pior caso passou de 9 para 8 sugestões, a do e-mail saiu, e "aceitar acentos e grafia" deixou o e-mail, o domínio e a URL intactos.
+- **Fase 2 (P2, tela):**
+  - O motivo da sugestão passou de `.subtle` (12 px, cinza) para `.reason` (14 px, cor do texto): é ele que decide aceitar ou não.
+  - A palavra aparece destacada (`mark`) dentro do trecho de contexto, em vez de obrigar a procurá-la.
+  - "Aceitar acentos e grafia (N)" subiu para logo abaixo da explicação da lista, antes das sugestões.
+  - O gerundismo ganhou a regra `estilo`, com etiqueta "Estilo". Ela nunca entra em "aceitar todas" (só acento e grafia entram) e gera as chaves de contador `proofread.estilo.acc|ign`.
+  - O script do piloto (`scripts/analyze-usage.mjs`) tinha a própria lista de regras e descartaria as contagens de "estilo" sem avisar. O teste `analyze-usage.test.ts` pegou o acoplamento, e a lista foi atualizada.
+  - Verificado no Chromium real, a 320 px e 420 px, nos dois temas: axe sem violações, sem rolagem horizontal, foco coerente depois de aceitar pelo teclado. A tela ficou 90 px mais curta (a ação em lote não precisa mais de uma linha no fim) e o motivo deixou de ficar menor que o corpo.
+- **Fase 3 (P3, polimento):**
+  - Contexto do texto do analista na fonte do corpo, não monoespaçada (não é código).
+  - Seleção de texto com o par `on-primary-container` / `primary-container`, já conferido em `contrast.test.ts`.
+  - O corte global de movimento (`0.01ms !important`) apagava o fade de opacidade e cor sem ganho de conforto, porque a interface não se desloca. Agora `prefers-reduced-motion` só remove `animation` e restringe as transições a opacidade e cor. Medido no Chromium: `transition-property` = `opacity, background-color, border-color, color`, `animation` = `none`. A camada de estado do botão (`::after`) não foi medida separadamente.
+  - Achado de processo: a primeira medida rodou sobre o `dist` antigo. A regra estava certa no código, mas o pacote não tinha sido reconstruído. Medidas de render precisam de `npm run build` antes.

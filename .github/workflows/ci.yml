@@ -67,7 +67,9 @@ jobs:
 
   e2e:
     name: Extensão empacotada em Chromium real
-    runs-on: ubuntu-latest
+    # Fixo em 24.04: o Playwright 1.56.1 (instalado abaixo, com --with-deps) não suporta o Ubuntu 26.04 do ubuntu-latest.
+    # Ao atualizar o Playwright, confira a lista de sistemas suportados antes de voltar para ubuntu-latest.
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - name: Checkout
@@ -96,9 +98,12 @@ jobs:
           node scripts/verify-dist.mjs "$RUNNER_TEMP/ext" --com-chave
 
       - name: Playwright (fora do lockfile, só para este job)
+        # Só o navegador, sem --with-deps: o apt baixava dezenas de pacotes (fontes, mesa) de um espelho lento e o job estourava
+        # o tempo. O ubuntu-24.04 do GitHub já traz as bibliotecas do Chrome; se faltar alguma, a etapa falha com o nome dela.
+        timeout-minutes: 8
         run: |
           npm install --no-save --no-audit --no-fund playwright@1.56.1
-          npx playwright install --with-deps chromium
+          npx playwright install chromium
 
       - name: Demonstração em Chromium com a extensão carregada
         run: node scripts/demo-capture.mjs "$RUNNER_TEMP/ext" "$RUNNER_TEMP/demo"

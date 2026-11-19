@@ -8,6 +8,7 @@ import { ledgerTexts } from '../config/learning-ledger';
 import type { Ledger } from '../config/learning-ledger';
 import { sanitizeTrainedStyle } from '../config/trained-style';
 import type { TrainedStyle } from '../config/trained-style';
+import { redactionProblems } from './block-vetting';
 import { CATEGORY_LABELS, scanText } from './sensitive';
 import { COMMUNICATION_TYPES } from './types';
 import type { CommunicationType, LabelKey, LanguageProfile } from './types';
@@ -70,7 +71,8 @@ export function proposeTraining(ledger: Ledger, profile: LanguageProfile): Train
       continue;
     }
     for (const role of ['opening', 'closing'] as const) {
-      const candidates = t.blocks.filter((b) => b.role === role).sort((a, b) => b.count - a.count);
+      // Trecho com fato de chamado (nome, sistema, número, dia) nunca vira estilo, mesmo que se repita.
+      const candidates = t.blocks.filter((b) => b.role === role && redactionProblems(b.text, profile).length === 0).sort((a, b) => b.count - a.count);
       const best = candidates[0];
       if (!best) continue;
       if (best.count < 2 || best.count * 2 < t.texts) {

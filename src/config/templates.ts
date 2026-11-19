@@ -330,6 +330,19 @@ export const FIXED_PHRASES_TO_USER = {
   user_not_confirmed: 'Até o momento do encerramento, não há registro de confirmação da sua parte sobre a solução.',
 } as const;
 
+/**
+ * Aberturas do encerramento sem confirmação do usuário: não afirmam que a situação foi solucionada, pois o analista
+ * não registrou essa confirmação. Valem só quando o perfil não define abertura própria para o tipo.
+ */
+export const UNCONFIRMED_CLOSURE_OPENINGS: Record<'cordial' | 'formal' | 'direct', readonly string[]> = {
+  cordial: ['Estamos encerrando este chamado após as ações descritas abaixo.', 'Este chamado está sendo encerrado. Seguem os detalhes do que foi feito.'],
+  formal: ['Informamos o encerramento deste chamado, conforme o registro abaixo.', 'Registramos o encerramento deste chamado, conforme detalhado abaixo.'],
+  direct: ['Chamado encerrado.', 'Encerramos o chamado.'],
+};
+
+/** Rótulo de ações cujo sujeito é outra parte (usuário, fornecedor...). Fixo: não afirma que a equipe fez ou fará. */
+export const OTHER_PARTY_LABEL = 'Informado por outras partes';
+
 export interface ResolvedTemplates {
   openings: PhraseTable;
   typeClosings: PhraseTable;
