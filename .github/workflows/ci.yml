@@ -67,7 +67,9 @@ jobs:
 
   e2e:
     name: Extensão empacotada em Chromium real
-    runs-on: ubuntu-latest
+    # Fixo em 24.04: o Playwright 1.56.1 (instalado abaixo, com --with-deps) não suporta o Ubuntu 26.04 do ubuntu-latest.
+    # Ao atualizar o Playwright, confira a lista de sistemas suportados antes de voltar para ubuntu-latest.
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - name: Checkout
