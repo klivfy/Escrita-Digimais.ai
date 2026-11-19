@@ -219,3 +219,48 @@ describe('camada 2: medida contra os três conjuntos do estudo (camadas 1 e 2 ju
     expect(exact).toBeGreaterThanOrEqual(76);
   });
 });
+
+describe('camada 2: conjunto de regressão 4 (autor único, escrito com as regras à vista)', () => {
+  const g = gold('gold-4.json');
+  const covered = g.erros.filter((e) => e.cat !== 'fora');
+  const outside = g.erros.filter((e) => e.cat === 'fora');
+  const result = (entrada: string): string => applySuggestions(entrada, proofreadAll(entrada, index));
+  /** A sugestão caminha para o esperado: toda palavra da troca aparece no texto esperado. */
+  const towardExpected = (replacement: string, expected: string): boolean =>
+    replacement.toLowerCase().split(/\s+/).every((w) => expected.toLowerCase().includes(w));
+
+  it('0 sugestões nas frases corretas', () => {
+    expect(g.limpos.length).toBeGreaterThanOrEqual(50);
+    for (const t of g.limpos) expect(proofreadAll(t, index), t).toEqual([]);
+  });
+
+  it('nos erros cobertos o resultado é o esperado ou o texto original, nunca outra coisa', () => {
+    for (const e of covered) {
+      const out = result(e.entrada);
+      if (out !== e.esperado) expect([e.esperado, e.entrada], e.entrada).toContain(out);
+    }
+  });
+
+  it('acerto exato nos erros cobertos: pelo menos 80% e pelo menos 45 de 47 (medido)', () => {
+    const exact = covered.filter((e) => result(e.entrada) === e.esperado).length;
+    expect(covered.length).toBe(47);
+    expect(exact / covered.length).toBeGreaterThanOrEqual(0.8);
+    expect(exact).toBeGreaterThanOrEqual(45);
+  });
+
+  it('limites conhecidos dentro do desenho: continuam sem sugestão (se um for corrigido, atualize este teste e o estudo)', () => {
+    // "seguimos a espera": o verbo seguir não está na lista da regra de crase. "mais o": o artigo ficou de fora de propósito (", mais o anexo" pode ser soma).
+    for (const t of ['Seguimos a espera de retorno do fornecedor.', 'O teste funcionou, mais o erro voltou depois.']) expect(result(t), t).toBe(t);
+  });
+
+  it('fora do desenho: o que a camada toca caminha para o esperado; o resto fica como está', () => {
+    let untouched = 0;
+    for (const e of outside) {
+      const sug = proofreadAll(e.entrada, index);
+      for (const s of sug) expect(towardExpected(s.replacement, e.esperado), `${e.entrada}: ${s.original} -> ${s.replacement}`).toBe(true);
+      if (applySuggestions(e.entrada, sug) === e.entrada) untouched++;
+    }
+    // Medido: 4 de 5 sem sugestão (esta/está, bakcup, pendrive, "a maioria ... relataram") e 1 parcial ("os switch queimou": corrige só o plural).
+    expect(untouched).toBe(4);
+  });
+});

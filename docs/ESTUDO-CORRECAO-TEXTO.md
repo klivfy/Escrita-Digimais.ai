@@ -203,4 +203,20 @@ Achado numa sonda com frases novas (fictícias, escritas depois das regras): "Co
   - "entre eu e você" vira "entre mim e você": só quando "e" ou "ou" vem logo depois do "eu" ("entre eu ir e ele ficar" está certo).
   - Gerundismo "vou estar enviando" vira "vou enviar": é questão de estilo, e a sugestão diz isso no motivo. Só com `vou`, `vamos`, `vai` ou `vão` e gerúndio regular; "vou estar de férias" e "vou estar sendo avaliado" ficam de fora. Quem usa o progressivo de propósito ("amanhã às 10h vou estar trabalhando no servidor") recebe uma sugestão que pode ignorar.
 - Medida (frases novas, fictícias): 5 de 5 erros corrigidos exatamente e 0 de 16 frases corretas com sugestão. Mesma ressalva: autor único, conhecia as regras.
-- Ainda abertos (plano em fases): um conjunto de regressão novo (`gold-4`) escrito por outra pessoa e a decisão sobre o léxico morfológico.
+- Ainda abertos (plano em fases): um conjunto escrito por outra pessoa (o `gold-4` não cumpre isso, ver a seção 12) e a decisão sobre o léxico morfológico.
+
+## 12. Conjunto de regressão 4 (`scripts/estudo-correcao/gold-4.json`)
+
+Reúne as frases das sondas desta rodada: 52 com erro e 57 corretas, todas fictícias. Categorias: ortografia, nominal, verbal, crase, uso, estilo (gerundismo) e `fora` (limites já documentados: léxico, lista de verbos, frequência). O teste está em `src/tests/agreement.test.ts`.
+
+| Medida | Resultado |
+|---|---|
+| Frases corretas com sugestão | 0 de 57 |
+| Erros cobertos corrigidos exatamente | 45 de 47 (96%) |
+| Erros cobertos com resultado diferente do esperado ou do original | 0 |
+| Fora do desenho (5): sem sugestão / parcial | 4 / 1 |
+
+- Os 2 erros cobertos que escapam: "seguimos a espera" (o verbo `seguir` não está na lista da regra de crase) e ", mais o erro voltou" (o artigo ficou de fora de propósito). Estão no teste como limites conhecidos: se um for corrigido, o teste quebra e deve ser atualizado.
+- O caso parcial é "os switch queimou": corrige o plural e deixa o verbo, porque `queimou` não está na lista.
+- **Leitura honesta:** o critério da seção 7 pedia um conjunto escrito por outra pessoa, congelado antes do ajuste, com 80% de acerto. O `gold-4` não cumpre isso: o autor é o mesmo das regras e as conhecia, e parte das frases foi escrita para exercitar regra que eu acabara de criar. Os 96% medem regressão e as armadilhas conhecidas, não cobertura em texto real, e a revocação em texto livre será menor. O critério da seção 7 segue aberto até haver um conjunto independente.
+- Para fechar o critério: 30 a 40 frases (com e sem erro) escritas por quem não conhece as regras, guardadas fora do repositório se vierem de chamados reais, e rodadas uma vez, sem ajuste prévio.
