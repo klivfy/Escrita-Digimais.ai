@@ -83,6 +83,38 @@ describe('camada 2: concordância verbal', () => {
     quiet('Os técnicos verificaram o cabo. Depois e concluiu o teste.');
   });
 
+  it('"nós" abrindo a oração leva o verbo à primeira pessoa do plural', () => {
+    expect(fix('Nós vai resolver o chamado amanhã.')).toBe('Nós vamos resolver o chamado amanhã.');
+    expect(fix('Hoje nós precisa de acesso ao servidor.')).toBe('Hoje nós precisamos de acesso ao servidor.');
+    expect(fix('Quando nós consegue o acesso, avisamos.')).toBe('Quando nós conseguimos o acesso, avisamos.');
+    // Depois de preposição, "nós" não é sujeito: "para nós vai ser complicado" está certo.
+    quiet('Para nós vai ser complicado.');
+    quiet('Isso para nós é importante.');
+    quiet('Entre nós vai haver acordo.');
+    quiet('Nós vamos resolver o chamado amanhã.');
+  });
+
+  it('"entre eu e você" vira "entre mim e você", sem mexer em "entre eu ir e ele ficar"', () => {
+    expect(fix('Entre eu e você, o erro é antigo.')).toBe('Entre mim e você, o erro é antigo.');
+    expect(fix('A decisão ficou entre eu ou ela.')).toBe('A decisão ficou entre mim ou ela.');
+    quiet('Entre mim e você, o erro é antigo.');
+    quiet('Entre eu ir e ele ficar, prefiro ir.');
+    quiet('Eu e você abrimos o chamado.');
+  });
+
+  it('gerundismo "vou estar enviando" é sugerido como estilo, só com gerúndio regular', () => {
+    expect(fix('Vou estar enviando o arquivo hoje.')).toBe('Vou enviar o arquivo hoje.');
+    expect(fix('A equipe vai estar verificando o cabo.')).toBe('A equipe vai verificar o cabo.');
+    expect(fix('Vamos estar abrindo o chamado.')).toBe('Vamos abrir o chamado.');
+    const s = checkAgreement('Vou estar enviando o arquivo hoje.')[0];
+    expect(s.rule).toBe('uso');
+    expect(s.reason).toMatch(/estilo/);
+    quiet('Vou enviar o arquivo hoje.');
+    quiet('Estou enviando o arquivo agora.');
+    quiet('Vou estar de férias na próxima semana.');
+    quiet('Vou estar sendo avaliado amanhã.');
+  });
+
   it('sujeito composto só vale quando o primeiro termo abre a oração', () => {
     // Abre a oração: início da frase, depois de pontuação, de conjunção ou de advérbio de tempo.
     expect(fix('o técnico e o analista verificou o servidor')).toBe('o técnico e o analista verificaram o servidor');

@@ -150,6 +150,12 @@ const AGENTIVE_SINGULAR = new Set([
   'relatou', 'verificou', 'concluiu', 'analisou', 'resolveu', 'abriu', 'encerrou', 'atualizou', 'reiniciou', 'enviou', 'informou',
   'solicitou', 'confirmou', 'aprovou', 'liberou', 'testou', 'instalou', 'tentou', 'conseguiu', 'recebeu',
 ]);
+/** Verbos no singular que, com "nós" no início da oração, vão para a primeira pessoa do plural ("nós vai" vira "nós vamos"). Lista fechada. */
+const NOS_VERBS: Record<string, string> = {
+  vai: 'vamos', tem: 'temos', está: 'estamos', pode: 'podemos', deve: 'devemos', precisa: 'precisamos', consegue: 'conseguimos', faz: 'fazemos', fez: 'fizemos',
+};
+/** Gerúndios que não viram infinitivo regular (o infinitivo é pôr, ser, ter, vir, ir): ficam sem sugestão de gerundismo. */
+const IRREGULAR_GERUNDS = new Set(['pondo', 'sendo', 'tendo', 'vindo', 'indo']);
 /** Palavras que trocam o sujeito ou abrem outra oração entre dois verbos ligados por "e". */
 const SUBJECT_BREAKERS = new Set(['que', 'se', 'como', 'quando', 'porque', 'pois', 'mas', 'onde', 'enquanto']);
 
@@ -235,6 +241,22 @@ export function checkAgreement(text: string): ProofreadSuggestion[] {
     }
     if (lw === 'nós' && next && /ou$/.test(next.w) && next.w.length > 4) {
       add(next.s, next.e, next.w, next.w.replace(/ou$/, 'amos'), 'concordancia', 'Com "nós", o verbo fica na primeira pessoa do plural.');
+    }
+    // "Nós vai": com "nós" abrindo a oração, o verbo vai para a primeira pessoa do plural. Depois de preposição ("para nós vai ser...") nós não é sujeito.
+    if (lw === 'nós' && next && gapNext === ' ' && NOS_VERBS[next.w.toLowerCase()] && startsClause(t, text, i)) {
+      add(next.s, next.e, next.w, matchCase(next.w, NOS_VERBS[next.w.toLowerCase()]), 'concordancia', 'Com "nós", o verbo fica na primeira pessoa do plural.');
+    }
+    // "Entre eu e você": depois de preposição o pronome é "mim". Só com "e" ou "ou" logo depois ("entre eu ir e ele ficar" está certo).
+    if (k === 'entre' && next && gapNext === ' ' && nk === 'eu' && t[i + 2] && /^(e|ou)$/.test(strip(t[i + 2].w))) {
+      add(next.s, next.e, next.w, matchCase(next.w, 'mim'), 'uso', 'Depois de "entre", o pronome é "mim": entre mim e você.');
+    }
+    // Gerundismo ("vou estar enviando"): é questão de estilo, não de gramática; a sugestão diz isso e só vale com um gerúndio regular.
+    if (/^(vou|vamos|vai|vao)$/.test(k) && next && nk === 'estar' && gapNext === ' ' && t[i + 2] && text.slice(next.e, t[i + 2].s) === ' ') {
+      const g = t[i + 2].w;
+      const gk = strip(g);
+      if (/(ando|endo|indo)$/.test(gk) && !IRREGULAR_GERUNDS.has(gk) && g.length > 5) {
+        add(next.s, t[i + 2].e, `${next.w} ${g}`, g.replace(/ando$/, 'ar').replace(/endo$/, 'er').replace(/indo$/, 'ir'), 'uso', 'Gerundismo (estilo): "vou enviar" é mais direto que "vou estar enviando".');
+      }
     }
     if (k === 'houveram') add(t[i].s, t[i].e, w, matchCase(w, 'houve'), 'concordancia', 'Haver no sentido de existir fica no singular.');
     if (k === 'fazem' && next && NUMERALS_PL.has(nk) && t[i + 2] && TIME_UNITS.test(strip(t[i + 2].w))) {
